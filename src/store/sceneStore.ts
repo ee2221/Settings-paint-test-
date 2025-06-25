@@ -30,6 +30,13 @@ interface Group {
   objectIds: string[];
 }
 
+interface SceneSettings {
+  backgroundColor: string;
+  showGrid: boolean;
+  gridSize: number;
+  gridDivisions: number;
+}
+
 interface HistoryState {
   objects: Array<{
     id: string;
@@ -60,6 +67,7 @@ interface SceneState {
   editMode: EditMode;
   cameraPerspective: CameraPerspective;
   cameraZoom: number;
+  sceneSettings: SceneSettings;
   selectedElements: {
     vertices: number[];
     edges: number[];
@@ -95,6 +103,7 @@ interface SceneState {
   setTransformMode: (mode: 'translate' | 'rotate' | 'scale' | null) => void;
   setEditMode: (mode: EditMode) => void;
   setCameraPerspective: (perspective: CameraPerspective) => void;
+  updateSceneSettings: (settings: Partial<SceneSettings>) => void;
   toggleVisibility: (id: string) => void;
   toggleLock: (id: string) => void;
   updateObjectName: (id: string, name: string) => void;
@@ -198,6 +207,12 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   editMode: null,
   cameraPerspective: 'perspective',
   cameraZoom: 1,
+  sceneSettings: {
+    backgroundColor: '#0f0f23',
+    showGrid: true,
+    gridSize: 10,
+    gridDivisions: 10
+  },
   selectedElements: {
     vertices: [],
     edges: [],
@@ -213,6 +228,11 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   // New placement state
   placementMode: false,
   pendingObject: null,
+
+  updateSceneSettings: (settings) =>
+    set((state) => ({
+      sceneSettings: { ...state.sceneSettings, ...settings }
+    })),
 
   saveToHistory: () => {
     const state = get();

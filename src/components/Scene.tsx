@@ -936,7 +936,8 @@ const Scene: React.FC = () => {
     updateVertexDrag,
     updateEdgeDrag,
     canSelectObject,
-    placementMode
+    placementMode,
+    sceneSettings
   } = useSceneStore();
   const [selectedPosition, setSelectedPosition] = useState<THREE.Vector3 | null>(null);
   const [selectedEdgePosition, setSelectedEdgePosition] = useState<THREE.Vector3 | null>(null);
@@ -1001,7 +1002,8 @@ const Scene: React.FC = () => {
     <div className="relative w-full h-full">
       <Canvas
         camera={{ position: [5, 5, 5], fov: 75 }}
-        className="w-full h-full bg-gray-900"
+        className="w-full h-full"
+        style={{ backgroundColor: sceneSettings.backgroundColor }}
         onContextMenu={(e) => e.preventDefault()} // Prevent default right-click menu
         shadows
       >
@@ -1023,13 +1025,15 @@ const Scene: React.FC = () => {
         {/* User-created Scene Lights */}
         <SceneLights />
         
-        <Grid
-          infiniteGrid
-          cellSize={1}
-          sectionSize={3}
-          fadeDistance={30}
-          fadeStrength={1}
-        />
+        {sceneSettings.showGrid && (
+          <Grid
+            infiniteGrid
+            cellSize={1}
+            sectionSize={3}
+            fadeDistance={30}
+            fadeStrength={1}
+          />
+        )}
 
         {objects.map(({ object, visible, id }) => (
           visible && (
