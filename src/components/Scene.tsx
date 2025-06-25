@@ -223,13 +223,7 @@ const VertexCountSelector = () => {
 };
 
 const VertexPoints = ({ geometry, object }) => {
-  const { 
-    editMode, 
-    selectedElements, 
-    startVertexDrag, 
-    startVertexDragMode,
-    isObjectLocked 
-  } = useSceneStore();
+  const { editMode, selectedElements, startVertexDrag, isObjectLocked } = useSceneStore();
   const positions = geometry.attributes.position;
   const vertices = [];
   const worldMatrix = object.matrixWorld;
@@ -257,12 +251,6 @@ const VertexPoints = ({ geometry, object }) => {
             e.stopPropagation();
             if (editMode === 'vertex' && !objectLocked) {
               startVertexDrag(i, vertex);
-            }
-          }}
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            if (editMode === 'vertex' && !objectLocked) {
-              startVertexDragMode(i, vertex);
             }
           }}
         >
@@ -481,7 +469,7 @@ const EditModeOverlay = () => {
     if (objectLocked) return;
 
     const handlePointerMove = (event) => {
-      if (draggedVertex && draggedVertex.isDragging) {
+      if (draggedVertex) {
         const cameraDirection = new THREE.Vector3();
         camera.getWorldDirection(cameraDirection);
         plane.current.normal.copy(cameraDirection);
@@ -492,36 +480,23 @@ const EditModeOverlay = () => {
 
         raycaster.setFromCamera(pointer, camera);
         if (raycaster.ray.intersectPlane(plane.current, intersection.current)) {
-          // Convert world position to local position
-          const localPosition = intersection.current.clone();
-          const inverseMatrix = selectedObject.matrixWorld.clone().invert();
-          localPosition.applyMatrix4(inverseMatrix);
-          
-          updateVertexDrag(localPosition);
+          updateVertexDrag(intersection.current);
         }
       }
     };
 
     const handlePointerUp = () => {
-      if (draggedVertex && draggedVertex.isDragging) {
-        endVertexDrag();
-      }
-    };
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape' && draggedVertex && draggedVertex.isDragging) {
+      if (draggedVertex) {
         endVertexDrag();
       }
     };
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('keydown', handleKeyDown);
     
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [
     selectedObject,
