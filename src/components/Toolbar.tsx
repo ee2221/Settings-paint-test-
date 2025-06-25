@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star } from 'lucide-react';
+import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star, Dot, Minus } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
@@ -398,13 +398,13 @@ const Toolbar: React.FC = () => {
 
   const editTools = [
     {
-      icon: Edit,
+      icon: Dot,
       mode: 'vertex' as const,
       title: 'Edit Vertices',
       shortcut: 'V'
     },
     {
-      icon: Edit,
+      icon: Minus,
       mode: 'edge' as const,
       title: 'Edit Edges',
       shortcut: 'E'
