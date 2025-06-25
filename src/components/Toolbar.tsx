@@ -57,7 +57,7 @@ const Toolbar: React.FC = () => {
     }
   ];
 
-  // Nature objects - trees, flowers, and rocks
+  // Nature objects - trees, flowers, and rocks (removed Pebble and Sunflower)
   const natureObjects = [
     {
       name: 'Pine Tree',
@@ -154,44 +154,6 @@ const Toolbar: React.FC = () => {
       color: '#FF69B4'
     },
     {
-      name: 'Sunflower',
-      icon: Flower,
-      geometry: () => {
-        const group = new THREE.Group();
-        
-        // Flower stem
-        const stemGeometry = new THREE.CylinderGeometry(0.03, 0.04, 1.2, 8);
-        const stemMaterial = new THREE.MeshStandardMaterial({ color: '#228B22' });
-        const stem = new THREE.Mesh(stemGeometry, stemMaterial);
-        stem.position.y = 0.6;
-        group.add(stem);
-        
-        // Flower center
-        const centerGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 16);
-        const centerMaterial = new THREE.MeshStandardMaterial({ color: '#8B4513' });
-        const center = new THREE.Mesh(centerGeometry, centerMaterial);
-        center.position.y = 1.2;
-        group.add(center);
-        
-        // Sunflower petals
-        const petalGeometry = new THREE.BoxGeometry(0.08, 0.3, 0.02);
-        const petalMaterial = new THREE.MeshStandardMaterial({ color: '#FFD700' });
-        
-        for (let i = 0; i < 12; i++) {
-          const petal = new THREE.Mesh(petalGeometry, petalMaterial);
-          const angle = (i / 12) * Math.PI * 2;
-          petal.position.x = Math.cos(angle) * 0.2;
-          petal.position.z = Math.sin(angle) * 0.2;
-          petal.position.y = 1.2;
-          petal.rotation.y = angle;
-          group.add(petal);
-        }
-        
-        return group;
-      },
-      color: '#FFD700'
-    },
-    {
       name: 'Boulder',
       icon: Mountain,
       geometry: () => {
@@ -253,34 +215,6 @@ const Toolbar: React.FC = () => {
         return geometry;
       },
       color: '#A0A0A0'
-    },
-    {
-      name: 'Pebble',
-      icon: Mountain,
-      geometry: () => {
-        // Create a smooth, small pebble
-        const geometry = new THREE.SphereGeometry(0.15, 12, 8);
-        const positions = geometry.attributes.position;
-        
-        // Slightly flatten and make irregular
-        for (let i = 0; i < positions.count; i++) {
-          const x = positions.getX(i);
-          const y = positions.getY(i);
-          const z = positions.getZ(i);
-          
-          // Flatten the Y axis and add slight irregularity
-          positions.setXYZ(
-            i,
-            x * (1 + (Math.random() - 0.5) * 0.1),
-            y * 0.6 * (1 + (Math.random() - 0.5) * 0.1),
-            z * (1 + (Math.random() - 0.5) * 0.1)
-          );
-        }
-        
-        geometry.computeVertexNormals();
-        return geometry;
-      },
-      color: '#B8860B'
     },
     {
       name: 'Grass Patch',

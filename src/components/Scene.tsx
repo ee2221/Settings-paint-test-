@@ -815,8 +815,8 @@ const PlacementHelper = () => {
   // Check if object is a nature object that should be placed with base at cursor
   const isNatureObject = (objectName: string) => {
     const natureNames = [
-      'Pine Tree', 'Oak Tree', 'Flower', 'Sunflower', 
-      'Boulder', 'Small Rock', 'Pebble', 'Grass Patch'
+      'Pine Tree', 'Oak Tree', 'Flower', 
+      'Boulder', 'Small Rock', 'Grass Patch'
     ];
     return natureNames.includes(objectName);
   };
