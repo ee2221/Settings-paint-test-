@@ -812,57 +812,72 @@ const PlacementHelper = () => {
     return dimensions;
   };
 
-  // Enhanced placement logic with surface-oriented placement and ground level support
+  // Check if object is a nature object that should be placed with base at cursor
+  const isNatureObject = (objectName: string) => {
+    const natureNames = [
+      'Pine Tree', 'Oak Tree', 'Flower', 'Sunflower', 
+      'Boulder', 'Small Rock', 'Pebble', 'Grass Patch'
+    ];
+    return natureNames.includes(objectName);
+  };
+
+  // Enhanced placement logic with proper base positioning for nature objects
   const findPlacementPosition = (intersectionPoint: THREE.Vector3, normal?: THREE.Vector3) => {
     if (!pendingObject) return { position: intersectionPoint, rotation: null };
 
     let rotation: THREE.Euler | null = null;
     let offsetDistance = 0;
 
+    // Check if this is a nature object
+    const isNature = isNatureObject(pendingObject.name);
+
     // If we have a surface normal, orient the object to the surface
     if (normal) {
       rotation = calculateObjectOrientation(normal);
       
-      // Get object dimensions in the new orientation
-      const dimensions = getOrientedObjectDimensions(rotation);
-      
-      // Use the smallest dimension as the offset (the "base" of the object)
-      offsetDistance = Math.min(dimensions.width, dimensions.height, dimensions.depth) / 2;
-      
-      // For ground placement (Y normal close to 1), use height and allow Y=0 placement
-      if (Math.abs(normal.y) > 0.9) {
-        offsetDistance = dimensions.height / 2;
+      if (isNature) {
+        // For nature objects, place the base exactly at the intersection point
+        offsetDistance = 0;
+      } else {
+        // For regular objects, use the smallest dimension as offset
+        const dimensions = getOrientedObjectDimensions(rotation);
+        offsetDistance = Math.min(dimensions.width, dimensions.height, dimensions.depth) / 2;
         
-        // Special case: if intersection is at or very close to Y=0, place directly on ground
-        if (Math.abs(intersectionPoint.y) < 0.01) {
-          const finalPosition = new THREE.Vector3(
-            intersectionPoint.x,
-            offsetDistance, // Just lift by half the object height
-            intersectionPoint.z
-          );
-          return { position: finalPosition, rotation };
+        // For very flat surfaces (like ground), use height
+        if (Math.abs(normal.y) > 0.9) {
+          offsetDistance = dimensions.height / 2;
         }
       }
     } else {
-      // Fallback: use default orientation and height
-      const tempBox = getPendingObjectBoundingBox(intersectionPoint);
-      offsetDistance = (tempBox.max.y - tempBox.min.y) / 2;
-      
-      // For ground level placement without normal
-      if (Math.abs(intersectionPoint.y) < 0.01) {
-        const finalPosition = new THREE.Vector3(
-          intersectionPoint.x,
-          offsetDistance,
-          intersectionPoint.z
-        );
-        return { position: finalPosition, rotation };
+      // Fallback: use default orientation
+      if (isNature) {
+        // For nature objects without normal, place base at intersection
+        offsetDistance = 0;
+      } else {
+        // For regular objects, use height offset
+        const tempBox = getPendingObjectBoundingBox(intersectionPoint);
+        offsetDistance = (tempBox.max.y - tempBox.min.y) / 2;
       }
     }
 
-    // Calculate final position with proper offset
-    const finalPosition = normal 
-      ? intersectionPoint.clone().add(normal.clone().multiplyScalar(offsetDistance))
-      : new THREE.Vector3(intersectionPoint.x, intersectionPoint.y + offsetDistance, intersectionPoint.z);
+    // Calculate final position
+    let finalPosition: THREE.Vector3;
+    
+    if (isNature) {
+      // For nature objects, place base exactly at intersection point
+      finalPosition = intersectionPoint.clone();
+      
+      // Only apply minimal offset if we're on a surface with normal
+      if (normal && Math.abs(normal.y) < 0.9) {
+        // On angled surfaces, apply small offset to prevent clipping
+        finalPosition.add(normal.clone().multiplyScalar(0.01));
+      }
+    } else {
+      // For regular objects, apply proper offset
+      finalPosition = normal 
+        ? intersectionPoint.clone().add(normal.clone().multiplyScalar(offsetDistance))
+        : new THREE.Vector3(intersectionPoint.x, intersectionPoint.y + offsetDistance, intersectionPoint.z);
+    }
 
     return { position: finalPosition, rotation };
   };
