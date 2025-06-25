@@ -226,69 +226,42 @@ const VertexPoints = ({ geometry, object }) => {
   const { editMode, selectedElements, startVertexDrag, isObjectLocked } = useSceneStore();
   const positions = geometry.attributes.position;
   const vertices = [];
+  const worldMatrix = object.matrixWorld;
   
   // Check if object is locked
   const selectedObj = useSceneStore.getState().objects.find(obj => obj.object === object);
   const objectLocked = selectedObj ? isObjectLocked(selectedObj.id) : false;
-  
-  // Get unique vertex positions to avoid duplicates
-  const uniqueVertices = new Map();
   
   for (let i = 0; i < positions.count; i++) {
     const vertex = new THREE.Vector3(
       positions.getX(i),
       positions.getY(i),
       positions.getZ(i)
-    );
-    
-    // Apply object's world matrix to get world position
-    vertex.applyMatrix4(object.matrixWorld);
-    
-    // Create a key for this position to check for duplicates
-    const key = `${vertex.x.toFixed(6)},${vertex.y.toFixed(6)},${vertex.z.toFixed(6)}`;
-    
-    if (!uniqueVertices.has(key)) {
-      uniqueVertices.set(key, {
-        position: vertex,
-        indices: [i]
-      });
-    } else {
-      // Add this index to the existing vertex group
-      uniqueVertices.get(key).indices.push(i);
-    }
+    ).applyMatrix4(worldMatrix);
+    vertices.push(vertex);
   }
-
-  // Convert map to array for rendering
-  const vertexGroups = Array.from(uniqueVertices.values());
 
   return editMode === 'vertex' ? (
     <group>
-      {vertexGroups.map((vertexGroup, groupIndex) => {
-        const isSelected = vertexGroup.indices.some(index => 
-          selectedElements.vertices.includes(index)
-        );
-        
-        return (
-          <mesh
-            key={groupIndex}
-            position={vertexGroup.position}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (editMode === 'vertex' && !objectLocked) {
-                // Use the first index in the group for the drag operation
-                startVertexDrag(vertexGroup.indices[0], vertexGroup.position);
-              }
-            }}
-          >
-            <sphereGeometry args={[0.08]} />
-            <meshBasicMaterial
-              color={objectLocked ? '#666666' : (isSelected ? '#ff4444' : '#ffff00')}
-              transparent
-              opacity={objectLocked ? 0.3 : (isSelected ? 0.9 : 0.7)}
-            />
-          </mesh>
-        );
-      })}
+      {vertices.map((vertex, i) => (
+        <mesh
+          key={i}
+          position={vertex}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (editMode === 'vertex' && !objectLocked) {
+              startVertexDrag(i, vertex);
+            }
+          }}
+        >
+          <sphereGeometry args={[0.05]} />
+          <meshBasicMaterial
+            color={objectLocked ? 'gray' : (selectedElements.vertices.includes(i) ? 'red' : 'yellow')}
+            transparent
+            opacity={objectLocked ? 0.3 : 0.5}
+          />
+        </mesh>
+      ))}
     </group>
   ) : null;
 };
@@ -477,15 +450,15 @@ const EditModeOverlay = () => {
   const { 
     selectedObject, 
     editMode,
+    setSelectedElements,
     draggedVertex,
     updateVertexDrag,
     endVertexDrag,
     isObjectLocked
   } = useSceneStore();
-  const { camera, raycaster, pointer } = useThree();
+  const { scene, camera, raycaster, pointer } = useThree();
   const plane = useRef(new THREE.Plane());
   const intersection = useRef(new THREE.Vector3());
-  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (!selectedObject || !editMode || !(selectedObject instanceof THREE.Mesh)) return;
@@ -495,57 +468,35 @@ const EditModeOverlay = () => {
     const objectLocked = selectedObj ? isObjectLocked(selectedObj.id) : false;
     if (objectLocked) return;
 
-    const handlePointerDown = (event) => {
-      if (draggedVertex && event.button === 0) { // Left mouse button
-        setIsDragging(true);
-        
-        // Set up dragging plane
+    const handlePointerMove = (event) => {
+      if (draggedVertex) {
         const cameraDirection = new THREE.Vector3();
         camera.getWorldDirection(cameraDirection);
-        plane.current.setFromNormalAndCoplanarPoint(cameraDirection, draggedVertex.position);
-      }
-    };
+        plane.current.normal.copy(cameraDirection);
+        plane.current.setFromNormalAndCoplanarPoint(
+          cameraDirection,
+          draggedVertex.position
+        );
 
-    const handlePointerMove = (event) => {
-      if (isDragging && draggedVertex) {
         raycaster.setFromCamera(pointer, camera);
         if (raycaster.ray.intersectPlane(plane.current, intersection.current)) {
-          // Convert world position to local position
-          const localPosition = intersection.current.clone();
-          const inverseMatrix = selectedObject.matrixWorld.clone().invert();
-          localPosition.applyMatrix4(inverseMatrix);
-          
-          updateVertexDrag(localPosition);
+          updateVertexDrag(intersection.current);
         }
       }
     };
 
-    const handlePointerUp = (event) => {
-      if (isDragging && event.button === 0) { // Left mouse button
-        setIsDragging(false);
-        if (draggedVertex) {
-          endVertexDrag();
-        }
-      }
-    };
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape' && (isDragging || draggedVertex)) {
-        setIsDragging(false);
+    const handlePointerUp = () => {
+      if (draggedVertex) {
         endVertexDrag();
       }
     };
 
-    window.addEventListener('pointerdown', handlePointerDown);
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('keydown', handleKeyDown);
     
     return () => {
-      window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [
     selectedObject,
@@ -553,11 +504,11 @@ const EditModeOverlay = () => {
     camera,
     raycaster,
     pointer,
+    setSelectedElements,
     draggedVertex,
     updateVertexDrag,
     endVertexDrag,
-    isObjectLocked,
-    isDragging
+    isObjectLocked
   ]);
 
   if (!selectedObject || !editMode || !(selectedObject instanceof THREE.Mesh)) return null;
@@ -994,10 +945,7 @@ const Scene: React.FC = () => {
   useEffect(() => {
     if (editMode === 'vertex' && selectedObject instanceof THREE.Mesh) {
       if (draggedVertex) {
-        // Convert local position to world position for display
-        const worldPosition = draggedVertex.position.clone();
-        worldPosition.applyMatrix4(selectedObject.matrixWorld);
-        setSelectedPosition(worldPosition);
+        setSelectedPosition(draggedVertex.position);
       } else if (selectedElements.vertices.length > 0) {
         const geometry = selectedObject.geometry;
         const positions = geometry.attributes.position;
