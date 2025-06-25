@@ -11,7 +11,9 @@ import {
   Grid3X3,
   Eye,
   EyeOff,
-  GripHorizontal
+  GripHorizontal,
+  Layout,
+  LayoutDashboard
 } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 
@@ -23,7 +25,7 @@ const SettingsPanel: React.FC = () => {
   
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<string[]>(['appearance']);
+  const [expandedSections, setExpandedSections] = useState<string[]>(['appearance', 'interface']);
   
   // Dragging state
   const [isDragging, setIsDragging] = useState(false);
@@ -117,6 +119,10 @@ const SettingsPanel: React.FC = () => {
     updateSceneSettings({ showGrid: !sceneSettings.showGrid });
   };
 
+  const handleHideMenusToggle = () => {
+    updateSceneSettings({ hideAllMenus: !sceneSettings.hideAllMenus });
+  };
+
   // Settings button (always visible)
   if (!isOpen) {
     return (
@@ -208,6 +214,66 @@ const SettingsPanel: React.FC = () => {
 
       {/* Content */}
       <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 80px)' }}>
+        {/* Interface Section */}
+        <div className="space-y-2 mb-4">
+          <button
+            onClick={() => toggleSection('interface')}
+            className="w-full flex items-center justify-between p-2 hover:bg-white/5 rounded-lg transition-colors text-white/90"
+          >
+            <div className="flex items-center gap-2">
+              {expandedSections.includes('interface') ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+              <Layout className="w-4 h-4" />
+              <span className="text-sm font-medium">Interface</span>
+            </div>
+          </button>
+
+          {expandedSections.includes('interface') && (
+            <div className="space-y-4 ml-4">
+              {/* Hide All Menus Toggle */}
+              <div className="flex items-center justify-between p-3 bg-[#2a2a2a] rounded-lg border border-white/10">
+                <div className="flex items-center gap-3">
+                  <LayoutDashboard className="w-5 h-5 text-white/70" />
+                  <div>
+                    <div className="text-sm font-medium text-white/90">Hide All Tool Menus</div>
+                    <div className="text-xs text-white/60 mt-0.5">
+                      Clean workspace mode - hides all UI panels
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleHideMenusToggle}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    sceneSettings.hideAllMenus ? 'bg-blue-500' : 'bg-gray-600'
+                  }`}
+                  title={sceneSettings.hideAllMenus ? 'Show All Menus' : 'Hide All Menus'}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      sceneSettings.hideAllMenus ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {sceneSettings.hideAllMenus && (
+                <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                  <div className="text-xs text-orange-400 font-medium mb-1 flex items-center gap-2">
+                    <Eye className="w-3 h-3" />
+                    Clean Mode Active
+                  </div>
+                  <div className="text-xs text-white/60">
+                    All tool menus are hidden. Use this settings panel or keyboard shortcuts to access features.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Appearance Section */}
         <div className="space-y-2">
           <button
@@ -319,13 +385,16 @@ const SettingsPanel: React.FC = () => {
           )}
         </div>
 
-        {/* Future sections can be added here */}
+        {/* Keyboard Shortcuts Info */}
         <div className="mt-6 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-          <div className="text-xs text-blue-400 font-medium mb-1">
-            More Settings Coming Soon
+          <div className="text-xs text-blue-400 font-medium mb-2">
+            💡 Keyboard Shortcuts
           </div>
-          <div className="text-xs text-white/50">
-            Additional customization options will be added in future updates.
+          <div className="text-xs text-white/60 space-y-1">
+            <div><kbd className="bg-white/10 px-1 rounded">Tab</kbd> - Toggle clean mode</div>
+            <div><kbd className="bg-white/10 px-1 rounded">G</kbd> - Toggle grid</div>
+            <div><kbd className="bg-white/10 px-1 rounded">Ctrl+Z</kbd> - Undo</div>
+            <div><kbd className="bg-white/10 px-1 rounded">Ctrl+Y</kbd> - Redo</div>
           </div>
         </div>
       </div>

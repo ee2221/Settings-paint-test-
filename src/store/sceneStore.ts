@@ -35,6 +35,7 @@ interface SceneSettings {
   showGrid: boolean;
   gridSize: number;
   gridDivisions: number;
+  hideAllMenus: boolean;
 }
 
 interface HistoryState {
@@ -211,7 +212,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     backgroundColor: '#0f0f23',
     showGrid: true,
     gridSize: 10,
-    gridDivisions: 10
+    gridDivisions: 10,
+    hideAllMenus: false
   },
   selectedElements: {
     vertices: [],

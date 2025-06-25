@@ -8,18 +8,29 @@ import EditControls from './components/EditControls';
 import CameraPerspectivePanel from './components/CameraPerspectivePanel';
 import LightingPanel from './components/LightingPanel';
 import SettingsPanel from './components/SettingsPanel';
+import { useSceneStore } from './store/sceneStore';
 
 function App() {
+  const { sceneSettings } = useSceneStore();
+
   return (
     <div className="w-full h-screen relative">
       <Scene />
-      <ActionsToolbar />
-      <Toolbar />
-      <LayersPanel />
-      <ObjectProperties />
-      <EditControls />
-      <CameraPerspectivePanel />
-      <LightingPanel />
+      
+      {/* Conditionally render UI panels based on hideAllMenus setting */}
+      {!sceneSettings.hideAllMenus && (
+        <>
+          <ActionsToolbar />
+          <Toolbar />
+          <LayersPanel />
+          <ObjectProperties />
+          <EditControls />
+          <CameraPerspectivePanel />
+          <LightingPanel />
+        </>
+      )}
+      
+      {/* Settings panel is always visible */}
       <SettingsPanel />
     </div>
   );
