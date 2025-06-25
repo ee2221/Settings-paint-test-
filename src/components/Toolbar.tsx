@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star, Dot, Minus, Edit3 } from 'lucide-react';
+import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star, Dot, Minus } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
@@ -398,18 +398,16 @@ const Toolbar: React.FC = () => {
 
   const editTools = [
     {
-      icon: Edit3,
+      icon: Dot,
       mode: 'vertex' as const,
       title: 'Edit Vertices',
-      shortcut: 'V',
-      description: 'Edit individual vertex points'
+      shortcut: 'V'
     },
     {
       icon: Minus,
       mode: 'edge' as const,
       title: 'Edit Edges',
-      shortcut: 'E',
-      description: 'Edit edges between vertices'
+      shortcut: 'E'
     }
   ];
 
@@ -588,7 +586,7 @@ const Toolbar: React.FC = () => {
         <div className="w-full h-px bg-white/10" />
 
         {/* Edit Tools */}
-        {editTools.map(({ icon: Icon, mode, title, shortcut, description }) => {
+        {editTools.map(({ icon: Icon, mode, title, shortcut }) => {
           // Check if edge mode should be disabled for certain geometries
           const isDisabled = mode === 'edge' && selectedObject instanceof THREE.Mesh && (
             selectedObject.geometry instanceof THREE.CylinderGeometry ||
@@ -608,22 +606,13 @@ const Toolbar: React.FC = () => {
                     ? 'bg-green-500/30 text-green-300 hover:scale-105 active:scale-95'
                     : 'text-white/90 hover:bg-white/10 hover:text-white hover:scale-105 active:scale-95'
               }`}
-              title={isDisabled ? `${title} (Not available for this geometry)` : `${title} (${shortcut}) - ${description}`}
+              title={isDisabled ? `${title} (Not available for this geometry)` : `${title} (${shortcut})`}
             >
               <Icon className="w-5 h-5" />
               
-              {/* Enhanced Tooltip */}
-              <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-black/90 text-white text-xs px-3 py-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap max-w-48">
-                <div className="font-medium">{title}</div>
-                {!isDisabled && (
-                  <>
-                    <div className="text-white/60 mt-1">{description}</div>
-                    <div className="text-blue-400 mt-1">Press {shortcut}</div>
-                  </>
-                )}
-                {isDisabled && (
-                  <div className="text-red-400 mt-1">Not available for this geometry</div>
-                )}
+              {/* Tooltip */}
+              <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                {isDisabled ? `${title} (Not available)` : `${title} (${shortcut})`}
               </div>
             </button>
           );
