@@ -329,7 +329,16 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       return { 
         selectedObject: object,
         editMode: newEditMode,
-        transformMode: null // Clear transform mode when selecting object
+        transformMode: null, // Clear transform mode when selecting object
+        // Clear any existing vertex/edge selections
+        selectedElements: {
+          vertices: [],
+          edges: [],
+          faces: []
+        },
+        draggedVertex: null,
+        draggedEdge: null,
+        isDraggingEdge: false
       };
     }),
 
@@ -346,7 +355,19 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           return state; // Don't change the edit mode
         }
       }
-      return { editMode: mode };
+      
+      // Clear selections when changing edit mode
+      return { 
+        editMode: mode,
+        selectedElements: {
+          vertices: [],
+          edges: [],
+          faces: []
+        },
+        draggedVertex: null,
+        draggedEdge: null,
+        isDraggingEdge: false
+      };
     }),
 
   setCameraPerspective: (perspective) => set({ cameraPerspective: perspective }),
@@ -480,12 +501,15 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       const geometry = state.selectedObject.geometry;
       const positions = geometry.attributes.position;
       const overlappingIndices = [];
+      
+      // Get the local position of the clicked vertex
       const selectedPos = new THREE.Vector3(
         positions.getX(index),
         positions.getY(index),
         positions.getZ(index)
       );
 
+      // Find all vertices that share the same position (overlapping vertices)
       for (let i = 0; i < positions.count; i++) {
         const pos = new THREE.Vector3(
           positions.getX(i),
@@ -500,8 +524,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       return {
         draggedVertex: {
           indices: overlappingIndices,
-          position: position.clone(),
-          initialPosition: position.clone()
+          position: selectedPos.clone(), // Store local position
+          initialPosition: selectedPos.clone()
         },
         selectedElements: {
           ...state.selectedElements,
@@ -510,7 +534,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       };
     }),
 
-  updateVertexDrag: (position) =>
+  updateVertexDrag: (localPosition) =>
     set((state) => {
       if (!state.draggedVertex || !(state.selectedObject instanceof THREE.Mesh)) return state;
 
@@ -521,13 +545,13 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       const geometry = state.selectedObject.geometry;
       const positions = geometry.attributes.position;
       
-      // Update all overlapping vertices to the new position
+      // Update all overlapping vertices to the new local position
       state.draggedVertex.indices.forEach(index => {
         positions.setXYZ(
           index,
-          position.x,
-          position.y,
-          position.z
+          localPosition.x,
+          localPosition.y,
+          localPosition.z
         );
       });
 
@@ -537,7 +561,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       return {
         draggedVertex: {
           ...state.draggedVertex,
-          position: position.clone()
+          position: localPosition.clone()
         }
       };
     }),
@@ -690,7 +714,9 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           vertices: [],
           edges: [],
           faces: []
-        }
+        },
+        draggedVertex: null,
+        draggedEdge: null
       };
     }),
 
@@ -727,7 +753,9 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           vertices: [],
           edges: [],
           faces: []
-        }
+        },
+        draggedVertex: null,
+        draggedEdge: null
       };
     }),
 
