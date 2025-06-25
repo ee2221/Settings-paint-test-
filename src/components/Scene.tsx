@@ -247,7 +247,7 @@ const VertexPoints = ({ geometry, object }) => {
         <mesh
           key={i}
           position={vertex}
-          onPointerDown={(e) => {
+          onClick={(e) => {
             e.stopPropagation();
             if (editMode === 'vertex' && !objectLocked) {
               startVertexDrag(i, vertex);
@@ -446,106 +446,77 @@ const EdgeLines = ({ geometry, object }) => {
   ) : null;
 };
 
-// Enhanced vertex dragging component with smooth mouse tracking
-const VertexDragController = () => {
+const EditModeOverlay = () => {
   const { 
     selectedObject, 
     editMode,
+    setSelectedElements,
     draggedVertex,
     updateVertexDrag,
     endVertexDrag,
     isObjectLocked
   } = useSceneStore();
-  const { camera, raycaster, pointer } = useThree();
+  const { scene, camera, raycaster, pointer } = useThree();
   const plane = useRef(new THREE.Plane());
   const intersection = useRef(new THREE.Vector3());
 
-  useFrame(() => {
-    if (!selectedObject || !editMode || !(selectedObject instanceof THREE.Mesh) || !draggedVertex) return;
+  useEffect(() => {
+    if (!selectedObject || !editMode || !(selectedObject instanceof THREE.Mesh)) return;
 
     // Check if object is locked
     const selectedObj = useSceneStore.getState().objects.find(obj => obj.object === selectedObject);
     const objectLocked = selectedObj ? isObjectLocked(selectedObj.id) : false;
     if (objectLocked) return;
 
-    // Set up a plane perpendicular to camera for smooth dragging
-    const cameraDirection = new THREE.Vector3();
-    camera.getWorldDirection(cameraDirection);
-    
-    // Use the current vertex position as the plane point
-    plane.current.setFromNormalAndCoplanarPoint(cameraDirection, draggedVertex.position);
+    const handlePointerMove = (event) => {
+      if (draggedVertex) {
+        const cameraDirection = new THREE.Vector3();
+        camera.getWorldDirection(cameraDirection);
+        plane.current.normal.copy(cameraDirection);
+        plane.current.setFromNormalAndCoplanarPoint(
+          cameraDirection,
+          draggedVertex.position
+        );
 
-    // Cast ray from camera through mouse position
-    raycaster.setFromCamera(pointer, camera);
-    
-    // Find intersection with the plane
-    if (raycaster.ray.intersectPlane(plane.current, intersection.current)) {
-      // Convert world position to local position
-      const localPosition = intersection.current.clone();
-      const inverseMatrix = selectedObject.matrixWorld.clone().invert();
-      localPosition.applyMatrix4(inverseMatrix);
-      
-      // Update vertex position
-      updateVertexDrag(localPosition);
-    }
-  });
+        raycaster.setFromCamera(pointer, camera);
+        if (raycaster.ray.intersectPlane(plane.current, intersection.current)) {
+          updateVertexDrag(intersection.current);
+        }
+      }
+    };
 
-  useEffect(() => {
-    if (!draggedVertex) return;
-
-    const handlePointerUp = (event) => {
-      if (event.button === 0) { // Left mouse button
+    const handlePointerUp = () => {
+      if (draggedVertex) {
         endVertexDrag();
       }
     };
 
-    const handleRightClick = (event) => {
-      if (event.button === 2) { // Right click
-        event.preventDefault();
-        endVertexDrag();
-      }
-    };
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        endVertexDrag();
-      }
-    };
-
+    window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('contextmenu', handleRightClick);
-    window.addEventListener('keydown', handleKeyDown);
     
     return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('contextmenu', handleRightClick);
-      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [draggedVertex, endVertexDrag]);
-
-  return null;
-};
-
-const EditModeOverlay = () => {
-  const { 
-    selectedObject, 
+  }, [
+    selectedObject,
     editMode,
+    camera,
+    raycaster,
+    pointer,
     setSelectedElements,
+    draggedVertex,
+    updateVertexDrag,
+    endVertexDrag,
     isObjectLocked
-  } = useSceneStore();
+  ]);
 
   if (!selectedObject || !editMode || !(selectedObject instanceof THREE.Mesh)) return null;
-
-  // Check if object is locked
-  const selectedObj = useSceneStore.getState().objects.find(obj => obj.object === selectedObject);
-  const objectLocked = selectedObj ? isObjectLocked(selectedObj.id) : false;
-  if (objectLocked) return null;
 
   return (
     <>
       <VertexPoints geometry={selectedObject.geometry} object={selectedObject} />
       <EdgeLines geometry={selectedObject.geometry} object={selectedObject} />
-      <VertexDragController />
     </>
   );
 };
