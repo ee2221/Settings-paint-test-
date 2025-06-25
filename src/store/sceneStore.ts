@@ -321,19 +321,9 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         return state; // Don't change selection if object is locked
       }
 
-      let newTransformMode = state.transformMode;
       let newEditMode = state.editMode;
 
       if (object) {
-        // When selecting an object, apply persistent modes or defaults
-        if (state.persistentTransformMode) {
-          // Use the persistent transform mode
-          newTransformMode = state.persistentTransformMode;
-        } else {
-          // Default to move tool when selecting an object
-          newTransformMode = 'translate';
-        }
-
         // Apply persistent edit mode if set
         if (state.persistentEditMode) {
           newEditMode = state.persistentEditMode;
@@ -349,15 +339,15 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           }
         }
       } else {
-        // When deselecting, clear current modes but keep persistent modes
-        newTransformMode = null;
+        // When deselecting, clear edit mode but keep persistent modes
         newEditMode = null;
       }
       
       return { 
         selectedObject: object,
-        transformMode: newTransformMode,
-        editMode: newEditMode
+        editMode: newEditMode,
+        // Don't automatically set transform mode - only show when explicitly selected
+        transformMode: object ? state.transformMode : null
       };
     }),
 
