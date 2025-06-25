@@ -446,70 +446,130 @@ const EdgeLines = ({ geometry, object }) => {
   ) : null;
 };
 
-const EditModeOverlay = () => {
+// Enhanced vertex dragging component with improved mouse tracking
+const VertexDragController = () => {
   const { 
     selectedObject, 
     editMode,
-    setSelectedElements,
     draggedVertex,
     updateVertexDrag,
     endVertexDrag,
     isObjectLocked
   } = useSceneStore();
-  const { scene, camera, raycaster, pointer } = useThree();
-  const plane = useRef(new THREE.Plane());
-  const intersection = useRef(new THREE.Vector3());
+  const { camera, raycaster, pointer, gl } = useThree();
+  const isDraggingRef = useRef(false);
+  const dragPlaneRef = useRef(new THREE.Plane());
+  const intersectionRef = useRef(new THREE.Vector3());
+  const lastMousePositionRef = useRef({ x: 0, y: 0 });
+  const dragStartDepthRef = useRef(0);
 
   useEffect(() => {
-    if (!selectedObject || !editMode || !(selectedObject instanceof THREE.Mesh)) return;
+    if (!selectedObject || !editMode || !(selectedObject instanceof THREE.Mesh) || !draggedVertex) return;
 
     // Check if object is locked
     const selectedObj = useSceneStore.getState().objects.find(obj => obj.object === selectedObject);
     const objectLocked = selectedObj ? isObjectLocked(selectedObj.id) : false;
     if (objectLocked) return;
 
-    const handlePointerMove = (event) => {
-      if (draggedVertex) {
-        const cameraDirection = new THREE.Vector3();
-        camera.getWorldDirection(cameraDirection);
-        plane.current.normal.copy(cameraDirection);
-        plane.current.setFromNormalAndCoplanarPoint(
-          cameraDirection,
-          draggedVertex.position
-        );
+    // Calculate the initial depth of the vertex from the camera
+    const vertexWorldPos = draggedVertex.position.clone();
+    vertexWorldPos.applyMatrix4(selectedObject.matrixWorld);
+    const cameraToVertex = vertexWorldPos.clone().sub(camera.position);
+    dragStartDepthRef.current = cameraToVertex.length();
 
-        raycaster.setFromCamera(pointer, camera);
-        if (raycaster.ray.intersectPlane(plane.current, intersection.current)) {
-          updateVertexDrag(intersection.current);
-        }
+    // Set up the drag plane perpendicular to the camera direction
+    const cameraDirection = new THREE.Vector3();
+    camera.getWorldDirection(cameraDirection);
+    dragPlaneRef.current.setFromNormalAndCoplanarPoint(cameraDirection, vertexWorldPos);
+
+    isDraggingRef.current = true;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!isDraggingRef.current || !draggedVertex) return;
+
+      // Get normalized device coordinates
+      const rect = gl.domElement.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      // Cast ray from camera through mouse position
+      raycaster.setFromCamera({ x, y }, camera);
+
+      // Find intersection with the drag plane
+      if (raycaster.ray.intersectPlane(dragPlaneRef.current, intersectionRef.current)) {
+        // Convert world position back to local object space
+        const localPosition = intersectionRef.current.clone();
+        const inverseMatrix = selectedObject.matrixWorld.clone().invert();
+        localPosition.applyMatrix4(inverseMatrix);
+        
+        // Update the vertex position
+        updateVertexDrag(localPosition);
       }
     };
 
-    const handlePointerUp = () => {
-      if (draggedVertex) {
+    const handlePointerUp = (event: PointerEvent) => {
+      if (event.button === 0) { // Left mouse button
+        isDraggingRef.current = false;
         endVertexDrag();
       }
     };
 
+    const handleRightClick = (event: MouseEvent) => {
+      if (event.button === 2) { // Right click
+        event.preventDefault();
+        isDraggingRef.current = false;
+        endVertexDrag();
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        isDraggingRef.current = false;
+        endVertexDrag();
+      }
+    };
+
+    // Add event listeners
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('contextmenu', handleRightClick);
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Set cursor to indicate dragging
+    gl.domElement.style.cursor = 'grabbing';
     
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('contextmenu', handleRightClick);
+      window.removeEventListener('keydown', handleKeyDown);
+      
+      // Reset cursor
+      gl.domElement.style.cursor = '';
+      isDraggingRef.current = false;
     };
   }, [
     selectedObject,
     editMode,
     camera,
     raycaster,
-    pointer,
-    setSelectedElements,
     draggedVertex,
     updateVertexDrag,
     endVertexDrag,
-    isObjectLocked
+    isObjectLocked,
+    gl
   ]);
+
+  return null; // This component only handles events, no rendering
+};
+
+const EditModeOverlay = () => {
+  const { 
+    selectedObject, 
+    editMode,
+    setSelectedElements,
+    isObjectLocked
+  } = useSceneStore();
 
   if (!selectedObject || !editMode || !(selectedObject instanceof THREE.Mesh)) return null;
 
@@ -517,6 +577,7 @@ const EditModeOverlay = () => {
     <>
       <VertexPoints geometry={selectedObject.geometry} object={selectedObject} />
       <EdgeLines geometry={selectedObject.geometry} object={selectedObject} />
+      <VertexDragController />
     </>
   );
 };
