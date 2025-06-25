@@ -78,6 +78,7 @@ interface SceneState {
     indices: number[];
     position: THREE.Vector3;
     initialPosition: THREE.Vector3;
+    isDragging: boolean;
   } | null;
   draggedEdge: {
     indices: number[][];
@@ -113,6 +114,7 @@ interface SceneState {
   updateObjectOpacity: (opacity: number) => void;
   setSelectedElements: (type: 'vertices' | 'edges' | 'faces', indices: number[]) => void;
   startVertexDrag: (index: number, position: THREE.Vector3) => void;
+  startVertexDragMode: (index: number, position: THREE.Vector3) => void;
   updateVertexDrag: (position: THREE.Vector3) => void;
   endVertexDrag: () => void;
   startEdgeDrag: (vertexIndices: number[], positions: THREE.Vector3[], midpoint: THREE.Vector3) => void;
@@ -512,7 +514,50 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         draggedVertex: {
           indices: overlappingIndices,
           position: position.clone(),
-          initialPosition: position.clone()
+          initialPosition: position.clone(),
+          isDragging: false
+        },
+        selectedElements: {
+          ...state.selectedElements,
+          vertices: overlappingIndices
+        }
+      };
+    }),
+
+  startVertexDragMode: (index, position) =>
+    set((state) => {
+      if (!(state.selectedObject instanceof THREE.Mesh)) return state;
+
+      // Check if selected object is locked
+      const selectedObj = state.objects.find(obj => obj.object === state.selectedObject);
+      if (get().isObjectLocked(selectedObj?.id || '')) return state;
+
+      const geometry = state.selectedObject.geometry;
+      const positions = geometry.attributes.position;
+      const overlappingIndices = [];
+      const selectedPos = new THREE.Vector3(
+        positions.getX(index),
+        positions.getY(index),
+        positions.getZ(index)
+      );
+
+      for (let i = 0; i < positions.count; i++) {
+        const pos = new THREE.Vector3(
+          positions.getX(i),
+          positions.getY(i),
+          positions.getZ(i)
+        );
+        if (pos.distanceTo(selectedPos) < 0.0001) {
+          overlappingIndices.push(i);
+        }
+      }
+
+      return {
+        draggedVertex: {
+          indices: overlappingIndices,
+          position: position.clone(),
+          initialPosition: position.clone(),
+          isDragging: true
         },
         selectedElements: {
           ...state.selectedElements,
