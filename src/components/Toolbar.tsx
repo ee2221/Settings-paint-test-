@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain } from 'lucide-react';
+import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
@@ -17,6 +17,21 @@ const Toolbar: React.FC = () => {
   const [showObjectMenu, setShowObjectMenu] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
 
+  // Custom Circle Icon Component for Sphere
+  const CircleIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+    </svg>
+  );
+
+  // Custom Donut Icon Component for Torus
+  const DonutIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4" />
+    </svg>
+  );
+
   // Basic geometric shapes
   const basicShapes = [
     {
@@ -27,7 +42,7 @@ const Toolbar: React.FC = () => {
     },
     {
       name: 'Sphere',
-      icon: Sphere,
+      icon: CircleIcon,
       geometry: () => new THREE.SphereGeometry(0.5, 32, 16),
       color: '#aa4488'
     },
@@ -51,9 +66,94 @@ const Toolbar: React.FC = () => {
     },
     {
       name: 'Torus',
-      icon: Circle,
+      icon: DonutIcon,
       geometry: () => new THREE.TorusGeometry(0.5, 0.2, 16, 100),
       color: '#8844aa'
+    },
+    {
+      name: 'Heart',
+      icon: Heart,
+      geometry: () => {
+        // Create a heart shape using a custom geometry
+        const heartShape = new THREE.Shape();
+        
+        const x = 0, y = 0;
+        heartShape.moveTo(x + 5, y + 5);
+        heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
+        heartShape.bezierCurveTo(x - 6, y, x - 6, y + 3.5, x - 6, y + 3.5);
+        heartShape.bezierCurveTo(x - 6, y + 5.5, x - 4, y + 7.7, x + 5, y + 15);
+        heartShape.bezierCurveTo(x + 12, y + 7.7, x + 14, y + 5.5, x + 14, y + 3.5);
+        heartShape.bezierCurveTo(x + 14, y + 3.5, x + 14, y, x + 10, y);
+        heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
+
+        const extrudeSettings = {
+          depth: 2,
+          bevelEnabled: true,
+          bevelSegments: 2,
+          steps: 2,
+          bevelSize: 0.5,
+          bevelThickness: 0.5
+        };
+
+        const geometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+        
+        // Scale and center the heart
+        geometry.scale(0.05, 0.05, 0.05);
+        geometry.center();
+        
+        return geometry;
+      },
+      color: '#ff6b9d'
+    },
+    {
+      name: 'Star',
+      icon: Star,
+      geometry: () => {
+        // Create a star shape
+        const starShape = new THREE.Shape();
+        const outerRadius = 10;
+        const innerRadius = 4;
+        const spikes = 5;
+        
+        let rot = Math.PI / 2 * 3;
+        let x = 0;
+        let y = outerRadius;
+        const step = Math.PI / spikes;
+
+        starShape.moveTo(0, outerRadius);
+        
+        for (let i = 0; i < spikes; i++) {
+          x = Math.cos(rot) * outerRadius;
+          y = Math.sin(rot) * outerRadius;
+          starShape.lineTo(x, y);
+          rot += step;
+
+          x = Math.cos(rot) * innerRadius;
+          y = Math.sin(rot) * innerRadius;
+          starShape.lineTo(x, y);
+          rot += step;
+        }
+        
+        starShape.lineTo(0, outerRadius);
+
+        const extrudeSettings = {
+          depth: 2,
+          bevelEnabled: true,
+          bevelSegments: 2,
+          steps: 2,
+          bevelSize: 0.3,
+          bevelThickness: 0.3
+        };
+
+        const geometry = new THREE.ExtrudeGeometry(starShape, extrudeSettings);
+        
+        // Scale and center the star
+        geometry.scale(0.05, 0.05, 0.05);
+        geometry.center();
+        
+        return geometry;
+      },
+      color: '#ffd700'
     }
   ];
 
