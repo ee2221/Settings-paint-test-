@@ -1,22 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Circle, 
-  Triangle, 
-  Cylinder,
-  Cone,
-  Sphere,
-  Plus,
-  Move,
-  RotateCw,
-  Scale,
-  Edit,
-  MousePointer,
-  ChevronDown,
-  Lightbulb,
-  Sun,
-  Zap
-} from 'lucide-react';
+import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
