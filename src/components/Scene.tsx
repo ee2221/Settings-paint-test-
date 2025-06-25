@@ -812,7 +812,7 @@ const PlacementHelper = () => {
     return dimensions;
   };
 
-  // Enhanced placement logic with surface-oriented placement
+  // Enhanced placement logic with surface-oriented placement and ground level support
   const findPlacementPosition = (intersectionPoint: THREE.Vector3, normal?: THREE.Vector3) => {
     if (!pendingObject) return { position: intersectionPoint, rotation: null };
 
@@ -829,14 +829,34 @@ const PlacementHelper = () => {
       // Use the smallest dimension as the offset (the "base" of the object)
       offsetDistance = Math.min(dimensions.width, dimensions.height, dimensions.depth) / 2;
       
-      // For very flat surfaces (like ground), use height
+      // For ground placement (Y normal close to 1), use height and allow Y=0 placement
       if (Math.abs(normal.y) > 0.9) {
         offsetDistance = dimensions.height / 2;
+        
+        // Special case: if intersection is at or very close to Y=0, place directly on ground
+        if (Math.abs(intersectionPoint.y) < 0.01) {
+          const finalPosition = new THREE.Vector3(
+            intersectionPoint.x,
+            offsetDistance, // Just lift by half the object height
+            intersectionPoint.z
+          );
+          return { position: finalPosition, rotation };
+        }
       }
     } else {
       // Fallback: use default orientation and height
       const tempBox = getPendingObjectBoundingBox(intersectionPoint);
       offsetDistance = (tempBox.max.y - tempBox.min.y) / 2;
+      
+      // For ground level placement without normal
+      if (Math.abs(intersectionPoint.y) < 0.01) {
+        const finalPosition = new THREE.Vector3(
+          intersectionPoint.x,
+          offsetDistance,
+          intersectionPoint.z
+        );
+        return { position: finalPosition, rotation };
+      }
     }
 
     // Calculate final position with proper offset
@@ -877,7 +897,7 @@ const PlacementHelper = () => {
         
         setSurfaceNormal(normal);
       } else {
-        // Check intersection with ground plane
+        // Check intersection with ground plane at Y=0
         const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
         const intersection = new THREE.Vector3();
         
