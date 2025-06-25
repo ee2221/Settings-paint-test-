@@ -329,7 +329,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       return { 
         selectedObject: object,
         editMode: newEditMode,
-        // Don't clear transform mode when selecting object - keep it persistent
+        transformMode: null // Clear transform mode when selecting object
       };
     }),
 
@@ -1063,7 +1063,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       placementMode: true,
       pendingObject: objectDef,
       selectedObject: null,
-      // Don't clear transform mode - keep it persistent
+      transformMode: null,
       editMode: null
     }),
 
