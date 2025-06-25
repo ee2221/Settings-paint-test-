@@ -69,6 +69,9 @@ interface SceneState {
   cameraPerspective: CameraPerspective;
   cameraZoom: number;
   sceneSettings: SceneSettings;
+  // New persistent mode settings
+  persistentTransformMode: 'translate' | 'rotate' | 'scale' | null;
+  persistentEditMode: EditMode;
   selectedElements: {
     vertices: number[];
     edges: number[];
@@ -215,6 +218,9 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     gridDivisions: 10,
     hideAllMenus: false
   },
+  // New persistent mode settings
+  persistentTransformMode: null,
+  persistentEditMode: null,
   selectedElements: {
     vertices: [],
     edges: [],
@@ -315,25 +321,54 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         return state; // Don't change selection if object is locked
       }
 
-      // Auto-enable vertex mode for sphere, cylinder, and cone
+      let newTransformMode = state.transformMode;
       let newEditMode = state.editMode;
-      if (object instanceof THREE.Mesh) {
-        const geometry = object.geometry;
-        if (geometry instanceof THREE.SphereGeometry ||
-            geometry instanceof THREE.CylinderGeometry ||
-            geometry instanceof THREE.ConeGeometry) {
-          newEditMode = 'vertex';
+
+      if (object) {
+        // When selecting an object, apply persistent modes or defaults
+        if (state.persistentTransformMode) {
+          // Use the persistent transform mode
+          newTransformMode = state.persistentTransformMode;
+        } else {
+          // Default to move tool when selecting an object
+          newTransformMode = 'translate';
         }
+
+        // Apply persistent edit mode if set
+        if (state.persistentEditMode) {
+          newEditMode = state.persistentEditMode;
+        } else {
+          // Auto-enable vertex mode for sphere, cylinder, and cone
+          if (object instanceof THREE.Mesh) {
+            const geometry = object.geometry;
+            if (geometry instanceof THREE.SphereGeometry ||
+                geometry instanceof THREE.CylinderGeometry ||
+                geometry instanceof THREE.ConeGeometry) {
+              newEditMode = 'vertex';
+            }
+          }
+        }
+      } else {
+        // When deselecting, clear current modes but keep persistent modes
+        newTransformMode = null;
+        newEditMode = null;
       }
       
       return { 
         selectedObject: object,
-        editMode: newEditMode,
-        transformMode: null // Clear transform mode when selecting object
+        transformMode: newTransformMode,
+        editMode: newEditMode
       };
     }),
 
-  setTransformMode: (mode) => set({ transformMode: mode }),
+  setTransformMode: (mode) => 
+    set((state) => {
+      // Update both current and persistent transform mode
+      return {
+        transformMode: mode,
+        persistentTransformMode: mode // Remember this choice for future selections
+      };
+    }),
   
   setEditMode: (mode) => 
     set((state) => {
@@ -346,7 +381,12 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           return state; // Don't change the edit mode
         }
       }
-      return { editMode: mode };
+
+      // Update both current and persistent edit mode
+      return { 
+        editMode: mode,
+        persistentEditMode: mode // Remember this choice for future selections
+      };
     }),
 
   setCameraPerspective: (perspective) => set({ cameraPerspective: perspective }),
