@@ -317,6 +317,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
 
       // Auto-enable vertex mode for sphere, cylinder, and cone
       let newEditMode = state.editMode;
+      let newTransformMode = state.transformMode;
+      
       if (object instanceof THREE.Mesh) {
         const geometry = object.geometry;
         if (geometry instanceof THREE.SphereGeometry ||
@@ -324,12 +326,21 @@ export const useSceneStore = create<SceneState>((set, get) => ({
             geometry instanceof THREE.ConeGeometry) {
           newEditMode = 'vertex';
         }
+        
+        // Auto-enable move tool when selecting an object (if no tool is currently active)
+        if (!state.transformMode) {
+          newTransformMode = 'translate';
+        }
+        // If a tool is already active, keep it active
+      } else if (!object) {
+        // Clear transform mode when deselecting
+        newTransformMode = null;
       }
       
       return { 
         selectedObject: object,
         editMode: newEditMode,
-        transformMode: null // Clear transform mode when selecting object
+        transformMode: newTransformMode
       };
     }),
 
@@ -1108,7 +1119,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         objects: newObjects,
         placementMode: false,
         pendingObject: null,
-        selectedObject: object
+        selectedObject: object,
+        transformMode: 'translate' // Auto-enable move tool for newly placed objects
       };
     }),
 
