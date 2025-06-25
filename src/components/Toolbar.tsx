@@ -1,22 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Cylinder, 
-  Sphere, 
-  Triangle, 
-  Plus,
-  Move3D,
-  RotateCw,
-  Scale,
-  MousePointer,
-  Minus,
-  Star,
-  Heart,
-  Hexagon,
-  Circle,
-  Square,
-  Diamond
-} from 'lucide-react';
+import { Box, Cylinder, Cherry as Sphere, Triangle, Plus, Move3D, RotateCw, Scale, MousePointer, Minus, Star, Heart, Hexagon, Circle, Square, Diamond } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
