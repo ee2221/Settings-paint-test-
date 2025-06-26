@@ -8,6 +8,7 @@ import EditControls from './components/EditControls';
 import CameraPerspectivePanel from './components/CameraPerspectivePanel';
 import LightingPanel from './components/LightingPanel';
 import SettingsPanel, { HideInterfaceButton } from './components/SettingsPanel';
+import SaveLoadPanel from './components/SaveLoadPanel';
 import { useSceneStore } from './store/sceneStore';
 
 function App() {
@@ -17,8 +18,11 @@ function App() {
     <div className="w-full h-screen relative">
       <Scene />
       
-      {/* Hide Interface Button - Always visible at top center */}
+      {/* Hide Interface Button - Always visible at top left corner */}
       <HideInterfaceButton />
+      
+      {/* Save/Load Panel - Always visible */}
+      <SaveLoadPanel />
       
       {/* Conditionally render UI panels based on hideAllMenus setting */}
       {!sceneSettings.hideAllMenus && (
