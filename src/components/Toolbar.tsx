@@ -1,1720 +1,1198 @@
 import React, { useState } from 'react';
-import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star, Dot, Minus, Type } from 'lucide-react';
+import { 
+  Box, 
+  Sphere, 
+  Cylinder, 
+  Pyramid,
+  Cone,
+  Torus,
+  Move,
+  RotateCw,
+  Scale,
+  MousePointer,
+  Vertices,
+  Minus,
+  TreePine,
+  Flower,
+  Mountain,
+  Type,
+  Sun,
+  Lightbulb,
+  Zap
+} from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
 const Toolbar: React.FC = () => {
   const { 
-    selectedObject, 
-    transformMode, 
-    editMode, 
+    addObject, 
     setTransformMode, 
-    setEditMode,
+    transformMode, 
+    setEditMode, 
+    editMode,
     startObjectPlacement,
     addLight
   } = useSceneStore();
   
-  const [showObjectMenu, setShowObjectMenu] = useState(false);
-  const [activeTab, setActiveTab] = useState('basic');
-  const [textInput, setTextInput] = useState('Hello World');
+  const [text3D, setText3D] = useState('');
   const [showTextInput, setShowTextInput] = useState(false);
 
-  // Custom Circle Icon Component for Sphere
-  const CircleIcon = ({ className }: { className?: string }) => (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" />
-    </svg>
-  );
-
-  // Custom Donut Icon Component for Torus
-  const DonutIcon = ({ className }: { className?: string }) => (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" />
-      <circle cx="12" cy="12" r="4" />
-    </svg>
-  );
-
-  // Complete alphabet function to create letter shapes
-  const createLetterShape = (char: string) => {
-    const shape = new THREE.Shape();
-    const charWidth = 0.8;
-    const charHeight = 1.2;
-    
-    // Handle both uppercase and lowercase
-    const upperChar = char.toUpperCase();
-    const isLowercase = char !== upperChar;
-    
-    // Adjust dimensions for lowercase letters
-    const height = isLowercase ? charHeight * 0.7 : charHeight;
-    const width = charWidth;
-    
-    switch (upperChar) {
-      case 'A':
-        if (isLowercase) {
-          // Lowercase 'a' - circular with vertical line
-          shape.moveTo(width * 0.3, 0);
-          shape.bezierCurveTo(width * 0.1, 0, 0, height * 0.2, 0, height * 0.4);
-          shape.bezierCurveTo(0, height * 0.6, width * 0.1, height * 0.8, width * 0.3, height * 0.8);
-          shape.lineTo(width * 0.7, height * 0.8);
-          shape.lineTo(width * 0.7, 0);
-          shape.lineTo(width * 0.5, 0);
-          shape.lineTo(width * 0.5, height * 0.6);
-          shape.lineTo(width * 0.3, height * 0.6);
-          shape.bezierCurveTo(width * 0.2, height * 0.6, width * 0.15, height * 0.5, width * 0.15, height * 0.4);
-          shape.bezierCurveTo(width * 0.15, height * 0.3, width * 0.2, height * 0.2, width * 0.3, height * 0.2);
-          shape.lineTo(width * 0.5, height * 0.2);
-          shape.lineTo(width * 0.5, 0);
-          shape.lineTo(width * 0.3, 0);
-        } else {
-          // Uppercase 'A'
-          shape.moveTo(width * 0.1, 0);
-          shape.lineTo(width * 0.5, height);
-          shape.lineTo(width * 0.9, 0);
-          shape.lineTo(width * 0.75, 0);
-          shape.lineTo(width * 0.65, height * 0.3);
-          shape.lineTo(width * 0.35, height * 0.3);
-          shape.lineTo(width * 0.25, 0);
-          shape.lineTo(width * 0.1, 0);
-          
-          // Create hole for crossbar
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.42, height * 0.45);
-          hole.lineTo(width * 0.58, height * 0.45);
-          hole.lineTo(width * 0.55, height * 0.55);
-          hole.lineTo(width * 0.45, height * 0.55);
-          hole.lineTo(width * 0.42, height * 0.45);
-          shape.holes.push(hole);
-        }
-        break;
-        
-      case 'B':
-        if (isLowercase) {
-          // Lowercase 'b'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height * 1.4); // Ascender
-          shape.lineTo(width * 0.15, height * 1.4);
-          shape.lineTo(width * 0.15, height * 0.8);
-          shape.lineTo(width * 0.6, height * 0.8);
-          shape.bezierCurveTo(width * 0.85, height * 0.8, width, height * 0.65, width, height * 0.4);
-          shape.bezierCurveTo(width, height * 0.15, width * 0.85, 0, width * 0.6, 0);
-          shape.lineTo(0, 0);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.15, height * 0.15);
-          hole.lineTo(width * 0.6, height * 0.15);
-          hole.bezierCurveTo(width * 0.75, height * 0.15, width * 0.85, height * 0.25, width * 0.85, height * 0.4);
-          hole.bezierCurveTo(width * 0.85, height * 0.55, width * 0.75, height * 0.65, width * 0.6, height * 0.65);
-          hole.lineTo(width * 0.15, height * 0.65);
-          hole.lineTo(width * 0.15, height * 0.15);
-          shape.holes.push(hole);
-        } else {
-          // Uppercase 'B'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width * 0.6, height);
-          shape.bezierCurveTo(width * 0.8, height, width * 0.9, height * 0.85, width * 0.9, height * 0.75);
-          shape.bezierCurveTo(width * 0.9, height * 0.65, width * 0.85, height * 0.55, width * 0.75, height * 0.5);
-          shape.bezierCurveTo(width * 0.85, height * 0.45, width * 0.9, height * 0.35, width * 0.9, height * 0.25);
-          shape.bezierCurveTo(width * 0.9, height * 0.15, width * 0.8, 0, width * 0.6, 0);
-          shape.lineTo(0, 0);
-          
-          // Create holes for both bumps
-          const hole1 = new THREE.Path();
-          hole1.moveTo(width * 0.15, height * 0.55);
-          hole1.lineTo(width * 0.6, height * 0.55);
-          hole1.bezierCurveTo(width * 0.7, height * 0.55, width * 0.75, height * 0.65, width * 0.75, height * 0.75);
-          hole1.bezierCurveTo(width * 0.75, height * 0.8, width * 0.7, height * 0.85, width * 0.6, height * 0.85);
-          hole1.lineTo(width * 0.15, height * 0.85);
-          hole1.lineTo(width * 0.15, height * 0.55);
-          shape.holes.push(hole1);
-          
-          const hole2 = new THREE.Path();
-          hole2.moveTo(width * 0.15, height * 0.15);
-          hole2.lineTo(width * 0.6, height * 0.15);
-          hole2.bezierCurveTo(width * 0.7, height * 0.15, width * 0.75, height * 0.2, width * 0.75, height * 0.25);
-          hole2.bezierCurveTo(width * 0.75, height * 0.35, width * 0.7, height * 0.4, width * 0.6, height * 0.4);
-          hole2.lineTo(width * 0.15, height * 0.4);
-          hole2.lineTo(width * 0.15, height * 0.15);
-          shape.holes.push(hole2);
-        }
-        break;
-        
-      case 'C':
-        if (isLowercase) {
-          // Lowercase 'c'
-          shape.moveTo(width * 0.8, height * 0.3);
-          shape.bezierCurveTo(width * 0.8, height * 0.1, width * 0.65, 0, width * 0.4, 0);
-          shape.bezierCurveTo(width * 0.15, 0, 0, height * 0.15, 0, height * 0.4);
-          shape.bezierCurveTo(0, height * 0.65, width * 0.15, height * 0.8, width * 0.4, height * 0.8);
-          shape.bezierCurveTo(width * 0.65, height * 0.8, width * 0.8, height * 0.7, width * 0.8, height * 0.5);
-          shape.lineTo(width * 0.65, height * 0.5);
-          shape.bezierCurveTo(width * 0.65, height * 0.6, width * 0.55, height * 0.65, width * 0.4, height * 0.65);
-          shape.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
-          shape.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
-          shape.bezierCurveTo(width * 0.55, height * 0.15, width * 0.65, height * 0.2, width * 0.65, height * 0.3);
-          shape.lineTo(width * 0.8, height * 0.3);
-        } else {
-          // Uppercase 'C'
-          shape.moveTo(width, height * 0.8);
-          shape.bezierCurveTo(width, height, width * 0.8, height, width * 0.5, height);
-          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.5);
-          shape.bezierCurveTo(0, height * 0.2, width * 0.2, 0, width * 0.5, 0);
-          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.2, width, height * 0.2);
-          shape.lineTo(width * 0.8, height * 0.3);
-          shape.bezierCurveTo(width * 0.8, height * 0.15, width * 0.7, height * 0.15, width * 0.5, height * 0.15);
-          shape.bezierCurveTo(width * 0.3, height * 0.15, width * 0.15, height * 0.3, width * 0.15, height * 0.5);
-          shape.bezierCurveTo(width * 0.15, height * 0.7, width * 0.3, height * 0.85, width * 0.5, height * 0.85);
-          shape.bezierCurveTo(width * 0.7, height * 0.85, width * 0.8, height * 0.7, width * 0.8, height * 0.7);
-          shape.lineTo(width, height * 0.8);
-        }
-        break;
-        
-      case 'D':
-        if (isLowercase) {
-          // Lowercase 'd'
-          shape.moveTo(width * 0.7, 0);
-          shape.lineTo(width * 0.7, height * 1.4); // Ascender
-          shape.lineTo(width * 0.85, height * 1.4);
-          shape.lineTo(width * 0.85, 0);
-          shape.lineTo(width * 0.4, 0);
-          shape.bezierCurveTo(width * 0.15, 0, 0, height * 0.15, 0, height * 0.4);
-          shape.bezierCurveTo(0, height * 0.65, width * 0.15, height * 0.8, width * 0.4, height * 0.8);
-          shape.lineTo(width * 0.7, height * 0.8);
-          shape.lineTo(width * 0.7, 0);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.15, height * 0.4);
-          hole.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
-          hole.lineTo(width * 0.7, height * 0.15);
-          hole.lineTo(width * 0.7, height * 0.65);
-          hole.lineTo(width * 0.4, height * 0.65);
-          hole.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
-          shape.holes.push(hole);
-        } else {
-          // Uppercase 'D'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width * 0.6, height);
-          shape.bezierCurveTo(width * 0.85, height, width, height * 0.8, width, height * 0.5);
-          shape.bezierCurveTo(width, height * 0.2, width * 0.85, 0, width * 0.6, 0);
-          shape.lineTo(0, 0);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.15, height * 0.15);
-          hole.lineTo(width * 0.6, height * 0.15);
-          hole.bezierCurveTo(width * 0.75, height * 0.15, width * 0.85, height * 0.25, width * 0.85, height * 0.5);
-          hole.bezierCurveTo(width * 0.85, height * 0.75, width * 0.75, height * 0.85, width * 0.6, height * 0.85);
-          hole.lineTo(width * 0.15, height * 0.85);
-          hole.lineTo(width * 0.15, height * 0.15);
-          shape.holes.push(hole);
-        }
-        break;
-        
-      case 'E':
-        if (isLowercase) {
-          // Lowercase 'e'
-          shape.moveTo(width * 0.8, height * 0.3);
-          shape.lineTo(width * 0.15, height * 0.3);
-          shape.lineTo(width * 0.15, height * 0.45);
-          shape.lineTo(width * 0.7, height * 0.45);
-          shape.bezierCurveTo(width * 0.8, height * 0.5, width * 0.85, height * 0.6, width * 0.85, height * 0.7);
-          shape.bezierCurveTo(width * 0.85, height * 0.75, width * 0.7, height * 0.8, width * 0.4, height * 0.8);
-          shape.bezierCurveTo(width * 0.15, height * 0.8, 0, height * 0.65, 0, height * 0.4);
-          shape.bezierCurveTo(0, height * 0.15, width * 0.15, 0, width * 0.4, 0);
-          shape.bezierCurveTo(width * 0.65, 0, width * 0.8, height * 0.1, width * 0.8, height * 0.3);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.15, height * 0.15);
-          hole.bezierCurveTo(width * 0.25, height * 0.15, width * 0.7, height * 0.15, width * 0.7, height * 0.15);
-          hole.lineTo(width * 0.7, height * 0.3);
-          hole.lineTo(width * 0.15, height * 0.3);
-          hole.lineTo(width * 0.15, height * 0.15);
-          shape.holes.push(hole);
-        } else {
-          // Uppercase 'E'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width, height);
-          shape.lineTo(width, height * 0.85);
-          shape.lineTo(width * 0.15, height * 0.85);
-          shape.lineTo(width * 0.15, height * 0.6);
-          shape.lineTo(width * 0.8, height * 0.6);
-          shape.lineTo(width * 0.8, height * 0.4);
-          shape.lineTo(width * 0.15, height * 0.4);
-          shape.lineTo(width * 0.15, height * 0.15);
-          shape.lineTo(width, height * 0.15);
-          shape.lineTo(width, 0);
-          shape.lineTo(0, 0);
-        }
-        break;
-        
-      case 'F':
-        if (isLowercase) {
-          // Lowercase 'f'
-          shape.moveTo(width * 0.3, 0);
-          shape.lineTo(width * 0.3, height * 1.1);
-          shape.bezierCurveTo(width * 0.3, height * 1.3, width * 0.4, height * 1.4, width * 0.6, height * 1.4);
-          shape.lineTo(width * 0.8, height * 1.4);
-          shape.lineTo(width * 0.8, height * 1.25);
-          shape.lineTo(width * 0.6, height * 1.25);
-          shape.bezierCurveTo(width * 0.5, height * 1.25, width * 0.45, height * 1.2, width * 0.45, height * 1.1);
-          shape.lineTo(width * 0.45, height * 0.8);
-          shape.lineTo(width * 0.7, height * 0.8);
-          shape.lineTo(width * 0.7, height * 0.65);
-          shape.lineTo(width * 0.45, height * 0.65);
-          shape.lineTo(width * 0.45, 0);
-          shape.lineTo(width * 0.3, 0);
-        } else {
-          // Uppercase 'F'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width, height);
-          shape.lineTo(width, height * 0.85);
-          shape.lineTo(width * 0.15, height * 0.85);
-          shape.lineTo(width * 0.15, height * 0.6);
-          shape.lineTo(width * 0.8, height * 0.6);
-          shape.lineTo(width * 0.8, height * 0.4);
-          shape.lineTo(width * 0.15, height * 0.4);
-          shape.lineTo(width * 0.15, 0);
-          shape.lineTo(0, 0);
-        }
-        break;
-        
-      case 'G':
-        if (isLowercase) {
-          // Lowercase 'g'
-          shape.moveTo(width * 0.85, height * 0.8);
-          shape.lineTo(width * 0.85, height * -0.3); // Descender
-          shape.bezierCurveTo(width * 0.85, height * -0.5, width * 0.7, height * -0.6, width * 0.4, height * -0.6);
-          shape.lineTo(width * 0.2, height * -0.6);
-          shape.lineTo(width * 0.2, height * -0.45);
-          shape.lineTo(width * 0.4, height * -0.45);
-          shape.bezierCurveTo(width * 0.6, height * -0.45, width * 0.7, height * -0.4, width * 0.7, height * -0.3);
-          shape.lineTo(width * 0.7, 0);
-          shape.lineTo(width * 0.4, 0);
-          shape.bezierCurveTo(width * 0.15, 0, 0, height * 0.15, 0, height * 0.4);
-          shape.bezierCurveTo(0, height * 0.65, width * 0.15, height * 0.8, width * 0.4, height * 0.8);
-          shape.lineTo(width * 0.85, height * 0.8);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.15, height * 0.4);
-          hole.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
-          hole.lineTo(width * 0.7, height * 0.15);
-          hole.lineTo(width * 0.7, height * 0.65);
-          hole.lineTo(width * 0.4, height * 0.65);
-          hole.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
-          shape.holes.push(hole);
-        } else {
-          // Uppercase 'G'
-          shape.moveTo(width, height * 0.8);
-          shape.bezierCurveTo(width, height, width * 0.8, height, width * 0.5, height);
-          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.5);
-          shape.bezierCurveTo(0, height * 0.2, width * 0.2, 0, width * 0.5, 0);
-          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.2, width, height * 0.4);
-          shape.lineTo(width * 0.6, height * 0.4);
-          shape.lineTo(width * 0.6, height * 0.55);
-          shape.lineTo(width * 0.85, height * 0.55);
-          shape.lineTo(width * 0.85, height * 0.3);
-          shape.bezierCurveTo(width * 0.85, height * 0.15, width * 0.7, height * 0.15, width * 0.5, height * 0.15);
-          shape.bezierCurveTo(width * 0.3, height * 0.15, width * 0.15, height * 0.3, width * 0.15, height * 0.5);
-          shape.bezierCurveTo(width * 0.15, height * 0.7, width * 0.3, height * 0.85, width * 0.5, height * 0.85);
-          shape.bezierCurveTo(width * 0.7, height * 0.85, width * 0.85, height * 0.7, width * 0.85, height * 0.7);
-          shape.lineTo(width, height * 0.8);
-        }
-        break;
-        
-      case 'H':
-        if (isLowercase) {
-          // Lowercase 'h'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height * 1.4); // Ascender
-          shape.lineTo(width * 0.15, height * 1.4);
-          shape.lineTo(width * 0.15, height * 0.5);
-          shape.lineTo(width * 0.65, height * 0.5);
-          shape.lineTo(width * 0.65, height * 1.4);
-          shape.lineTo(width * 0.8, height * 1.4);
-          shape.lineTo(width * 0.8, 0);
-          shape.lineTo(width * 0.65, 0);
-          shape.lineTo(width * 0.65, height * 0.35);
-          shape.lineTo(width * 0.15, height * 0.35);
-          shape.lineTo(width * 0.15, 0);
-          shape.lineTo(0, 0);
-        } else {
-          // Uppercase 'H'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width * 0.15, height);
-          shape.lineTo(width * 0.15, height * 0.6);
-          shape.lineTo(width * 0.65, height * 0.6);
-          shape.lineTo(width * 0.65, height);
-          shape.lineTo(width * 0.8, height);
-          shape.lineTo(width * 0.8, 0);
-          shape.lineTo(width * 0.65, 0);
-          shape.lineTo(width * 0.65, height * 0.4);
-          shape.lineTo(width * 0.15, height * 0.4);
-          shape.lineTo(width * 0.15, 0);
-          shape.lineTo(0, 0);
-        }
-        break;
-        
-      case 'I':
-        if (isLowercase) {
-          // Lowercase 'i'
-          shape.moveTo(width * 0.3, 0);
-          shape.lineTo(width * 0.3, height * 0.8);
-          shape.lineTo(width * 0.5, height * 0.8);
-          shape.lineTo(width * 0.5, 0);
-          shape.lineTo(width * 0.3, 0);
-          
-          // Dot above
-          shape.moveTo(width * 0.3, height * 1.0);
-          shape.lineTo(width * 0.5, height * 1.0);
-          shape.lineTo(width * 0.5, height * 1.2);
-          shape.lineTo(width * 0.3, height * 1.2);
-          shape.lineTo(width * 0.3, height * 1.0);
-        } else {
-          // Uppercase 'I'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height * 0.15);
-          shape.lineTo(width * 0.3, height * 0.15);
-          shape.lineTo(width * 0.3, height * 0.85);
-          shape.lineTo(0, height * 0.85);
-          shape.lineTo(0, height);
-          shape.lineTo(width, height);
-          shape.lineTo(width, height * 0.85);
-          shape.lineTo(width * 0.7, height * 0.85);
-          shape.lineTo(width * 0.7, height * 0.15);
-          shape.lineTo(width, height * 0.15);
-          shape.lineTo(width, 0);
-          shape.lineTo(0, 0);
-        }
-        break;
-        
-      case 'J':
-        if (isLowercase) {
-          // Lowercase 'j'
-          shape.moveTo(width * 0.4, height * -0.6); // Descender
-          shape.bezierCurveTo(width * 0.2, height * -0.6, 0, height * -0.5, 0, height * -0.3);
-          shape.lineTo(0, height * -0.15);
-          shape.bezierCurveTo(0, height * -0.35, width * 0.1, height * -0.45, width * 0.4, height * -0.45);
-          shape.bezierCurveTo(width * 0.6, height * -0.45, width * 0.7, height * -0.35, width * 0.7, height * -0.15);
-          shape.lineTo(width * 0.7, height * 0.8);
-          shape.lineTo(width * 0.85, height * 0.8);
-          shape.lineTo(width * 0.85, height * -0.15);
-          shape.bezierCurveTo(width * 0.85, height * -0.45, width * 0.7, height * -0.6, width * 0.4, height * -0.6);
-          
-          // Dot above
-          shape.moveTo(width * 0.7, height * 1.0);
-          shape.lineTo(width * 0.85, height * 1.0);
-          shape.lineTo(width * 0.85, height * 1.2);
-          shape.lineTo(width * 0.7, height * 1.2);
-          shape.lineTo(width * 0.7, height * 1.0);
-        } else {
-          // Uppercase 'J'
-          shape.moveTo(width * 0.3, 0);
-          shape.bezierCurveTo(width * 0.1, 0, 0, height * 0.1, 0, height * 0.3);
-          shape.lineTo(0, height * 0.45);
-          shape.bezierCurveTo(0, height * 0.2, width * 0.2, height * 0.15, width * 0.3, height * 0.15);
-          shape.bezierCurveTo(width * 0.5, height * 0.15, width * 0.65, height * 0.2, width * 0.65, height * 0.45);
-          shape.lineTo(width * 0.65, height * 0.85);
-          shape.lineTo(width * 0.3, height * 0.85);
-          shape.lineTo(width * 0.3, height);
-          shape.lineTo(width, height);
-          shape.lineTo(width, 0);
-          shape.lineTo(width * 0.3, 0);
-        }
-        break;
-        
-      case 'K':
-        if (isLowercase) {
-          // Lowercase 'k'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height * 1.4); // Ascender
-          shape.lineTo(width * 0.15, height * 1.4);
-          shape.lineTo(width * 0.15, height * 0.5);
-          shape.lineTo(width * 0.4, height * 0.5);
-          shape.lineTo(width * 0.7, height * 0.8);
-          shape.lineTo(width * 0.9, height * 0.8);
-          shape.lineTo(width * 0.55, height * 0.4);
-          shape.lineTo(width * 0.9, 0);
-          shape.lineTo(width * 0.7, 0);
-          shape.lineTo(width * 0.4, height * 0.35);
-          shape.lineTo(width * 0.15, height * 0.35);
-          shape.lineTo(width * 0.15, 0);
-          shape.lineTo(0, 0);
-        } else {
-          // Uppercase 'K'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width * 0.15, height);
-          shape.lineTo(width * 0.15, height * 0.6);
-          shape.lineTo(width * 0.4, height * 0.6);
-          shape.lineTo(width * 0.8, height);
-          shape.lineTo(width, height);
-          shape.lineTo(width * 0.55, height * 0.5);
-          shape.lineTo(width, 0);
-          shape.lineTo(width * 0.8, 0);
-          shape.lineTo(width * 0.4, height * 0.4);
-          shape.lineTo(width * 0.15, height * 0.4);
-          shape.lineTo(width * 0.15, 0);
-          shape.lineTo(0, 0);
-        }
-        break;
-        
-      case 'L':
-        if (isLowercase) {
-          // Lowercase 'l'
-          shape.moveTo(width * 0.3, 0);
-          shape.lineTo(width * 0.3, height * 1.4); // Ascender
-          shape.lineTo(width * 0.5, height * 1.4);
-          shape.lineTo(width * 0.5, 0);
-          shape.lineTo(width * 0.3, 0);
-        } else {
-          // Uppercase 'L'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width * 0.15, height);
-          shape.lineTo(width * 0.15, height * 0.15);
-          shape.lineTo(width, height * 0.15);
-          shape.lineTo(width, 0);
-          shape.lineTo(0, 0);
-        }
-        break;
-        
-      case 'M':
-        if (isLowercase) {
-          // Lowercase 'm'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height * 0.8);
-          shape.lineTo(width * 0.12, height * 0.8);
-          shape.lineTo(width * 0.12, height * 0.15);
-          shape.lineTo(width * 0.25, height * 0.15);
-          shape.lineTo(width * 0.25, height * 0.8);
-          shape.lineTo(width * 0.37, height * 0.8);
-          shape.lineTo(width * 0.37, height * 0.15);
-          shape.lineTo(width * 0.5, height * 0.15);
-          shape.lineTo(width * 0.5, height * 0.8);
-          shape.lineTo(width * 0.62, height * 0.8);
-          shape.lineTo(width * 0.62, height * 0.15);
-          shape.lineTo(width * 0.75, height * 0.15);
-          shape.lineTo(width * 0.75, height * 0.8);
-          shape.lineTo(width * 0.87, height * 0.8);
-          shape.lineTo(width * 0.87, 0);
-          shape.lineTo(0, 0);
-        } else {
-          // Uppercase 'M'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width * 0.15, height);
-          shape.lineTo(width * 0.15, height * 0.3);
-          shape.lineTo(width * 0.4, height * 0.8);
-          shape.lineTo(width * 0.6, height * 0.8);
-          shape.lineTo(width * 0.85, height * 0.3);
-          shape.lineTo(width * 0.85, height);
-          shape.lineTo(width, height);
-          shape.lineTo(width, 0);
-          shape.lineTo(width * 0.85, 0);
-          shape.lineTo(width * 0.85, height * 0.7);
-          shape.lineTo(width * 0.65, height * 0.3);
-          shape.lineTo(width * 0.35, height * 0.3);
-          shape.lineTo(width * 0.15, height * 0.7);
-          shape.lineTo(width * 0.15, 0);
-          shape.lineTo(0, 0);
-        }
-        break;
-        
-      case 'N':
-        if (isLowercase) {
-          // Lowercase 'n'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height * 0.8);
-          shape.lineTo(width * 0.15, height * 0.8);
-          shape.lineTo(width * 0.15, height * 0.15);
-          shape.lineTo(width * 0.65, height * 0.15);
-          shape.lineTo(width * 0.65, height * 0.8);
-          shape.lineTo(width * 0.8, height * 0.8);
-          shape.lineTo(width * 0.8, 0);
-          shape.lineTo(0, 0);
-        } else {
-          // Uppercase 'N'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width * 0.15, height);
-          shape.lineTo(width * 0.15, height * 0.3);
-          shape.lineTo(width * 0.65, height * 0.8);
-          shape.lineTo(width * 0.8, height * 0.8);
-          shape.lineTo(width * 0.8, 0);
-          shape.lineTo(width * 0.65, 0);
-          shape.lineTo(width * 0.65, height * 0.7);
-          shape.lineTo(width * 0.15, height * 0.2);
-          shape.lineTo(0, height * 0.2);
-          shape.lineTo(0, 0);
-        }
-        break;
-        
-      case 'O':
-        if (isLowercase) {
-          // Lowercase 'o'
-          shape.moveTo(width * 0.4, 0);
-          shape.bezierCurveTo(width * 0.15, 0, 0, height * 0.15, 0, height * 0.4);
-          shape.bezierCurveTo(0, height * 0.65, width * 0.15, height * 0.8, width * 0.4, height * 0.8);
-          shape.bezierCurveTo(width * 0.65, height * 0.8, width * 0.8, height * 0.65, width * 0.8, height * 0.4);
-          shape.bezierCurveTo(width * 0.8, height * 0.15, width * 0.65, 0, width * 0.4, 0);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.4, height * 0.15);
-          hole.bezierCurveTo(width * 0.55, height * 0.15, width * 0.65, height * 0.25, width * 0.65, height * 0.4);
-          hole.bezierCurveTo(width * 0.65, height * 0.55, width * 0.55, height * 0.65, width * 0.4, height * 0.65);
-          hole.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
-          hole.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
-          shape.holes.push(hole);
-        } else {
-          // Uppercase 'O'
-          shape.moveTo(width * 0.5, 0);
-          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.2, width, height * 0.5);
-          shape.bezierCurveTo(width, height * 0.8, width * 0.8, height, width * 0.5, height);
-          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.5);
-          shape.bezierCurveTo(0, height * 0.2, width * 0.2, 0, width * 0.5, 0);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.5, height * 0.15);
-          hole.bezierCurveTo(width * 0.7, height * 0.15, width * 0.85, height * 0.3, width * 0.85, height * 0.5);
-          hole.bezierCurveTo(width * 0.85, height * 0.7, width * 0.7, height * 0.85, width * 0.5, height * 0.85);
-          hole.bezierCurveTo(width * 0.3, height * 0.85, width * 0.15, height * 0.7, width * 0.15, height * 0.5);
-          hole.bezierCurveTo(width * 0.15, height * 0.3, width * 0.3, height * 0.15, width * 0.5, height * 0.15);
-          shape.holes.push(hole);
-        }
-        break;
-        
-      case 'P':
-        if (isLowercase) {
-          // Lowercase 'p'
-          shape.moveTo(0, height * -0.6); // Descender
-          shape.lineTo(0, height * 0.8);
-          shape.lineTo(width * 0.6, height * 0.8);
-          shape.bezierCurveTo(width * 0.85, height * 0.8, width, height * 0.65, width, height * 0.4);
-          shape.bezierCurveTo(width, height * 0.15, width * 0.85, 0, width * 0.6, 0);
-          shape.lineTo(width * 0.15, 0);
-          shape.lineTo(width * 0.15, height * -0.6);
-          shape.lineTo(0, height * -0.6);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.15, height * 0.15);
-          hole.lineTo(width * 0.6, height * 0.15);
-          hole.bezierCurveTo(width * 0.75, height * 0.15, width * 0.85, height * 0.25, width * 0.85, height * 0.4);
-          hole.bezierCurveTo(width * 0.85, height * 0.55, width * 0.75, height * 0.65, width * 0.6, height * 0.65);
-          hole.lineTo(width * 0.15, height * 0.65);
-          hole.lineTo(width * 0.15, height * 0.15);
-          shape.holes.push(hole);
-        } else {
-          // Uppercase 'P'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width * 0.6, height);
-          shape.bezierCurveTo(width * 0.85, height, width, height * 0.8, width, height * 0.65);
-          shape.bezierCurveTo(width, height * 0.5, width * 0.85, height * 0.4, width * 0.6, height * 0.4);
-          shape.lineTo(width * 0.15, height * 0.4);
-          shape.lineTo(width * 0.15, 0);
-          shape.lineTo(0, 0);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.15, height * 0.55);
-          hole.lineTo(width * 0.6, height * 0.55);
-          hole.bezierCurveTo(width * 0.75, height * 0.55, width * 0.85, height * 0.65, width * 0.85, height * 0.75);
-          hole.bezierCurveTo(width * 0.85, height * 0.8, width * 0.75, height * 0.85, width * 0.6, height * 0.85);
-          hole.lineTo(width * 0.15, height * 0.85);
-          hole.lineTo(width * 0.15, height * 0.55);
-          shape.holes.push(hole);
-        }
-        break;
-        
-      case 'Q':
-        if (isLowercase) {
-          // Lowercase 'q'
-          shape.moveTo(width * 0.85, height * -0.6); // Descender
-          shape.lineTo(width * 0.85, height * 0.8);
-          shape.lineTo(width * 0.4, height * 0.8);
-          shape.bezierCurveTo(width * 0.15, height * 0.8, 0, height * 0.65, 0, height * 0.4);
-          shape.bezierCurveTo(0, height * 0.15, width * 0.15, 0, width * 0.4, 0);
-          shape.lineTo(width * 0.7, 0);
-          shape.lineTo(width * 0.7, height * -0.6);
-          shape.lineTo(width * 0.85, height * -0.6);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.15, height * 0.4);
-          hole.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
-          hole.lineTo(width * 0.7, height * 0.15);
-          hole.lineTo(width * 0.7, height * 0.65);
-          hole.lineTo(width * 0.4, height * 0.65);
-          hole.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
-          shape.holes.push(hole);
-        } else {
-          // Uppercase 'Q'
-          shape.moveTo(width * 0.5, 0);
-          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.2, width, height * 0.5);
-          shape.bezierCurveTo(width, height * 0.8, width * 0.8, height, width * 0.5, height);
-          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.5);
-          shape.bezierCurveTo(0, height * 0.2, width * 0.2, 0, width * 0.5, 0);
-          
-          // Add tail
-          shape.moveTo(width * 0.7, height * 0.3);
-          shape.lineTo(width * 0.9, height * 0.1);
-          shape.lineTo(width, height * 0.2);
-          shape.lineTo(width * 0.8, height * 0.4);
-          shape.lineTo(width * 0.7, height * 0.3);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.5, height * 0.15);
-          hole.bezierCurveTo(width * 0.7, height * 0.15, width * 0.85, height * 0.3, width * 0.85, height * 0.5);
-          hole.bezierCurveTo(width * 0.85, height * 0.7, width * 0.7, height * 0.85, width * 0.5, height * 0.85);
-          hole.bezierCurveTo(width * 0.3, height * 0.85, width * 0.15, height * 0.7, width * 0.15, height * 0.5);
-          hole.bezierCurveTo(width * 0.15, height * 0.3, width * 0.3, height * 0.15, width * 0.5, height * 0.15);
-          shape.holes.push(hole);
-        }
-        break;
-        
-      case 'R':
-        if (isLowercase) {
-          // Lowercase 'r'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height * 0.8);
-          shape.lineTo(width * 0.15, height * 0.8);
-          shape.lineTo(width * 0.15, height * 0.65);
-          shape.lineTo(width * 0.4, height * 0.65);
-          shape.bezierCurveTo(width * 0.6, height * 0.65, width * 0.7, height * 0.7, width * 0.7, height * 0.8);
-          shape.lineTo(width * 0.85, height * 0.8);
-          shape.bezierCurveTo(width * 0.85, height * 0.6, width * 0.7, height * 0.5, width * 0.4, height * 0.5);
-          shape.lineTo(width * 0.15, height * 0.5);
-          shape.lineTo(width * 0.15, 0);
-          shape.lineTo(0, 0);
-        } else {
-          // Uppercase 'R'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width * 0.6, height);
-          shape.bezierCurveTo(width * 0.85, height, width, height * 0.8, width, height * 0.65);
-          shape.bezierCurveTo(width, height * 0.5, width * 0.85, height * 0.4, width * 0.6, height * 0.4);
-          shape.lineTo(width * 0.8, 0);
-          shape.lineTo(width * 0.6, 0);
-          shape.lineTo(width * 0.4, height * 0.4);
-          shape.lineTo(width * 0.15, height * 0.4);
-          shape.lineTo(width * 0.15, 0);
-          shape.lineTo(0, 0);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.15, height * 0.55);
-          hole.lineTo(width * 0.6, height * 0.55);
-          hole.bezierCurveTo(width * 0.75, height * 0.55, width * 0.85, height * 0.65, width * 0.85, height * 0.75);
-          hole.bezierCurveTo(width * 0.85, height * 0.8, width * 0.75, height * 0.85, width * 0.6, height * 0.85);
-          hole.lineTo(width * 0.15, height * 0.85);
-          hole.lineTo(width * 0.15, height * 0.55);
-          shape.holes.push(hole);
-        }
-        break;
-        
-      case 'S':
-        if (isLowercase) {
-          // Lowercase 's'
-          shape.moveTo(width * 0.7, height * 0.2);
-          shape.bezierCurveTo(width * 0.7, height * 0.1, width * 0.6, 0, width * 0.4, 0);
-          shape.bezierCurveTo(width * 0.2, 0, 0, height * 0.1, 0, height * 0.25);
-          shape.bezierCurveTo(0, height * 0.35, width * 0.1, height * 0.4, width * 0.3, height * 0.4);
-          shape.lineTo(width * 0.5, height * 0.4);
-          shape.bezierCurveTo(width * 0.6, height * 0.4, width * 0.7, height * 0.45, width * 0.7, height * 0.55);
-          shape.bezierCurveTo(width * 0.7, height * 0.65, width * 0.6, height * 0.8, width * 0.4, height * 0.8);
-          shape.bezierCurveTo(width * 0.2, height * 0.8, 0, height * 0.7, 0, height * 0.6);
-          shape.lineTo(width * 0.15, height * 0.6);
-          shape.bezierCurveTo(width * 0.15, height * 0.65, width * 0.25, height * 0.65, width * 0.4, height * 0.65);
-          shape.bezierCurveTo(width * 0.5, height * 0.65, width * 0.55, height * 0.6, width * 0.55, height * 0.55);
-          shape.bezierCurveTo(width * 0.55, height * 0.5, width * 0.5, height * 0.55, width * 0.4, height * 0.55);
-          shape.lineTo(width * 0.3, height * 0.55);
-          shape.bezierCurveTo(width * 0.1, height * 0.55, 0, height * 0.45, 0, height * 0.25);
-          shape.bezierCurveTo(0, height * 0.1, width * 0.1, 0, width * 0.4, 0);
-          shape.bezierCurveTo(width * 0.6, 0, width * 0.7, height * 0.1, width * 0.7, height * 0.2);
-        } else {
-          // Uppercase 'S'
-          shape.moveTo(width, height * 0.8);
-          shape.bezierCurveTo(width, height, width * 0.8, height, width * 0.5, height);
-          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.6);
-          shape.bezierCurveTo(0, height * 0.4, width * 0.2, height * 0.5, width * 0.5, height * 0.5);
-          shape.bezierCurveTo(width * 0.8, height * 0.5, width, height * 0.4, width, height * 0.2);
-          shape.bezierCurveTo(width, 0, width * 0.8, 0, width * 0.5, 0);
-          shape.bezierCurveTo(width * 0.2, 0, 0, height * 0.2, 0, height * 0.2);
-          shape.lineTo(width * 0.2, height * 0.3);
-          shape.bezierCurveTo(width * 0.2, height * 0.15, width * 0.3, height * 0.15, width * 0.5, height * 0.15);
-          shape.bezierCurveTo(width * 0.7, height * 0.15, width * 0.8, height * 0.25, width * 0.8, height * 0.35);
-          shape.bezierCurveTo(width * 0.8, height * 0.45, width * 0.7, height * 0.35, width * 0.5, height * 0.35);
-          shape.bezierCurveTo(width * 0.3, height * 0.35, width * 0.2, height * 0.55, width * 0.2, height * 0.65);
-          shape.bezierCurveTo(width * 0.2, height * 0.75, width * 0.3, height * 0.85, width * 0.5, height * 0.85);
-          shape.bezierCurveTo(width * 0.7, height * 0.85, width * 0.8, height * 0.75, width * 0.8, height * 0.7);
-          shape.lineTo(width, height * 0.8);
-        }
-        break;
-        
-      case 'T':
-        if (isLowercase) {
-          // Lowercase 't'
-          shape.moveTo(width * 0.3, 0);
-          shape.lineTo(width * 0.3, height * 1.1);
-          shape.lineTo(width * 0.45, height * 1.1);
-          shape.lineTo(width * 0.45, height * 0.8);
-          shape.lineTo(width * 0.7, height * 0.8);
-          shape.lineTo(width * 0.7, height * 0.65);
-          shape.lineTo(width * 0.45, height * 0.65);
-          shape.lineTo(width * 0.45, 0);
-          shape.lineTo(width * 0.3, 0);
-        } else {
-          // Uppercase 'T'
-          shape.moveTo(0, height * 0.85);
-          shape.lineTo(0, height);
-          shape.lineTo(width, height);
-          shape.lineTo(width, height * 0.85);
-          shape.lineTo(width * 0.575, height * 0.85);
-          shape.lineTo(width * 0.575, 0);
-          shape.lineTo(width * 0.425, 0);
-          shape.lineTo(width * 0.425, height * 0.85);
-          shape.lineTo(0, height * 0.85);
-        }
-        break;
-        
-      case 'U':
-        if (isLowercase) {
-          // Lowercase 'u'
-          shape.moveTo(0, height * 0.8);
-          shape.lineTo(0, height * 0.25);
-          shape.bezierCurveTo(0, height * 0.1, width * 0.1, 0, width * 0.25, 0);
-          shape.lineTo(width * 0.55, 0);
-          shape.bezierCurveTo(width * 0.7, 0, width * 0.8, height * 0.1, width * 0.8, height * 0.25);
-          shape.lineTo(width * 0.8, height * 0.8);
-          shape.lineTo(width * 0.65, height * 0.8);
-          shape.lineTo(width * 0.65, height * 0.25);
-          shape.bezierCurveTo(width * 0.65, height * 0.2, width * 0.6, height * 0.15, width * 0.55, height * 0.15);
-          shape.lineTo(width * 0.25, height * 0.15);
-          shape.bezierCurveTo(width * 0.2, height * 0.15, width * 0.15, height * 0.2, width * 0.15, height * 0.25);
-          shape.lineTo(width * 0.15, height * 0.8);
-          shape.lineTo(0, height * 0.8);
-        } else {
-          // Uppercase 'U'
-          shape.moveTo(0, height);
-          shape.lineTo(0, height * 0.3);
-          shape.bezierCurveTo(0, height * 0.1, width * 0.2, 0, width * 0.5, 0);
-          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.1, width, height * 0.3);
-          shape.lineTo(width, height);
-          shape.lineTo(width * 0.85, height);
-          shape.lineTo(width * 0.85, height * 0.3);
-          shape.bezierCurveTo(width * 0.85, height * 0.2, width * 0.7, height * 0.15, width * 0.5, height * 0.15);
-          shape.bezierCurveTo(width * 0.3, height * 0.15, width * 0.15, height * 0.2, width * 0.15, height * 0.3);
-          shape.lineTo(width * 0.15, height);
-          shape.lineTo(0, height);
-        }
-        break;
-        
-      case 'V':
-        if (isLowercase) {
-          // Lowercase 'v'
-          shape.moveTo(0, height * 0.8);
-          shape.lineTo(width * 0.35, 0);
-          shape.lineTo(width * 0.45, 0);
-          shape.lineTo(width * 0.8, height * 0.8);
-          shape.lineTo(width * 0.65, height * 0.8);
-          shape.lineTo(width * 0.4, height * 0.2);
-          shape.lineTo(width * 0.15, height * 0.8);
-          shape.lineTo(0, height * 0.8);
-        } else {
-          // Uppercase 'V'
-          shape.moveTo(0, height);
-          shape.lineTo(width * 0.4, 0);
-          shape.lineTo(width * 0.6, 0);
-          shape.lineTo(width, height);
-          shape.lineTo(width * 0.85, height);
-          shape.lineTo(width * 0.5, height * 0.2);
-          shape.lineTo(width * 0.15, height);
-          shape.lineTo(0, height);
-        }
-        break;
-        
-      case 'W':
-        if (isLowercase) {
-          // Lowercase 'w'
-          shape.moveTo(0, height * 0.8);
-          shape.lineTo(width * 0.15, 0);
-          shape.lineTo(width * 0.25, 0);
-          shape.lineTo(width * 0.35, height * 0.6);
-          shape.lineTo(width * 0.45, 0);
-          shape.lineTo(width * 0.55, 0);
-          shape.lineTo(width * 0.65, height * 0.6);
-          shape.lineTo(width * 0.75, 0);
-          shape.lineTo(width * 0.85, 0);
-          shape.lineTo(width, height * 0.8);
-          shape.lineTo(width * 0.85, height * 0.8);
-          shape.lineTo(width * 0.75, height * 0.2);
-          shape.lineTo(width * 0.65, height * 0.8);
-          shape.lineTo(width * 0.55, height * 0.8);
-          shape.lineTo(width * 0.45, height * 0.2);
-          shape.lineTo(width * 0.35, height * 0.8);
-          shape.lineTo(width * 0.25, height * 0.8);
-          shape.lineTo(width * 0.15, height * 0.2);
-          shape.lineTo(0, height * 0.8);
-        } else {
-          // Uppercase 'W'
-          shape.moveTo(0, height);
-          shape.lineTo(width * 0.2, 0);
-          shape.lineTo(width * 0.35, 0);
-          shape.lineTo(width * 0.5, height * 0.7);
-          shape.lineTo(width * 0.65, 0);
-          shape.lineTo(width * 0.8, 0);
-          shape.lineTo(width, height);
-          shape.lineTo(width * 0.85, height);
-          shape.lineTo(width * 0.7, height * 0.2);
-          shape.lineTo(width * 0.5, height);
-          shape.lineTo(width * 0.3, height * 0.2);
-          shape.lineTo(width * 0.15, height);
-          shape.lineTo(0, height);
-        }
-        break;
-        
-      case 'X':
-        if (isLowercase) {
-          // Lowercase 'x'
-          shape.moveTo(0, height * 0.8);
-          shape.lineTo(width * 0.25, height * 0.5);
-          shape.lineTo(0, 0);
-          shape.lineTo(width * 0.2, 0);
-          shape.lineTo(width * 0.4, height * 0.35);
-          shape.lineTo(width * 0.6, 0);
-          shape.lineTo(width * 0.8, 0);
-          shape.lineTo(width * 0.55, height * 0.5);
-          shape.lineTo(width * 0.8, height * 0.8);
-          shape.lineTo(width * 0.6, height * 0.8);
-          shape.lineTo(width * 0.4, height * 0.65);
-          shape.lineTo(width * 0.2, height * 0.8);
-          shape.lineTo(0, height * 0.8);
-        } else {
-          // Uppercase 'X'
-          shape.moveTo(0, height);
-          shape.lineTo(width * 0.35, height * 0.5);
-          shape.lineTo(0, 0);
-          shape.lineTo(width * 0.2, 0);
-          shape.lineTo(width * 0.5, height * 0.35);
-          shape.lineTo(width * 0.8, 0);
-          shape.lineTo(width, 0);
-          shape.lineTo(width * 0.65, height * 0.5);
-          shape.lineTo(width, height);
-          shape.lineTo(width * 0.8, height);
-          shape.lineTo(width * 0.5, height * 0.65);
-          shape.lineTo(width * 0.2, height);
-          shape.lineTo(0, height);
-        }
-        break;
-        
-      case 'Y':
-        if (isLowercase) {
-          // Lowercase 'y'
-          shape.moveTo(0, height * 0.8);
-          shape.lineTo(width * 0.35, height * 0.3);
-          shape.lineTo(width * 0.35, height * -0.6); // Descender
-          shape.lineTo(width * 0.5, height * -0.6);
-          shape.lineTo(width * 0.5, height * 0.3);
-          shape.lineTo(width * 0.8, height * 0.8);
-          shape.lineTo(width * 0.65, height * 0.8);
-          shape.lineTo(width * 0.425, height * 0.5);
-          shape.lineTo(width * 0.15, height * 0.8);
-          shape.lineTo(0, height * 0.8);
-        } else {
-          // Uppercase 'Y'
-          shape.moveTo(0, height);
-          shape.lineTo(width * 0.425, height * 0.5);
-          shape.lineTo(width * 0.425, 0);
-          shape.lineTo(width * 0.575, 0);
-          shape.lineTo(width * 0.575, height * 0.5);
-          shape.lineTo(width, height);
-          shape.lineTo(width * 0.8, height);
-          shape.lineTo(width * 0.5, height * 0.65);
-          shape.lineTo(width * 0.2, height);
-          shape.lineTo(0, height);
-        }
-        break;
-        
-      case 'Z':
-        if (isLowercase) {
-          // Lowercase 'z'
-          shape.moveTo(0, height * 0.8);
-          shape.lineTo(0, height * 0.65);
-          shape.lineTo(width * 0.6, height * 0.65);
-          shape.lineTo(0, height * 0.15);
-          shape.lineTo(0, 0);
-          shape.lineTo(width * 0.8, 0);
-          shape.lineTo(width * 0.8, height * 0.15);
-          shape.lineTo(width * 0.2, height * 0.15);
-          shape.lineTo(width * 0.8, height * 0.65);
-          shape.lineTo(width * 0.8, height * 0.8);
-          shape.lineTo(0, height * 0.8);
-        } else {
-          // Uppercase 'Z'
-          shape.moveTo(0, height);
-          shape.lineTo(0, height * 0.85);
-          shape.lineTo(width * 0.7, height * 0.85);
-          shape.lineTo(0, height * 0.15);
-          shape.lineTo(0, 0);
-          shape.lineTo(width, 0);
-          shape.lineTo(width, height * 0.15);
-          shape.lineTo(width * 0.3, height * 0.15);
-          shape.lineTo(width, height * 0.85);
-          shape.lineTo(width, height);
-          shape.lineTo(0, height);
-        }
-        break;
-        
-      case ' ':
-        // Space character - empty shape
-        shape.moveTo(0, 0);
-        shape.lineTo(width * 0.3, 0);
-        shape.lineTo(width * 0.3, height * 0.1);
-        shape.lineTo(0, height * 0.1);
-        shape.lineTo(0, 0);
-        break;
-        
-      default:
-        // Default rectangular shape for other characters
-        if (isLowercase) {
-          shape.moveTo(0, 0);
-          shape.lineTo(width, 0);
-          shape.lineTo(width, height);
-          shape.lineTo(0, height);
-          shape.lineTo(0, 0);
-        } else {
-          shape.moveTo(0, 0);
-          shape.lineTo(width, 0);
-          shape.lineTo(width, height);
-          shape.lineTo(0, height);
-          shape.lineTo(0, 0);
-        }
-        break;
-    }
-    
-    return shape;
-  };
-
-  // Enhanced function to create 3D text geometry
-  const create3DText = (text: string) => {
+  // Create 3D letter shapes with proper typography
+  const create3DLetter = (letter: string): THREE.Group => {
     const group = new THREE.Group();
+    const material = new THREE.MeshStandardMaterial({ color: '#4a90e2' });
     
-    const chars = text.split('');
-    let xOffset = 0;
-    const charWidth = 0.8;
-    const charSpacing = 0.1;
-    const extrudeDepth = 0.2;
+    // Letter dimensions
+    const width = 1;
+    const height = 1.4; // Standard height for uppercase
+    const depth = 0.2;
+    const thickness = 0.15; // Stroke thickness
     
-    chars.forEach((char, index) => {
-      if (char === ' ') {
-        xOffset += charWidth * 0.5;
-        return;
-      }
-      
-      const charShape = createLetterShape(char);
+    // Helper function to create extruded geometry from shape
+    const createExtrudedGeometry = (shape: THREE.Shape, holes: THREE.Shape[] = []) => {
+      // Add holes to the shape
+      holes.forEach(hole => shape.holes.push(hole));
       
       const extrudeSettings = {
-        depth: extrudeDepth,
+        depth: depth,
         bevelEnabled: true,
-        bevelSegments: 2,
-        steps: 2,
+        bevelThickness: 0.02,
         bevelSize: 0.02,
-        bevelThickness: 0.02
+        bevelSegments: 3
       };
+      return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    };
+
+    switch (letter.toLowerCase()) {
+      case 'a': {
+        const shape = new THREE.Shape();
+        // Outer triangle
+        shape.moveTo(0, 0);
+        shape.lineTo(width/2, height);
+        shape.lineTo(width, 0);
+        shape.lineTo(width - thickness, 0);
+        shape.lineTo(width/2, height - thickness);
+        shape.lineTo(thickness, 0);
+        shape.closePath();
+        
+        // Create hole for the triangle
+        const hole = new THREE.Shape();
+        hole.moveTo(width/2 - thickness/2, height * 0.4);
+        hole.lineTo(width/2 + thickness/2, height * 0.4);
+        hole.lineTo(width - thickness * 2, thickness);
+        hole.lineTo(thickness * 2, thickness);
+        hole.closePath();
+        
+        const geometry = createExtrudedGeometry(shape, [hole]);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
       
-      const charGeometry = new THREE.ExtrudeGeometry(charShape, extrudeSettings);
-      const charMaterial = new THREE.MeshStandardMaterial({ color: '#4a90e2' });
-      const charMesh = new THREE.Mesh(charGeometry, charMaterial);
+      case 'b': {
+        const shape = new THREE.Shape();
+        // Left vertical stroke
+        shape.moveTo(0, 0);
+        shape.lineTo(0, height);
+        shape.lineTo(thickness, height);
+        shape.lineTo(thickness, 0);
+        shape.closePath();
+        
+        // Top bump
+        const topBump = new THREE.Shape();
+        topBump.moveTo(thickness, height * 0.5);
+        topBump.lineTo(width * 0.7, height * 0.5);
+        topBump.bezierCurveTo(width, height * 0.5, width, height, width * 0.7, height);
+        topBump.lineTo(thickness, height);
+        topBump.closePath();
+        
+        // Bottom bump
+        const bottomBump = new THREE.Shape();
+        bottomBump.moveTo(thickness, 0);
+        bottomBump.lineTo(width * 0.8, 0);
+        bottomBump.bezierCurveTo(width, 0, width, height * 0.5, width * 0.7, height * 0.5);
+        bottomBump.lineTo(thickness, height * 0.5);
+        bottomBump.closePath();
+        
+        // Create holes for the bumps
+        const topHole = new THREE.Shape();
+        topHole.moveTo(thickness * 2, height * 0.75);
+        topHole.bezierCurveTo(width * 0.8, height * 0.75, width * 0.8, height * 0.6, thickness * 2, height * 0.6);
+        topHole.closePath();
+        
+        const bottomHole = new THREE.Shape();
+        bottomHole.moveTo(thickness * 2, height * 0.4);
+        bottomHole.bezierCurveTo(width * 0.8, height * 0.4, width * 0.8, height * 0.1, thickness * 2, height * 0.1);
+        bottomHole.closePath();
+        
+        const geometry1 = createExtrudedGeometry(shape);
+        const geometry2 = createExtrudedGeometry(topBump, [topHole]);
+        const geometry3 = createExtrudedGeometry(bottomBump, [bottomHole]);
+        
+        group.add(new THREE.Mesh(geometry1, material));
+        group.add(new THREE.Mesh(geometry2, material));
+        group.add(new THREE.Mesh(geometry3, material));
+        break;
+      }
       
-      charMesh.position.x = xOffset;
-      charMesh.position.y = -0.6; // Center vertically
+      case 'c': {
+        const shape = new THREE.Shape();
+        // Outer C shape
+        shape.moveTo(width, height * 0.3);
+        shape.bezierCurveTo(width, 0, 0, 0, 0, height/2);
+        shape.bezierCurveTo(0, height, width, height, width, height * 0.7);
+        shape.lineTo(width * 0.8, height * 0.7);
+        shape.bezierCurveTo(width * 0.8, height * 0.8, thickness, height * 0.8, thickness, height/2);
+        shape.bezierCurveTo(thickness, height * 0.2, width * 0.8, height * 0.2, width * 0.8, height * 0.3);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
       
-      group.add(charMesh);
-      xOffset += charWidth + charSpacing;
-    });
+      case 'd': {
+        const shape = new THREE.Shape();
+        // Left vertical stroke
+        shape.moveTo(0, 0);
+        shape.lineTo(0, height);
+        shape.lineTo(thickness, height);
+        shape.lineTo(thickness, 0);
+        shape.closePath();
+        
+        // Right curved part
+        const curve = new THREE.Shape();
+        curve.moveTo(thickness, 0);
+        curve.lineTo(width * 0.7, 0);
+        curve.bezierCurveTo(width, 0, width, height, width * 0.7, height);
+        curve.lineTo(thickness, height);
+        curve.closePath();
+        
+        // Create hole
+        const hole = new THREE.Shape();
+        hole.moveTo(thickness * 2, thickness);
+        hole.lineTo(width * 0.7, thickness);
+        hole.bezierCurveTo(width * 0.8, thickness, width * 0.8, height - thickness, width * 0.7, height - thickness);
+        hole.lineTo(thickness * 2, height - thickness);
+        hole.closePath();
+        
+        const geometry1 = createExtrudedGeometry(shape);
+        const geometry2 = createExtrudedGeometry(curve, [hole]);
+        
+        group.add(new THREE.Mesh(geometry1, material));
+        group.add(new THREE.Mesh(geometry2, material));
+        break;
+      }
+      
+      case 'e': {
+        // Fixed e with proper hole and disconnected tail
+        const shape = new THREE.Shape();
+        // Main body (C-shape)
+        shape.moveTo(width * 0.9, height * 0.3);
+        shape.bezierCurveTo(width * 0.9, 0, 0, 0, 0, height * 0.35);
+        shape.bezierCurveTo(0, height * 0.7, width * 0.9, height * 0.7, width * 0.9, height * 0.5);
+        shape.lineTo(width * 0.7, height * 0.5);
+        shape.bezierCurveTo(width * 0.7, height * 0.6, thickness, height * 0.6, thickness, height * 0.35);
+        shape.bezierCurveTo(thickness, height * 0.1, width * 0.7, height * 0.1, width * 0.7, height * 0.3);
+        shape.closePath();
+        
+        // Create hole in the middle
+        const hole = new THREE.Shape();
+        hole.moveTo(thickness * 2, height * 0.45);
+        hole.bezierCurveTo(width * 0.6, height * 0.45, width * 0.6, height * 0.25, thickness * 2, height * 0.25);
+        hole.closePath();
+        
+        // Separate crossbar (not connected to body)
+        const crossbar = new THREE.Shape();
+        crossbar.moveTo(width * 0.2, height * 0.35);
+        crossbar.lineTo(width * 0.8, height * 0.35);
+        crossbar.lineTo(width * 0.8, height * 0.45);
+        crossbar.lineTo(width * 0.2, height * 0.45);
+        crossbar.closePath();
+        
+        const geometry1 = createExtrudedGeometry(shape, [hole]);
+        const geometry2 = createExtrudedGeometry(crossbar);
+        
+        group.add(new THREE.Mesh(geometry1, material));
+        group.add(new THREE.Mesh(geometry2, material));
+        break;
+      }
+      
+      case 'f': {
+        const shape = new THREE.Shape();
+        // Vertical stroke
+        shape.moveTo(0, 0);
+        shape.lineTo(0, height);
+        shape.lineTo(width, height);
+        shape.lineTo(width, height - thickness);
+        shape.lineTo(thickness, height - thickness);
+        shape.lineTo(thickness, height * 0.6);
+        shape.lineTo(width * 0.8, height * 0.6);
+        shape.lineTo(width * 0.8, height * 0.5);
+        shape.lineTo(thickness, height * 0.5);
+        shape.lineTo(thickness, 0);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'g': {
+        const shape = new THREE.Shape();
+        // C shape with horizontal bar
+        shape.moveTo(width, height * 0.3);
+        shape.bezierCurveTo(width, 0, 0, 0, 0, height/2);
+        shape.bezierCurveTo(0, height, width, height, width, height * 0.7);
+        shape.lineTo(width, height * 0.5);
+        shape.lineTo(width * 0.6, height * 0.5);
+        shape.lineTo(width * 0.6, height * 0.4);
+        shape.lineTo(width * 0.8, height * 0.4);
+        shape.lineTo(width * 0.8, height * 0.7);
+        shape.bezierCurveTo(width * 0.8, height * 0.8, thickness, height * 0.8, thickness, height/2);
+        shape.bezierCurveTo(thickness, height * 0.2, width * 0.8, height * 0.2, width * 0.8, height * 0.3);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'h': {
+        const shape = new THREE.Shape();
+        // Left vertical
+        shape.moveTo(0, 0);
+        shape.lineTo(0, height);
+        shape.lineTo(thickness, height);
+        shape.lineTo(thickness, height * 0.6);
+        shape.lineTo(width - thickness, height * 0.6);
+        shape.lineTo(width - thickness, height);
+        shape.lineTo(width, height);
+        shape.lineTo(width, 0);
+        shape.lineTo(width - thickness, 0);
+        shape.lineTo(width - thickness, height * 0.5);
+        shape.lineTo(thickness, height * 0.5);
+        shape.lineTo(thickness, 0);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'i': {
+        const shape = new THREE.Shape();
+        // Top bar
+        shape.moveTo(0, height);
+        shape.lineTo(width, height);
+        shape.lineTo(width, height - thickness);
+        shape.lineTo((width + thickness)/2, height - thickness);
+        shape.lineTo((width + thickness)/2, thickness);
+        shape.lineTo(width, thickness);
+        shape.lineTo(width, 0);
+        shape.lineTo(0, 0);
+        shape.lineTo(0, thickness);
+        shape.lineTo((width - thickness)/2, thickness);
+        shape.lineTo((width - thickness)/2, height - thickness);
+        shape.lineTo(0, height - thickness);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'j': {
+        // Fixed j with proper hook shape
+        const shape = new THREE.Shape();
+        // Vertical stroke with hook at bottom
+        shape.moveTo(width * 0.7, height);
+        shape.lineTo(width, height);
+        shape.lineTo(width, height * 0.3);
+        shape.bezierCurveTo(width, 0, 0, 0, 0, height * 0.2);
+        shape.bezierCurveTo(0, height * 0.4, thickness * 2, height * 0.4, thickness * 2, height * 0.2);
+        shape.bezierCurveTo(thickness * 2, thickness, width - thickness, thickness, width - thickness, height * 0.3);
+        shape.lineTo(width - thickness, height);
+        shape.lineTo(width * 0.7, height);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'k': {
+        const shape = new THREE.Shape();
+        // Left vertical
+        shape.moveTo(0, 0);
+        shape.lineTo(0, height);
+        shape.lineTo(thickness, height);
+        shape.lineTo(thickness, height * 0.6);
+        shape.lineTo(width * 0.4, height * 0.6);
+        shape.lineTo(width, height);
+        shape.lineTo(width, height - thickness * 2);
+        shape.lineTo(width * 0.6, height * 0.5);
+        shape.lineTo(width, 0);
+        shape.lineTo(width - thickness * 2, 0);
+        shape.lineTo(width * 0.6, height * 0.4);
+        shape.lineTo(width * 0.4, height * 0.5);
+        shape.lineTo(thickness, height * 0.5);
+        shape.lineTo(thickness, 0);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'l': {
+        const shape = new THREE.Shape();
+        // Vertical stroke with bottom bar
+        shape.moveTo(0, 0);
+        shape.lineTo(0, height);
+        shape.lineTo(thickness, height);
+        shape.lineTo(thickness, thickness);
+        shape.lineTo(width, thickness);
+        shape.lineTo(width, 0);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'm': {
+        // Fixed m with proper double arch
+        const shape = new THREE.Shape();
+        // Left vertical stroke
+        shape.moveTo(0, 0);
+        shape.lineTo(0, height * 0.7);
+        shape.lineTo(thickness, height * 0.7);
+        shape.lineTo(thickness, 0);
+        shape.closePath();
+        
+        // First arch
+        const arch1 = new THREE.Shape();
+        arch1.moveTo(thickness, height * 0.7);
+        arch1.bezierCurveTo(thickness, height * 0.7, width * 0.3, height * 0.7, width * 0.3, height * 0.5);
+        arch1.lineTo(width * 0.3, 0);
+        arch1.lineTo(width * 0.3 + thickness, 0);
+        arch1.lineTo(width * 0.3 + thickness, height * 0.5);
+        arch1.bezierCurveTo(width * 0.3 + thickness, height * 0.6, thickness * 2, height * 0.6, thickness * 2, height * 0.6);
+        arch1.lineTo(thickness * 2, height * 0.7);
+        arch1.closePath();
+        
+        // Second arch
+        const arch2 = new THREE.Shape();
+        arch2.moveTo(width * 0.3 + thickness, height * 0.7);
+        arch2.bezierCurveTo(width * 0.3 + thickness, height * 0.7, width * 0.7, height * 0.7, width * 0.7, height * 0.5);
+        arch2.lineTo(width * 0.7, 0);
+        arch2.lineTo(width * 0.7 + thickness, 0);
+        arch2.lineTo(width * 0.7 + thickness, height * 0.5);
+        arch2.bezierCurveTo(width * 0.7 + thickness, height * 0.6, width * 0.3 + thickness * 2, height * 0.6, width * 0.3 + thickness * 2, height * 0.6);
+        arch2.lineTo(width * 0.3 + thickness * 2, height * 0.7);
+        arch2.closePath();
+        
+        const geometry1 = createExtrudedGeometry(shape);
+        const geometry2 = createExtrudedGeometry(arch1);
+        const geometry3 = createExtrudedGeometry(arch2);
+        
+        group.add(new THREE.Mesh(geometry1, material));
+        group.add(new THREE.Mesh(geometry2, material));
+        group.add(new THREE.Mesh(geometry3, material));
+        break;
+      }
+      
+      case 'n': {
+        // Fixed n with proper single arch
+        const shape = new THREE.Shape();
+        // Left vertical stroke
+        shape.moveTo(0, 0);
+        shape.lineTo(0, height * 0.7);
+        shape.lineTo(thickness, height * 0.7);
+        shape.lineTo(thickness, 0);
+        shape.closePath();
+        
+        // Arch connecting to right stroke
+        const arch = new THREE.Shape();
+        arch.moveTo(thickness, height * 0.7);
+        arch.bezierCurveTo(thickness, height * 0.7, width - thickness, height * 0.7, width - thickness, height * 0.5);
+        arch.lineTo(width - thickness, 0);
+        arch.lineTo(width, 0);
+        arch.lineTo(width, height * 0.5);
+        arch.bezierCurveTo(width, height * 0.7, thickness * 2, height * 0.6, thickness * 2, height * 0.6);
+        arch.lineTo(thickness * 2, height * 0.7);
+        arch.closePath();
+        
+        const geometry1 = createExtrudedGeometry(shape);
+        const geometry2 = createExtrudedGeometry(arch);
+        
+        group.add(new THREE.Mesh(geometry1, material));
+        group.add(new THREE.Mesh(geometry2, material));
+        break;
+      }
+      
+      case 'o': {
+        const shape = new THREE.Shape();
+        // Outer circle
+        shape.moveTo(width, height/2);
+        shape.bezierCurveTo(width, 0, 0, 0, 0, height/2);
+        shape.bezierCurveTo(0, height, width, height, width, height/2);
+        shape.closePath();
+        
+        // Inner hole
+        const hole = new THREE.Shape();
+        hole.moveTo(width * 0.8, height/2);
+        hole.bezierCurveTo(width * 0.8, thickness, thickness, thickness, thickness, height/2);
+        hole.bezierCurveTo(thickness, height - thickness, width * 0.8, height - thickness, width * 0.8, height/2);
+        hole.closePath();
+        
+        const geometry = createExtrudedGeometry(shape, [hole]);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'p': {
+        const shape = new THREE.Shape();
+        // Left vertical stroke
+        shape.moveTo(0, 0);
+        shape.lineTo(0, height);
+        shape.lineTo(thickness, height);
+        shape.lineTo(thickness, 0);
+        shape.closePath();
+        
+        // Top bump only
+        const bump = new THREE.Shape();
+        bump.moveTo(thickness, height * 0.5);
+        bump.lineTo(width * 0.7, height * 0.5);
+        bump.bezierCurveTo(width, height * 0.5, width, height, width * 0.7, height);
+        bump.lineTo(thickness, height);
+        bump.closePath();
+        
+        // Create hole for the bump
+        const hole = new THREE.Shape();
+        hole.moveTo(thickness * 2, height * 0.75);
+        hole.bezierCurveTo(width * 0.8, height * 0.75, width * 0.8, height * 0.6, thickness * 2, height * 0.6);
+        hole.closePath();
+        
+        const geometry1 = createExtrudedGeometry(shape);
+        const geometry2 = createExtrudedGeometry(bump, [hole]);
+        
+        group.add(new THREE.Mesh(geometry1, material));
+        group.add(new THREE.Mesh(geometry2, material));
+        break;
+      }
+      
+      case 'q': {
+        const shape = new THREE.Shape();
+        // Outer circle
+        shape.moveTo(width, height/2);
+        shape.bezierCurveTo(width, 0, 0, 0, 0, height/2);
+        shape.bezierCurveTo(0, height, width, height, width, height/2);
+        shape.closePath();
+        
+        // Inner hole
+        const hole = new THREE.Shape();
+        hole.moveTo(width * 0.8, height/2);
+        hole.bezierCurveTo(width * 0.8, thickness, thickness, thickness, thickness, height/2);
+        hole.bezierCurveTo(thickness, height - thickness, width * 0.8, height - thickness, width * 0.8, height/2);
+        hole.closePath();
+        
+        // Tail
+        const tail = new THREE.Shape();
+        tail.moveTo(width * 0.7, height * 0.3);
+        tail.lineTo(width * 1.2, -height * 0.2);
+        tail.lineTo(width * 1.3, -height * 0.1);
+        tail.lineTo(width * 0.8, height * 0.4);
+        tail.closePath();
+        
+        const geometry1 = createExtrudedGeometry(shape, [hole]);
+        const geometry2 = createExtrudedGeometry(tail);
+        
+        group.add(new THREE.Mesh(geometry1, material));
+        group.add(new THREE.Mesh(geometry2, material));
+        break;
+      }
+      
+      case 'r': {
+        // Fixed r with curved top that curves downward
+        const shape = new THREE.Shape();
+        // Left vertical stroke
+        shape.moveTo(0, 0);
+        shape.lineTo(0, height * 0.7);
+        shape.lineTo(thickness, height * 0.7);
+        shape.lineTo(thickness, 0);
+        shape.closePath();
+        
+        // Curved top that curves downward (like a hook)
+        const curve = new THREE.Shape();
+        curve.moveTo(thickness, height * 0.7);
+        curve.bezierCurveTo(thickness, height * 0.7, width * 0.6, height * 0.7, width * 0.6, height * 0.5);
+        curve.bezierCurveTo(width * 0.6, height * 0.4, width * 0.4, height * 0.4, width * 0.4, height * 0.5);
+        curve.lineTo(width * 0.3, height * 0.5);
+        curve.bezierCurveTo(width * 0.3, height * 0.3, width * 0.7, height * 0.3, width * 0.7, height * 0.5);
+        curve.bezierCurveTo(width * 0.7, height * 0.8, thickness * 2, height * 0.6, thickness * 2, height * 0.6);
+        curve.lineTo(thickness * 2, height * 0.7);
+        curve.closePath();
+        
+        const geometry1 = createExtrudedGeometry(shape);
+        const geometry2 = createExtrudedGeometry(curve);
+        
+        group.add(new THREE.Mesh(geometry1, material));
+        group.add(new THREE.Mesh(geometry2, material));
+        break;
+      }
+      
+      case 's': {
+        // Fixed s with proper S-curve
+        const shape = new THREE.Shape();
+        // S-curve shape
+        shape.moveTo(width * 0.8, height * 0.2);
+        shape.bezierCurveTo(width * 0.8, 0, 0, 0, 0, height * 0.2);
+        shape.bezierCurveTo(0, height * 0.4, width * 0.5, height * 0.4, width * 0.5, height * 0.5);
+        shape.bezierCurveTo(width * 0.5, height * 0.6, 0, height * 0.6, 0, height * 0.8);
+        shape.bezierCurveTo(0, height, width * 0.8, height, width * 0.8, height * 0.8);
+        shape.lineTo(width * 0.6, height * 0.8);
+        shape.bezierCurveTo(width * 0.6, height * 0.9, thickness, height * 0.9, thickness, height * 0.8);
+        shape.bezierCurveTo(thickness, height * 0.7, width * 0.4, height * 0.7, width * 0.4, height * 0.5);
+        shape.bezierCurveTo(width * 0.4, height * 0.3, thickness, height * 0.3, thickness, height * 0.2);
+        shape.bezierCurveTo(thickness, height * 0.1, width * 0.6, height * 0.1, width * 0.6, height * 0.2);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 't': {
+        const shape = new THREE.Shape();
+        // Horizontal top bar
+        shape.moveTo(0, height);
+        shape.lineTo(width, height);
+        shape.lineTo(width, height - thickness);
+        shape.lineTo((width + thickness)/2, height - thickness);
+        shape.lineTo((width + thickness)/2, 0);
+        shape.lineTo((width - thickness)/2, 0);
+        shape.lineTo((width - thickness)/2, height - thickness);
+        shape.lineTo(0, height - thickness);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'u': {
+        const shape = new THREE.Shape();
+        // U shape
+        shape.moveTo(0, height);
+        shape.lineTo(0, height * 0.3);
+        shape.bezierCurveTo(0, 0, width, 0, width, height * 0.3);
+        shape.lineTo(width, height);
+        shape.lineTo(width - thickness, height);
+        shape.lineTo(width - thickness, height * 0.3);
+        shape.bezierCurveTo(width - thickness, thickness, thickness, thickness, thickness, height * 0.3);
+        shape.lineTo(thickness, height);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'v': {
+        const shape = new THREE.Shape();
+        // V shape
+        shape.moveTo(0, height);
+        shape.lineTo(width/2, 0);
+        shape.lineTo(width, height);
+        shape.lineTo(width - thickness, height);
+        shape.lineTo(width/2, thickness * 2);
+        shape.lineTo(thickness, height);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'w': {
+        const shape = new THREE.Shape();
+        // W shape (double V)
+        shape.moveTo(0, height);
+        shape.lineTo(width * 0.25, 0);
+        shape.lineTo(width * 0.5, height * 0.6);
+        shape.lineTo(width * 0.75, 0);
+        shape.lineTo(width, height);
+        shape.lineTo(width - thickness, height);
+        shape.lineTo(width * 0.75, thickness * 2);
+        shape.lineTo(width * 0.5, height * 0.4);
+        shape.lineTo(width * 0.25, thickness * 2);
+        shape.lineTo(thickness, height);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'x': {
+        const shape = new THREE.Shape();
+        // X shape (two diagonal strokes)
+        shape.moveTo(0, height);
+        shape.lineTo(width * 0.4, height/2);
+        shape.lineTo(0, 0);
+        shape.lineTo(thickness * 2, 0);
+        shape.lineTo(width/2, height * 0.4);
+        shape.lineTo(width - thickness * 2, 0);
+        shape.lineTo(width, 0);
+        shape.lineTo(width * 0.6, height/2);
+        shape.lineTo(width, height);
+        shape.lineTo(width - thickness * 2, height);
+        shape.lineTo(width/2, height * 0.6);
+        shape.lineTo(thickness * 2, height);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'y': {
+        const shape = new THREE.Shape();
+        // Y shape
+        shape.moveTo(0, height);
+        shape.lineTo(width/2, height/2);
+        shape.lineTo(width, height);
+        shape.lineTo(width - thickness, height);
+        shape.lineTo(width/2 + thickness/2, height/2 + thickness);
+        shape.lineTo(width/2 + thickness/2, 0);
+        shape.lineTo(width/2 - thickness/2, 0);
+        shape.lineTo(width/2 - thickness/2, height/2 + thickness);
+        shape.lineTo(thickness, height);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      case 'z': {
+        const shape = new THREE.Shape();
+        // Z shape
+        shape.moveTo(0, height);
+        shape.lineTo(width, height);
+        shape.lineTo(width, height - thickness);
+        shape.lineTo(thickness * 2, thickness);
+        shape.lineTo(width, thickness);
+        shape.lineTo(width, 0);
+        shape.lineTo(0, 0);
+        shape.lineTo(0, thickness);
+        shape.lineTo(width - thickness * 2, height - thickness);
+        shape.lineTo(0, height - thickness);
+        shape.closePath();
+        
+        const geometry = createExtrudedGeometry(shape);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+      
+      // Lowercase letters (scaled down and adjusted)
+      case ' ': {
+        // Space - empty group
+        break;
+      }
+      
+      default: {
+        // Fallback - simple block
+        const geometry = new THREE.BoxGeometry(width, height, depth);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+        break;
+      }
+    }
     
-    // Center the entire text group
-    const box = new THREE.Box3().setFromObject(group);
-    const center = box.getCenter(new THREE.Vector3());
-    group.position.x = -center.x;
+    // Adjust for lowercase letters
+    if (letter !== letter.toUpperCase() && letter !== ' ') {
+      group.scale.set(0.7, 0.7, 1); // Make lowercase smaller
+      group.position.y = -height * 0.15; // Adjust baseline
+    }
     
     return group;
   };
 
-  // Basic geometric shapes
-  const basicShapes = [
-    {
-      name: 'Cube',
-      icon: Box,
-      geometry: () => new THREE.BoxGeometry(1, 1, 1),
-      color: '#44aa88'
-    },
-    {
-      name: 'Sphere',
-      icon: CircleIcon,
-      geometry: () => new THREE.SphereGeometry(0.5, 32, 16),
-      color: '#aa4488'
-    },
-    {
-      name: 'Cylinder',
-      icon: Cylinder,
-      geometry: () => new THREE.CylinderGeometry(0.5, 0.5, 1, 32),
-      color: '#4488aa'
-    },
-    {
-      name: 'Cone',
-      icon: Cone,
-      geometry: () => new THREE.ConeGeometry(0.5, 1, 32),
-      color: '#88aa44'
-    },
-    {
-      name: 'Plane',
-      icon: Triangle,
-      geometry: () => new THREE.PlaneGeometry(2, 2),
-      color: '#aa8844'
-    },
-    {
-      name: 'Torus',
-      icon: DonutIcon,
-      geometry: () => new THREE.TorusGeometry(0.5, 0.2, 16, 100),
-      color: '#8844aa'
-    },
-    {
-      name: 'Heart',
-      icon: Heart,
-      geometry: () => {
-        // Create a heart shape using a custom geometry
-        const heartShape = new THREE.Shape();
-        
-        const x = 0, y = 0;
-        heartShape.moveTo(x + 5, y + 5);
-        heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
-        heartShape.bezierCurveTo(x - 6, y, x - 6, y + 3.5, x - 6, y + 3.5);
-        heartShape.bezierCurveTo(x - 6, y + 5.5, x - 4, y + 7.7, x + 5, y + 15);
-        heartShape.bezierCurveTo(x + 12, y + 7.7, x + 14, y + 5.5, x + 14, y + 3.5);
-        heartShape.bezierCurveTo(x + 14, y + 3.5, x + 14, y, x + 10, y);
-        heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
-
-        const extrudeSettings = {
-          depth: 2,
-          bevelEnabled: true,
-          bevelSegments: 2,
-          steps: 2,
-          bevelSize: 0.5,
-          bevelThickness: 0.5
-        };
-
-        const geometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
-        
-        // Scale and center the heart
-        geometry.scale(0.05, 0.05, 0.05);
-        geometry.center();
-        
-        return geometry;
-      },
-      color: '#ff6b9d'
-    },
-    {
-      name: 'Star',
-      icon: Star,
-      geometry: () => {
-        // Create a star shape
-        const starShape = new THREE.Shape();
-        const outerRadius = 10;
-        const innerRadius = 4;
-        const spikes = 5;
-        
-        let rot = Math.PI / 2 * 3;
-        let x = 0;
-        let y = outerRadius;
-        const step = Math.PI / spikes;
-
-        starShape.moveTo(0, outerRadius);
-        
-        for (let i = 0; i < spikes; i++) {
-          x = Math.cos(rot) * outerRadius;
-          y = Math.sin(rot) * outerRadius;
-          starShape.lineTo(x, y);
-          rot += step;
-
-          x = Math.cos(rot) * innerRadius;
-          y = Math.sin(rot) * innerRadius;
-          starShape.lineTo(x, y);
-          rot += step;
-        }
-        
-        starShape.lineTo(0, outerRadius);
-
-        const extrudeSettings = {
-          depth: 2,
-          bevelEnabled: true,
-          bevelSegments: 2,
-          steps: 2,
-          bevelSize: 0.3,
-          bevelThickness: 0.3
-        };
-
-        const geometry = new THREE.ExtrudeGeometry(starShape, extrudeSettings);
-        
-        // Scale and center the star
-        geometry.scale(0.05, 0.05, 0.05);
-        geometry.center();
-        
-        return geometry;
-      },
-      color: '#ffd700'
+  const create3DText = (text: string): THREE.Group => {
+    const textGroup = new THREE.Group();
+    const spacing = 1.2;
+    
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      if (char === ' ') {
+        continue; // Skip spaces but maintain spacing
+      }
+      
+      const letterGroup = create3DLetter(char);
+      letterGroup.position.x = i * spacing;
+      textGroup.add(letterGroup);
     }
-  ];
+    
+    // Center the text
+    const box = new THREE.Box3().setFromObject(textGroup);
+    const center = box.getCenter(new THREE.Vector3());
+    textGroup.position.x = -center.x;
+    
+    return textGroup;
+  };
 
-  // Nature objects - trees, flowers, and rocks (removed Pebble and Sunflower)
-  const natureObjects = [
+  const handleAdd3DText = () => {
+    if (text3D.trim()) {
+      const textObject = create3DText(text3D);
+      addObject(textObject, `3D Text: "${text3D}"`);
+      setText3D('');
+      setShowTextInput(false);
+    }
+  };
+
+  const primitiveTools = [
     {
-      name: 'Pine Tree',
-      icon: TreePine,
-      geometry: () => {
-        const group = new THREE.Group();
-        
-        // Tree trunk
-        const trunkGeometry = new THREE.CylinderGeometry(0.1, 0.15, 1, 8);
-        const trunkMaterial = new THREE.MeshStandardMaterial({ color: '#8B4513' });
-        const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+      icon: Box,
+      name: 'Cube',
+      action: () => startObjectPlacement({
+        geometry: () => new THREE.BoxGeometry(1, 1, 1),
+        name: 'Cube'
+      })
+    },
+    {
+      icon: Sphere,
+      name: 'Sphere',
+      action: () => startObjectPlacement({
+        geometry: () => new THREE.SphereGeometry(0.5, 32, 16),
+        name: 'Sphere'
+      })
+    },
+    {
+      icon: Cylinder,
+      name: 'Cylinder',
+      action: () => startObjectPlacement({
+        geometry: () => new THREE.CylinderGeometry(0.5, 0.5, 1, 32),
+        name: 'Cylinder'
+      })
+    },
+    {
+      icon: Pyramid,
+      name: 'Cone',
+      action: () => startObjectPlacement({
+        geometry: () => new THREE.ConeGeometry(0.5, 1, 32),
+        name: 'Cone'
+      })
+    },
+    {
+      icon: Torus,
+      name: 'Torus',
+      action: () => startObjectPlacement({
+        geometry: () => new THREE.TorusGeometry(0.5, 0.2, 16, 100),
+        name: 'Torus'
+      })
+    },
+    {
+      icon: Type,
+      name: '3D Text',
+      action: () => setShowTextInput(true)
+    }
+  ] as const;
+
+  const createNatureObject = (type: string): THREE.Group => {
+    const group = new THREE.Group();
+    const greenMaterial = new THREE.MeshStandardMaterial({ color: '#228B22' });
+    const brownMaterial = new THREE.MeshStandardMaterial({ color: '#8B4513' });
+    const grayMaterial = new THREE.MeshStandardMaterial({ color: '#696969' });
+
+    switch (type) {
+      case 'Pine Tree': {
+        // Trunk
+        const trunk = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.1, 0.15, 1, 8),
+          brownMaterial
+        );
         trunk.position.y = 0.5;
         group.add(trunk);
-        
-        // Tree layers (3 cone layers)
-        const layerColors = ['#228B22', '#32CD32', '#90EE90'];
-        const layerSizes = [0.8, 0.6, 0.4];
-        const layerHeights = [0.8, 0.6, 0.4];
-        const layerPositions = [1.2, 1.6, 1.9];
-        
-        layerSizes.forEach((size, i) => {
-          const layerGeometry = new THREE.ConeGeometry(size, layerHeights[i], 8);
-          const layerMaterial = new THREE.MeshStandardMaterial({ color: layerColors[i] });
-          const layer = new THREE.Mesh(layerGeometry, layerMaterial);
-          layer.position.y = layerPositions[i];
-          group.add(layer);
-        });
-        
-        return group;
-      },
-      color: '#228B22'
-    },
-    {
-      name: 'Oak Tree',
-      icon: TreePine,
-      geometry: () => {
-        const group = new THREE.Group();
-        
-        // Tree trunk
-        const trunkGeometry = new THREE.CylinderGeometry(0.12, 0.18, 1.2, 8);
-        const trunkMaterial = new THREE.MeshStandardMaterial({ color: '#8B4513' });
-        const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-        trunk.position.y = 0.6;
+
+        // Three layers of pine needles
+        for (let i = 0; i < 3; i++) {
+          const needles = new THREE.Mesh(
+            new THREE.ConeGeometry(0.8 - i * 0.2, 1.2 - i * 0.2, 8),
+            greenMaterial
+          );
+          needles.position.y = 1.2 + i * 0.6;
+          group.add(needles);
+        }
+        break;
+      }
+      case 'Oak Tree': {
+        // Trunk
+        const trunk = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.15, 0.2, 1.5, 8),
+          brownMaterial
+        );
+        trunk.position.y = 0.75;
         group.add(trunk);
-        
-        // Tree crown (sphere)
-        const crownGeometry = new THREE.SphereGeometry(0.9, 16, 12);
-        const crownMaterial = new THREE.MeshStandardMaterial({ color: '#228B22' });
-        const crown = new THREE.Mesh(crownGeometry, crownMaterial);
-        crown.position.y = 1.5;
-        crown.scale.y = 0.8; // Slightly flatten the crown
+
+        // Rounded crown
+        const crown = new THREE.Mesh(
+          new THREE.SphereGeometry(1.2, 16, 12),
+          greenMaterial
+        );
+        crown.position.y = 2;
+        crown.scale.y = 0.8;
         group.add(crown);
-        
-        return group;
-      },
-      color: '#228B22'
-    },
-    {
-      name: 'Flower',
-      icon: Flower,
-      geometry: () => {
-        const group = new THREE.Group();
-        
-        // Flower stem
-        const stemGeometry = new THREE.CylinderGeometry(0.02, 0.03, 0.8, 6);
-        const stemMaterial = new THREE.MeshStandardMaterial({ color: '#228B22' });
-        const stem = new THREE.Mesh(stemGeometry, stemMaterial);
+        break;
+      }
+      case 'Flower': {
+        // Stem
+        const stem = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.02, 0.02, 0.8, 6),
+          greenMaterial
+        );
         stem.position.y = 0.4;
         group.add(stem);
-        
-        // Flower center
-        const centerGeometry = new THREE.SphereGeometry(0.08, 8, 6);
-        const centerMaterial = new THREE.MeshStandardMaterial({ color: '#FFD700' });
-        const center = new THREE.Mesh(centerGeometry, centerMaterial);
-        center.position.y = 0.8;
-        group.add(center);
-        
+
         // Flower petals
-        const petalGeometry = new THREE.SphereGeometry(0.12, 8, 6);
         const petalMaterial = new THREE.MeshStandardMaterial({ color: '#FF69B4' });
-        
         for (let i = 0; i < 6; i++) {
-          const petal = new THREE.Mesh(petalGeometry, petalMaterial);
+          const petal = new THREE.Mesh(
+            new THREE.SphereGeometry(0.1, 8, 6),
+            petalMaterial
+          );
           const angle = (i / 6) * Math.PI * 2;
           petal.position.x = Math.cos(angle) * 0.15;
           petal.position.z = Math.sin(angle) * 0.15;
           petal.position.y = 0.8;
-          petal.scale.set(0.8, 0.4, 0.8);
+          petal.scale.y = 0.3;
           group.add(petal);
         }
-        
-        return group;
-      },
-      color: '#FF69B4'
-    },
-    {
-      name: 'Boulder',
-      icon: Mountain,
-      geometry: () => {
-        // Create an irregular rock shape using a modified sphere
-        const geometry = new THREE.SphereGeometry(0.6, 8, 6);
-        const positions = geometry.attributes.position;
-        
-        // Randomly modify vertices to create irregular rock shape
-        for (let i = 0; i < positions.count; i++) {
-          const x = positions.getX(i);
-          const y = positions.getY(i);
-          const z = positions.getZ(i);
-          
-          // Add some randomness to make it look more rock-like
-          const noise = (Math.random() - 0.5) * 0.3;
-          const length = Math.sqrt(x * x + y * y + z * z);
-          const newLength = length + noise;
-          
-          positions.setXYZ(
-            i,
-            (x / length) * newLength,
-            (y / length) * newLength * (0.7 + Math.random() * 0.3), // Make it flatter
-            (z / length) * newLength
-          );
-        }
-        
-        geometry.computeVertexNormals();
-        return geometry;
-      },
-      color: '#696969'
-    },
-    {
-      name: 'Small Rock',
-      icon: Mountain,
-      geometry: () => {
-        // Create a smaller, more angular rock
-        const geometry = new THREE.DodecahedronGeometry(0.3);
-        const positions = geometry.attributes.position;
-        
-        // Slightly modify vertices for more natural look
-        for (let i = 0; i < positions.count; i++) {
-          const x = positions.getX(i);
-          const y = positions.getY(i);
-          const z = positions.getZ(i);
-          
-          const noise = (Math.random() - 0.5) * 0.1;
-          const length = Math.sqrt(x * x + y * y + z * z);
-          const newLength = length + noise;
-          
-          positions.setXYZ(
-            i,
-            (x / length) * newLength,
-            (y / length) * newLength,
-            (z / length) * newLength
-          );
-        }
-        
-        geometry.computeVertexNormals();
-        return geometry;
-      },
-      color: '#A0A0A0'
-    },
-    {
-      name: 'Grass Patch',
-      icon: TreePine,
-      geometry: () => {
-        const group = new THREE.Group();
-        
-        // Create multiple grass blades
-        const bladeGeometry = new THREE.BoxGeometry(0.02, 0.3, 0.01);
-        const bladeMaterial = new THREE.MeshStandardMaterial({ color: '#32CD32' });
-        
+
+        // Center
+        const center = new THREE.Mesh(
+          new THREE.SphereGeometry(0.05, 8, 6),
+          new THREE.MeshStandardMaterial({ color: '#FFD700' })
+        );
+        center.position.y = 0.8;
+        group.add(center);
+        break;
+      }
+      case 'Boulder': {
+        const boulder = new THREE.Mesh(
+          new THREE.SphereGeometry(0.8, 12, 8),
+          grayMaterial
+        );
+        boulder.position.y = 0.6;
+        boulder.scale.y = 0.7;
+        boulder.scale.x = 1.2;
+        group.add(boulder);
+        break;
+      }
+      case 'Small Rock': {
+        const rock = new THREE.Mesh(
+          new THREE.SphereGeometry(0.3, 8, 6),
+          grayMaterial
+        );
+        rock.position.y = 0.2;
+        rock.scale.y = 0.6;
+        rock.scale.x = 1.1;
+        group.add(rock);
+        break;
+      }
+      case 'Grass Patch': {
         for (let i = 0; i < 20; i++) {
-          const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
-          
-          // Random position within a small area
-          blade.position.x = (Math.random() - 0.5) * 0.6;
-          blade.position.z = (Math.random() - 0.5) * 0.6;
+          const blade = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.01, 0.005, 0.3, 4),
+            greenMaterial
+          );
+          blade.position.x = (Math.random() - 0.5) * 1.5;
+          blade.position.z = (Math.random() - 0.5) * 1.5;
           blade.position.y = 0.15;
-          
-          // Random rotation and slight scale variation
-          blade.rotation.y = Math.random() * Math.PI * 2;
-          blade.rotation.x = (Math.random() - 0.5) * 0.2;
-          blade.scale.y = 0.8 + Math.random() * 0.4;
-          
+          blade.rotation.z = (Math.random() - 0.5) * 0.3;
           group.add(blade);
         }
-        
-        return group;
-      },
-      color: '#32CD32'
+        break;
+      }
     }
-  ];
 
-  const handleObjectSelect = (shape: typeof basicShapes[0] | typeof natureObjects[0]) => {
-    startObjectPlacement({
-      geometry: shape.geometry,
-      name: shape.name,
-      color: shape.color
-    });
-    setShowObjectMenu(false);
+    return group;
   };
 
-  const handleTextCreate = () => {
-    if (!textInput.trim()) return;
-    
-    startObjectPlacement({
-      geometry: () => create3DText(textInput.trim()),
-      name: `3D Text: ${textInput.trim()}`,
-      color: '#4a90e2'
-    });
-    setShowObjectMenu(false);
-    setShowTextInput(false);
-  };
-
-  const handleLightAdd = (type: 'directional' | 'point' | 'spot') => {
-    const position = selectedObject 
-      ? [
-          selectedObject.position.x + 2,
-          selectedObject.position.y + 2,
-          selectedObject.position.z + 2
-        ]
-      : [2, 2, 2];
-
-    addLight(type, position);
-  };
+  const natureTools = [
+    {
+      icon: TreePine,
+      name: 'Pine Tree',
+      action: () => startObjectPlacement({
+        geometry: () => createNatureObject('Pine Tree'),
+        name: 'Pine Tree'
+      })
+    },
+    {
+      icon: TreePine,
+      name: 'Oak Tree',
+      action: () => startObjectPlacement({
+        geometry: () => createNatureObject('Oak Tree'),
+        name: 'Oak Tree'
+      })
+    },
+    {
+      icon: Flower,
+      name: 'Flower',
+      action: () => startObjectPlacement({
+        geometry: () => createNatureObject('Flower'),
+        name: 'Flower'
+      })
+    },
+    {
+      icon: Mountain,
+      name: 'Boulder',
+      action: () => startObjectPlacement({
+        geometry: () => createNatureObject('Boulder'),
+        name: 'Boulder'
+      })
+    },
+    {
+      icon: Mountain,
+      name: 'Small Rock',
+      action: () => startObjectPlacement({
+        geometry: () => createNatureObject('Small Rock'),
+        name: 'Small Rock'
+      })
+    },
+    {
+      icon: TreePine,
+      name: 'Grass Patch',
+      action: () => startObjectPlacement({
+        geometry: () => createNatureObject('Grass Patch'),
+        name: 'Grass Patch'
+      })
+    }
+  ] as const;
 
   const transformTools = [
     {
       icon: MousePointer,
       mode: null,
-      title: 'Select',
-      shortcut: 'Q'
+      name: 'Select',
+      active: transformMode === null
     },
     {
       icon: Move,
       mode: 'translate' as const,
-      title: 'Move',
-      shortcut: 'G'
+      name: 'Move',
+      active: transformMode === 'translate'
     },
     {
       icon: RotateCw,
       mode: 'rotate' as const,
-      title: 'Rotate',
-      shortcut: 'R'
+      name: 'Rotate',
+      active: transformMode === 'rotate'
     },
     {
       icon: Scale,
       mode: 'scale' as const,
-      title: 'Scale',
-      shortcut: 'S'
+      name: 'Scale',
+      active: transformMode === 'scale'
     }
-  ];
+  ] as const;
 
   const editTools = [
     {
-      icon: Dot,
+      icon: Vertices,
       mode: 'vertex' as const,
-      title: 'Edit Vertices',
-      shortcut: 'V'
+      name: 'Edit Vertices',
+      active: editMode === 'vertex'
     },
     {
       icon: Minus,
       mode: 'edge' as const,
-      title: 'Edit Edges',
-      shortcut: 'E'
+      name: 'Edit Edges',
+      active: editMode === 'edge'
     }
-  ];
+  ] as const;
 
   const lightTools = [
     {
       icon: Sun,
-      type: 'directional' as const,
-      title: 'Directional Light',
-      description: 'Parallel rays like sunlight'
+      name: 'Directional Light',
+      action: () => addLight('directional')
     },
     {
       icon: Lightbulb,
-      type: 'point' as const,
-      title: 'Point Light',
-      description: 'Omnidirectional like a bulb'
+      name: 'Point Light',
+      action: () => addLight('point')
     },
     {
       icon: Zap,
-      type: 'spot' as const,
-      title: 'Spot Light',
-      description: 'Focused cone of light'
+      name: 'Spot Light',
+      action: () => addLight('spot')
     }
-  ];
-
-  const tabs = [
-    { id: 'basic', name: 'Basic', icon: Box },
-    { id: 'nature', name: 'Nature', icon: TreePine },
-    { id: 'text', name: 'Text', icon: Type }
-  ];
+  ] as const;
 
   return (
-    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-[#1a1a1a] rounded-xl shadow-2xl shadow-black/20 p-3 border border-white/5 z-10">
-      <div className="flex flex-col gap-2">
-        {/* Add Object Button with Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowObjectMenu(!showObjectMenu)}
-            className="p-3 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 transition-all duration-200 flex items-center justify-center group relative hover:scale-105 active:scale-95"
-            title="Add Object (A)"
-          >
-            <Plus className="w-5 h-5" />
-            <ChevronDown className="w-3 h-3 ml-1" />
-            
-            {/* Tooltip */}
-            <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-              Add Object (A)
-            </div>
-          </button>
-
-          {/* Object Menu */}
-          {showObjectMenu && (
-            <div className="absolute left-full ml-2 top-0 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-lg z-20 min-w-80">
-              {/* Header */}
-              <div className="p-3 border-b border-white/10">
-                <h3 className="text-sm font-medium text-white/90">Add 3D Object</h3>
-              </div>
-
-              {/* Tabs */}
-              <div className="flex border-b border-white/10">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 p-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                      activeTab === tab.id
-                        ? 'text-blue-400 bg-blue-500/10 border-b-2 border-blue-500'
-                        : 'text-white/70 hover:text-white/90 hover:bg-white/5'
-                    }`}
-                  >
-                    <tab.icon className="w-4 h-4" />
-                    {tab.name}
-                  </button>
-                ))}
-              </div>
-
-              {/* Tab Content */}
-              <div className="p-3">
-                {activeTab === 'basic' && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {basicShapes.map((shape) => (
-                      <button
-                        key={shape.name}
-                        onClick={() => handleObjectSelect(shape)}
-                        className="p-3 rounded-lg hover:bg-white/5 flex flex-col items-center gap-2 transition-colors group"
-                      >
-                        <div 
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: shape.color + '20', color: shape.color }}
-                        >
-                          <shape.icon className="w-5 h-5" />
-                        </div>
-                        <span className="text-xs text-white/90 group-hover:text-white">
-                          {shape.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {activeTab === 'nature' && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {natureObjects.map((obj) => (
-                      <button
-                        key={obj.name}
-                        onClick={() => handleObjectSelect(obj)}
-                        className="p-3 rounded-lg hover:bg-white/5 flex flex-col items-center gap-2 transition-colors group"
-                      >
-                        <div 
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: obj.color + '20', color: obj.color }}
-                        >
-                          <obj.icon className="w-5 h-5" />
-                        </div>
-                        <span className="text-xs text-white/90 group-hover:text-white text-center">
-                          {obj.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {activeTab === 'text' && (
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <div 
-                        className="w-16 h-16 mx-auto rounded-lg flex items-center justify-center mb-3"
-                        style={{ backgroundColor: '#4a90e2' + '20', color: '#4a90e2' }}
-                      >
-                        <Type className="w-8 h-8" />
-                      </div>
-                      <h4 className="text-sm font-medium text-white/90 mb-2">Create 3D Text</h4>
-                      <p className="text-xs text-white/60 mb-4">
-                        Enter text to convert into a 3D extruded object
-                      </p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-white/70 mb-2">
-                          Text Content
-                        </label>
-                        <input
-                          type="text"
-                          value={textInput}
-                          onChange={(e) => setTextInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleTextCreate();
-                            }
-                          }}
-                          placeholder="Enter your text..."
-                          className="w-full bg-[#1a1a1a] border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50 focus:bg-[#0a0a0a]"
-                          maxLength={20}
-                        />
-                        <div className="text-xs text-white/50 mt-1">
-                          {textInput.length}/20 characters
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={handleTextCreate}
-                        disabled={!textInput.trim()}
-                        className={`w-full p-3 rounded-lg font-medium text-sm transition-all duration-200 ${
-                          textInput.trim()
-                            ? 'bg-blue-500 hover:bg-blue-600 text-white hover:scale-105 active:scale-95'
-                            : 'bg-white/10 text-white/30 cursor-not-allowed'
-                        }`}
-                      >
-                        Create 3D Text
-                      </button>
-                    </div>
-
-                    <div className="text-xs text-white/50 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                      <div className="font-medium text-blue-400 mb-1">🔤 Complete Alphabet Support:</div>
-                      <ul className="space-y-1">
-                        <li>• <strong>All 26 letters</strong> - A-Z with unique shapes</li>
-                        <li>• <strong>Uppercase & Lowercase</strong> - Proper typography</li>
-                        <li>• <strong>Authentic Letters</strong> - A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z</li>
-                        <li>• <strong>Professional 3D</strong> - Extruded with bevels</li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Lights Section */}
-              <div className="border-t border-white/10 p-3">
-                <h4 className="text-xs font-medium text-white/70 mb-2 uppercase tracking-wider">
-                  Lights
-                </h4>
-                <div className="space-y-1">
-                  {lightTools.map((light) => (
-                    <button
-                      key={light.type}
-                      onClick={() => handleLightAdd(light.type)}
-                      className="w-full p-2 rounded-lg hover:bg-white/5 flex items-center gap-3 transition-colors group"
-                    >
-                      <light.icon className="w-4 h-4 text-yellow-400" />
-                      <div className="text-left">
-                        <div className="text-sm text-white/90 group-hover:text-white">
-                          {light.title}
-                        </div>
-                        <div className="text-xs text-white/60">
-                          {light.description}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-[#1a1a1a] rounded-xl shadow-2xl shadow-black/20 p-4 border border-white/5 z-10">
+      <div className="space-y-6">
+        {/* 3D Objects */}
+        <div>
+          <h3 className="text-sm font-medium text-white/70 mb-3">3D Objects</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {primitiveTools.map(({ icon: Icon, name, action }) => (
+              <button
+                key={name}
+                onClick={action}
+                className="p-3 rounded-lg bg-[#2a2a2a] hover:bg-[#3a3a3a] transition-all duration-200 flex flex-col items-center gap-2 group hover:scale-105"
+                title={name}
+              >
+                <Icon className="w-5 h-5 text-white/90 group-hover:text-white" />
+                <span className="text-xs text-white/70 group-hover:text-white/90">{name}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Separator */}
-        <div className="w-full h-px bg-white/10" />
+        {/* Nature Objects */}
+        <div>
+          <h3 className="text-sm font-medium text-white/70 mb-3">Nature</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {natureTools.map(({ icon: Icon, name, action }) => (
+              <button
+                key={name}
+                onClick={action}
+                className="p-3 rounded-lg bg-[#2a2a2a] hover:bg-[#3a3a3a] transition-all duration-200 flex flex-col items-center gap-2 group hover:scale-105"
+                title={name}
+              >
+                <Icon className="w-5 h-5 text-white/90 group-hover:text-white" />
+                <span className="text-xs text-white/70 group-hover:text-white/90">{name.split(' ')[0]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Transform Tools */}
-        {transformTools.map(({ icon: Icon, mode, title, shortcut }) => (
-          <button
-            key={title}
-            onClick={() => setTransformMode(mode)}
-            className={`p-3 rounded-lg transition-all duration-200 flex items-center justify-center group relative hover:scale-105 active:scale-95 ${
-              transformMode === mode
-                ? 'bg-blue-500/30 text-blue-300'
-                : 'text-white/90 hover:bg-white/10 hover:text-white'
-            }`}
-            title={`${title} (${shortcut})`}
-          >
-            <Icon className="w-5 h-5" />
-            
-            {/* Tooltip */}
-            <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-              {title} ({shortcut})
-            </div>
-          </button>
-        ))}
-
-        {/* Separator */}
-        <div className="w-full h-px bg-white/10" />
+        <div>
+          <h3 className="text-sm font-medium text-white/70 mb-3">Transform</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {transformTools.map(({ icon: Icon, mode, name, active }) => (
+              <button
+                key={name}
+                onClick={() => setTransformMode(mode)}
+                className={`p-3 rounded-lg transition-all duration-200 flex flex-col items-center gap-2 group hover:scale-105 ${
+                  active
+                    ? 'bg-blue-500/20 border border-blue-500/30 text-blue-400'
+                    : 'bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white/90 hover:text-white'
+                }`}
+                title={name}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-xs">{name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Edit Tools */}
-        {editTools.map(({ icon: Icon, mode, title, shortcut }) => {
-          // Check if edge mode should be disabled for certain geometries
-          const isDisabled = mode === 'edge' && selectedObject instanceof THREE.Mesh && (
-            selectedObject.geometry instanceof THREE.CylinderGeometry ||
-            selectedObject.geometry instanceof THREE.ConeGeometry ||
-            selectedObject.geometry instanceof THREE.SphereGeometry
-          );
+        <div>
+          <h3 className="text-sm font-medium text-white/70 mb-3">Edit</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {editTools.map(({ icon: Icon, mode, name, active }) => (
+              <button
+                key={name}
+                onClick={() => setEditMode(active ? null : mode)}
+                className={`p-3 rounded-lg transition-all duration-200 flex flex-col items-center gap-2 group hover:scale-105 ${
+                  active
+                    ? 'bg-green-500/20 border border-green-500/30 text-green-400'
+                    : 'bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white/90 hover:text-white'
+                }`}
+                title={name}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-xs">{name.split(' ')[1]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
-          return (
-            <button
-              key={title}
-              onClick={() => !isDisabled && setEditMode(mode)}
-              disabled={isDisabled}
-              className={`p-3 rounded-lg transition-all duration-200 flex items-center justify-center group relative ${
-                isDisabled
-                  ? 'text-white/30 cursor-not-allowed'
-                  : editMode === mode
-                    ? 'bg-green-500/30 text-green-300 hover:scale-105 active:scale-95'
-                    : 'text-white/90 hover:bg-white/10 hover:text-white hover:scale-105 active:scale-95'
-              }`}
-              title={isDisabled ? `${title} (Not available for this geometry)` : `${title} (${shortcut})`}
-            >
-              <Icon className="w-5 h-5" />
-              
-              {/* Tooltip */}
-              <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-                {isDisabled ? `${title} (Not available)` : `${title} (${shortcut})`}
-              </div>
-            </button>
-          );
-        })}
+        {/* Lighting Tools */}
+        <div>
+          <h3 className="text-sm font-medium text-white/70 mb-3">Lighting</h3>
+          <div className="grid grid-cols-1 gap-2">
+            {lightTools.map(({ icon: Icon, name, action }) => (
+              <button
+                key={name}
+                onClick={action}
+                className="p-3 rounded-lg bg-[#2a2a2a] hover:bg-[#3a3a3a] transition-all duration-200 flex items-center gap-3 group hover:scale-105"
+                title={name}
+              >
+                <Icon className="w-5 h-5 text-yellow-400 group-hover:text-yellow-300" />
+                <span className="text-xs text-white/70 group-hover:text-white/90">{name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* 3D Text Input Modal */}
+      {showTextInput && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[#1a1a1a] rounded-xl p-6 border border-white/10 shadow-2xl">
+            <h3 className="text-lg font-semibold text-white/90 mb-4">Create 3D Text</h3>
+            <input
+              type="text"
+              value={text3D}
+              onChange={(e) => setText3D(e.target.value)}
+              placeholder="Enter text to convert to 3D..."
+              className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-4 py-2 text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50 mb-4"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleAdd3DText();
+                } else if (e.key === 'Escape') {
+                  setShowTextInput(false);
+                  setText3D('');
+                }
+              }}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleAdd3DText}
+                disabled={!text3D.trim()}
+                className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Create 3D Text
+              </button>
+              <button
+                onClick={() => {
+                  setShowTextInput(false);
+                  setText3D('');
+                }}
+                className="px-4 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white/90 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
