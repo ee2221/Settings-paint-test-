@@ -662,244 +662,272 @@ const Toolbar: React.FC = () => {
   ];
 
   return (
-    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-[#1a1a1a] rounded-xl shadow-2xl shadow-black/20 p-3 border border-white/5 z-10">
-      <div className="flex flex-col gap-2">
-        {/* Add Object Button with Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowObjectMenu(!showObjectMenu)}
-            className="p-3 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 transition-all duration-200 flex items-center justify-center group relative hover:scale-105 active:scale-95"
-            title="Add Object (A)"
-          >
-            <Plus className="w-5 h-5" />
-            <ChevronDown className="w-3 h-3 ml-1" />
-            
-            {/* Tooltip */}
-            <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-              Add Object (A)
-            </div>
-          </button>
-
-          {/* Object Menu */}
-          {showObjectMenu && (
-            <div className="absolute left-full ml-2 top-0 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-lg z-20 min-w-80">
-              {/* Header */}
-              <div className="p-3 border-b border-white/10">
-                <h3 className="text-sm font-medium text-white/90">Add 3D Object</h3>
+    <>
+      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-[#1a1a1a] rounded-xl shadow-2xl shadow-black/20 p-3 border border-white/5 z-10">
+        <div className="flex flex-col gap-2">
+          {/* Add Object Button with Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowObjectMenu(!showObjectMenu)}
+              className="p-3 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 transition-all duration-200 flex items-center justify-center group relative hover:scale-105 active:scale-95"
+              title="Add Object (A)"
+            >
+              <Plus className="w-5 h-5" />
+              <ChevronDown className="w-3 h-3 ml-1" />
+              
+              {/* Tooltip */}
+              <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                Add Object (A)
               </div>
+            </button>
 
-              {/* Tabs */}
-              <div className="flex border-b border-white/10">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 p-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                      activeTab === tab.id
-                        ? 'text-blue-400 bg-blue-500/10 border-b-2 border-blue-500'
-                        : 'text-white/70 hover:text-white/90 hover:bg-white/5'
-                    }`}
-                  >
-                    <tab.icon className="w-4 h-4" />
-                    {tab.name}
-                  </button>
-                ))}
-              </div>
+            {/* Object Menu */}
+            {showObjectMenu && (
+              <div className="absolute left-full ml-2 top-0 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-lg z-20 min-w-80">
+                {/* Header */}
+                <div className="p-3 border-b border-white/10">
+                  <h3 className="text-sm font-medium text-white/90">Add 3D Object</h3>
+                </div>
 
-              {/* Tab Content */}
-              <div className="p-3">
-                {activeTab === 'basic' && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {basicShapes.map((shape) => (
-                      <button
-                        key={shape.name}
-                        onClick={() => handleObjectSelect(shape)}
-                        className="p-3 rounded-lg hover:bg-white/5 flex flex-col items-center gap-2 transition-colors group"
-                      >
-                        <div 
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: shape.color + '20', color: shape.color }}
-                        >
-                          <shape.icon className="w-5 h-5" />
-                        </div>
-                        <span className="text-xs text-white/90 group-hover:text-white">
-                          {shape.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {activeTab === 'nature' && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {natureObjects.map((obj) => (
-                      <button
-                        key={obj.name}
-                        onClick={() => handleObjectSelect(obj)}
-                        className="p-3 rounded-lg hover:bg-white/5 flex flex-col items-center gap-2 transition-colors group"
-                      >
-                        <div 
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: obj.color + '20', color: obj.color }}
-                        >
-                          <obj.icon className="w-5 h-5" />
-                        </div>
-                        <span className="text-xs text-white/90 group-hover:text-white text-center">
-                          {obj.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Lights Section */}
-              <div className="border-t border-white/10 p-3">
-                <h4 className="text-xs font-medium text-white/70 mb-2 uppercase tracking-wider">
-                  Lights
-                </h4>
-                <div className="space-y-1">
-                  {lightTools.map((light) => (
+                {/* Tabs */}
+                <div className="flex border-b border-white/10">
+                  {tabs.map((tab) => (
                     <button
-                      key={light.type}
-                      onClick={() => handleLightAdd(light.type)}
-                      className="w-full p-2 rounded-lg hover:bg-white/5 flex items-center gap-3 transition-colors group"
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex-1 p-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                        activeTab === tab.id
+                          ? 'text-blue-400 bg-blue-500/10 border-b-2 border-blue-500'
+                          : 'text-white/70 hover:text-white/90 hover:bg-white/5'
+                      }`}
                     >
-                      <light.icon className="w-4 h-4 text-yellow-400" />
-                      <div className="text-left">
-                        <div className="text-sm text-white/90 group-hover:text-white">
-                          {light.title}
-                        </div>
-                        <div className="text-xs text-white/60">
-                          {light.description}
-                        </div>
-                      </div>
+                      <tab.icon className="w-4 h-4" />
+                      {tab.name}
                     </button>
                   ))}
                 </div>
+
+                {/* Tab Content */}
+                <div className="p-3">
+                  {activeTab === 'basic' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {basicShapes.map((shape) => (
+                        <button
+                          key={shape.name}
+                          onClick={() => handleObjectSelect(shape)}
+                          className="p-3 rounded-lg hover:bg-white/5 flex flex-col items-center gap-2 transition-colors group"
+                        >
+                          <div 
+                            className="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: shape.color + '20', color: shape.color }}
+                          >
+                            <shape.icon className="w-5 h-5" />
+                          </div>
+                          <span className="text-xs text-white/90 group-hover:text-white">
+                            {shape.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeTab === 'nature' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {natureObjects.map((obj) => (
+                        <button
+                          key={obj.name}
+                          onClick={() => handleObjectSelect(obj)}
+                          className="p-3 rounded-lg hover:bg-white/5 flex flex-col items-center gap-2 transition-colors group"
+                        >
+                          <div 
+                            className="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: obj.color + '20', color: obj.color }}
+                          >
+                            <obj.icon className="w-5 h-5" />
+                          </div>
+                          <span className="text-xs text-white/90 group-hover:text-white text-center">
+                            {obj.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Lights Section */}
+                <div className="border-t border-white/10 p-3">
+                  <h4 className="text-xs font-medium text-white/70 mb-2 uppercase tracking-wider">
+                    Lights
+                  </h4>
+                  <div className="space-y-1">
+                    {lightTools.map((light) => (
+                      <button
+                        key={light.type}
+                        onClick={() => handleLightAdd(light.type)}
+                        className="w-full p-2 rounded-lg hover:bg-white/5 flex items-center gap-3 transition-colors group"
+                      >
+                        <light.icon className="w-4 h-4 text-yellow-400" />
+                        <div className="text-left">
+                          <div className="text-sm text-white/90 group-hover:text-white">
+                            {light.title}
+                          </div>
+                          <div className="text-xs text-white/60">
+                            {light.description}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Separator */}
-        <div className="w-full h-px bg-white/10" />
+          {/* Separator */}
+          <div className="w-full h-px bg-white/10" />
 
-        {/* Transform Tools */}
-        {transformTools.map(({ icon: Icon, mode, title, shortcut }) => (
-          <button
-            key={title}
-            onClick={() => setTransformMode(mode)}
-            className={`p-3 rounded-lg transition-all duration-200 flex items-center justify-center group relative hover:scale-105 active:scale-95 ${
-              transformMode === mode
-                ? 'bg-blue-500/30 text-blue-300'
-                : 'text-white/90 hover:bg-white/10 hover:text-white'
-            }`}
-            title={`${title} (${shortcut})`}
-          >
-            <Icon className="w-5 h-5" />
-            
-            {/* Tooltip */}
-            <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-              {title} ({shortcut})
-            </div>
-          </button>
-        ))}
-
-        {/* Separator */}
-        <div className="w-full h-px bg-white/10" />
-
-        {/* Edit Tools */}
-        {editTools.map(({ icon: Icon, mode, title, shortcut }) => {
-          // Check if edge mode should be disabled for certain geometries
-          const isDisabled = mode === 'edge' && selectedObject instanceof THREE.Mesh && (
-            selectedObject.geometry instanceof THREE.CylinderGeometry ||
-            selectedObject.geometry instanceof THREE.ConeGeometry ||
-            selectedObject.geometry instanceof THREE.SphereGeometry
-          );
-
-          return (
+          {/* Transform Tools */}
+          {transformTools.map(({ icon: Icon, mode, title, shortcut }) => (
             <button
               key={title}
-              onClick={() => !isDisabled && setEditMode(mode)}
-              disabled={isDisabled}
-              className={`p-3 rounded-lg transition-all duration-200 flex items-center justify-center group relative ${
-                isDisabled
-                  ? 'text-white/30 cursor-not-allowed'
-                  : editMode === mode
-                    ? 'bg-green-500/30 text-green-300 hover:scale-105 active:scale-95'
-                    : 'text-white/90 hover:bg-white/10 hover:text-white hover:scale-105 active:scale-95'
+              onClick={() => setTransformMode(mode)}
+              className={`p-3 rounded-lg transition-all duration-200 flex items-center justify-center group relative hover:scale-105 active:scale-95 ${
+                transformMode === mode
+                  ? 'bg-blue-500/30 text-blue-300'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
               }`}
-              title={isDisabled ? `${title} (Not available for this geometry)` : `${title} (${shortcut})`}
+              title={`${title} (${shortcut})`}
             >
               <Icon className="w-5 h-5" />
               
               {/* Tooltip */}
               <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-                {isDisabled ? `${title} (Not available)` : `${title} (${shortcut})`}
+                {title} ({shortcut})
               </div>
             </button>
-          );
-        })}
+          ))}
+
+          {/* Separator */}
+          <div className="w-full h-px bg-white/10" />
+
+          {/* Edit Tools */}
+          {editTools.map(({ icon: Icon, mode, title, shortcut }) => {
+            // Check if edge mode should be disabled for certain geometries
+            const isDisabled = mode === 'edge' && selectedObject instanceof THREE.Mesh && (
+              selectedObject.geometry instanceof THREE.CylinderGeometry ||
+              selectedObject.geometry instanceof THREE.ConeGeometry ||
+              selectedObject.geometry instanceof THREE.SphereGeometry
+            );
+
+            return (
+              <button
+                key={title}
+                onClick={() => !isDisabled && setEditMode(mode)}
+                disabled={isDisabled}
+                className={`p-3 rounded-lg transition-all duration-200 flex items-center justify-center group relative ${
+                  isDisabled
+                    ? 'text-white/30 cursor-not-allowed'
+                    : editMode === mode
+                      ? 'bg-green-500/30 text-green-300 hover:scale-105 active:scale-95'
+                      : 'text-white/90 hover:bg-white/10 hover:text-white hover:scale-105 active:scale-95'
+                }`}
+                title={isDisabled ? `${title} (Not available for this geometry)` : `${title} (${shortcut})`}
+              >
+                <Icon className="w-5 h-5" />
+                
+                {/* Tooltip */}
+                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                  {isDisabled ? `${title} (Not available)` : `${title} (${shortcut})`}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* 3D Text Input Modal */}
+      {/* 3D Text Input Modal - Centered on Screen */}
       {showTextInput && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#2a2a2a] border border-white/10 rounded-xl p-6 w-96 shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <Type className="w-6 h-6 text-blue-400" />
-              <h3 className="text-lg font-semibold text-white/90">Create 3D Text</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1a1a] border border-white/20 rounded-2xl shadow-2xl shadow-black/40 w-full max-w-md mx-auto">
+            {/* Header */}
+            <div className="flex items-center gap-3 p-6 border-b border-white/10">
+              <div className="w-10 h-10 bg-cyan-500/20 rounded-xl flex items-center justify-center">
+                <Type className="w-5 h-5 text-cyan-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-white/95">Create 3D Text</h3>
+                <p className="text-sm text-white/60 mt-0.5">Enter text to extrude into 3D geometry</p>
+              </div>
             </div>
             
-            <div className="space-y-4">
+            {/* Content */}
+            <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-white/70 mb-2">
-                  Enter your text:
+                <label className="block text-sm font-medium text-white/80 mb-3">
+                  Text Content
                 </label>
                 <input
                   type="text"
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' && textInput.trim()) {
                       handleTextSubmit();
                     } else if (e.key === 'Escape') {
                       setShowTextInput(false);
                     }
                   }}
-                  className="w-full bg-[#1a1a1a] border border-white/10 rounded-lg px-3 py-2 text-white/90 focus:outline-none focus:border-blue-500/50"
-                  placeholder="Hello World"
+                  className="w-full bg-[#2a2a2a] border border-white/20 rounded-xl px-4 py-3 text-white/95 placeholder-white/40 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                  placeholder="Enter your text..."
                   autoFocus
+                  maxLength={20}
                 />
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-xs text-white/50">
+                    {textInput.length}/20 characters
+                  </span>
+                  {textInput.length > 15 && (
+                    <span className="text-xs text-amber-400">
+                      Keep text short for better performance
+                    </span>
+                  )}
+                </div>
               </div>
               
-              <div className="text-xs text-white/50">
-                <p>• Text will be extruded into 3D geometry</p>
-                <p>• Simple letters work best (A-Z, numbers)</p>
-                <p>• Keep text short for better performance</p>
+              {/* Tips */}
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                <h4 className="text-sm font-medium text-blue-400 mb-2 flex items-center gap-2">
+                  💡 Tips for Best Results
+                </h4>
+                <ul className="text-xs text-white/70 space-y-1">
+                  <li>• Simple letters and numbers work best</li>
+                  <li>• Avoid special characters and symbols</li>
+                  <li>• Shorter text renders faster and looks cleaner</li>
+                  <li>• Text will be automatically scaled and centered</li>
+                </ul>
               </div>
-              
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={handleTextSubmit}
-                  disabled={!textInput.trim()}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/30 disabled:cursor-not-allowed text-white py-2 px-4 rounded-lg transition-colors font-medium"
-                >
-                  Create 3D Text
-                </button>
-                <button
-                  onClick={() => setShowTextInput(false)}
-                  className="px-4 py-2 bg-[#1a1a1a] hover:bg-[#3a3a3a] text-white/70 hover:text-white rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 p-6 border-t border-white/10">
+              <button
+                onClick={() => setShowTextInput(false)}
+                className="flex-1 px-4 py-3 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white/80 hover:text-white rounded-xl transition-all duration-200 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleTextSubmit}
+                disabled={!textInput.trim()}
+                className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium shadow-lg disabled:shadow-none"
+              >
+                Create 3D Text
+              </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
