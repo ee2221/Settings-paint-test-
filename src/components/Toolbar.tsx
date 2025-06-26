@@ -16,7 +16,7 @@ const Toolbar: React.FC = () => {
   
   const [showObjectMenu, setShowObjectMenu] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
-  const [textInput, setTextInput] = useState('HELLO');
+  const [textInput, setTextInput] = useState('Hello World');
   const [showTextInput, setShowTextInput] = useState(false);
 
   // Custom Circle Icon Component for Sphere
@@ -34,757 +34,118 @@ const Toolbar: React.FC = () => {
     </svg>
   );
 
-  // Function to create accurate letter shapes
-  const createLetterShape = (char: string): THREE.Shape => {
-    const shape = new THREE.Shape();
-    const width = 1;
-    const height = 1.4;
-    
-    switch (char.toUpperCase()) {
-      case 'A':
-        // Create letter A
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.4, 0);
-        shape.lineTo(0.45, 0.3);
-        shape.lineTo(0.55, 0.3);
-        shape.lineTo(0.6, 0);
-        shape.lineTo(0.9, 0);
-        shape.lineTo(0.6, height);
-        shape.lineTo(0.4, height);
-        shape.lineTo(0.1, 0);
-        
-        // Create the hole (crossbar area)
-        const holeA = new THREE.Path();
-        holeA.moveTo(0.35, 0.4);
-        holeA.lineTo(0.65, 0.4);
-        holeA.lineTo(0.6, 0.6);
-        holeA.lineTo(0.4, 0.6);
-        holeA.lineTo(0.35, 0.4);
-        shape.holes.push(holeA);
-        break;
-
-      case 'B':
-        // Create letter B
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.6, height);
-        shape.bezierCurveTo(0.8, height, 0.9, height - 0.15, 0.9, height - 0.25);
-        shape.bezierCurveTo(0.9, height - 0.35, 0.8, height - 0.45, 0.7, height - 0.5);
-        shape.bezierCurveTo(0.85, height - 0.55, 0.95, height - 0.7, 0.95, height - 0.85);
-        shape.bezierCurveTo(0.95, height - 1.0, 0.8, 0, 0.6, 0);
-        shape.lineTo(0.1, 0);
-        
-        // Top hole
-        const holeBTop = new THREE.Path();
-        holeBTop.moveTo(0.3, height - 0.15);
-        holeBTop.lineTo(0.6, height - 0.15);
-        holeBTop.bezierCurveTo(0.7, height - 0.15, 0.7, height - 0.25, 0.7, height - 0.3);
-        holeBTop.bezierCurveTo(0.7, height - 0.35, 0.7, height - 0.45, 0.6, height - 0.45);
-        holeBTop.lineTo(0.3, height - 0.45);
-        holeBTop.lineTo(0.3, height - 0.15);
-        shape.holes.push(holeBTop);
-        
-        // Bottom hole
-        const holeBBottom = new THREE.Path();
-        holeBBottom.moveTo(0.3, height - 0.55);
-        holeBBottom.lineTo(0.6, height - 0.55);
-        holeBBottom.bezierCurveTo(0.75, height - 0.55, 0.75, height - 0.7, 0.75, height - 0.8);
-        holeBBottom.bezierCurveTo(0.75, height - 0.9, 0.75, height - 1.0, 0.6, height - 1.0);
-        holeBBottom.lineTo(0.3, height - 1.0);
-        holeBBottom.lineTo(0.3, height - 0.55);
-        shape.holes.push(holeBBottom);
-        break;
-
-      case 'C':
-        // Create letter C
-        shape.moveTo(0.9, 0.3);
-        shape.bezierCurveTo(0.9, 0.1, 0.8, 0, 0.6, 0);
-        shape.bezierCurveTo(0.3, 0, 0.1, 0.2, 0.1, 0.7);
-        shape.bezierCurveTo(0.1, 1.2, 0.3, height, 0.6, height);
-        shape.bezierCurveTo(0.8, height, 0.9, height - 0.1, 0.9, height - 0.3);
-        shape.lineTo(0.7, height - 0.3);
-        shape.bezierCurveTo(0.7, height - 0.15, 0.65, height - 0.1, 0.6, height - 0.1);
-        shape.bezierCurveTo(0.4, height - 0.1, 0.3, height - 0.3, 0.3, 0.7);
-        shape.bezierCurveTo(0.3, 0.3, 0.4, 0.1, 0.6, 0.1);
-        shape.bezierCurveTo(0.65, 0.1, 0.7, 0.15, 0.7, 0.3);
-        shape.lineTo(0.9, 0.3);
-        break;
-
-      case 'D':
-        // Create letter D
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.5, height);
-        shape.bezierCurveTo(0.8, height, 0.9, height - 0.3, 0.9, 0.7);
-        shape.bezierCurveTo(0.9, 0.3, 0.8, 0, 0.5, 0);
-        shape.lineTo(0.1, 0);
-        
-        // Hole
-        const holeD = new THREE.Path();
-        holeD.moveTo(0.3, 0.15);
-        holeD.lineTo(0.5, 0.15);
-        holeD.bezierCurveTo(0.65, 0.15, 0.7, 0.35, 0.7, 0.7);
-        holeD.bezierCurveTo(0.7, 1.05, 0.65, height - 0.15, 0.5, height - 0.15);
-        holeD.lineTo(0.3, height - 0.15);
-        holeD.lineTo(0.3, 0.15);
-        shape.holes.push(holeD);
-        break;
-
-      case 'E':
-        // Create letter E
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.8, height);
-        shape.lineTo(0.8, height - 0.2);
-        shape.lineTo(0.3, height - 0.2);
-        shape.lineTo(0.3, 0.8);
-        shape.lineTo(0.7, 0.8);
-        shape.lineTo(0.7, 0.6);
-        shape.lineTo(0.3, 0.6);
-        shape.lineTo(0.3, 0.2);
-        shape.lineTo(0.8, 0.2);
-        shape.lineTo(0.8, 0);
-        shape.lineTo(0.1, 0);
-        break;
-
-      case 'F':
-        // Create letter F
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.8, height);
-        shape.lineTo(0.8, height - 0.2);
-        shape.lineTo(0.3, height - 0.2);
-        shape.lineTo(0.3, 0.8);
-        shape.lineTo(0.7, 0.8);
-        shape.lineTo(0.7, 0.6);
-        shape.lineTo(0.3, 0.6);
-        shape.lineTo(0.3, 0);
-        shape.lineTo(0.1, 0);
-        break;
-
-      case 'G':
-        // Create letter G
-        shape.moveTo(0.9, 0.3);
-        shape.bezierCurveTo(0.9, 0.1, 0.8, 0, 0.6, 0);
-        shape.bezierCurveTo(0.3, 0, 0.1, 0.2, 0.1, 0.7);
-        shape.bezierCurveTo(0.1, 1.2, 0.3, height, 0.6, height);
-        shape.bezierCurveTo(0.8, height, 0.9, height - 0.1, 0.9, height - 0.3);
-        shape.lineTo(0.9, 0.6);
-        shape.lineTo(0.6, 0.6);
-        shape.lineTo(0.6, 0.8);
-        shape.lineTo(0.7, 0.8);
-        shape.lineTo(0.7, height - 0.3);
-        shape.bezierCurveTo(0.7, height - 0.15, 0.65, height - 0.1, 0.6, height - 0.1);
-        shape.bezierCurveTo(0.4, height - 0.1, 0.3, height - 0.3, 0.3, 0.7);
-        shape.bezierCurveTo(0.3, 0.3, 0.4, 0.1, 0.6, 0.1);
-        shape.bezierCurveTo(0.65, 0.1, 0.7, 0.15, 0.7, 0.3);
-        shape.lineTo(0.9, 0.3);
-        break;
-
-      case 'H':
-        // Create letter H
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.3, height);
-        shape.lineTo(0.3, 0.8);
-        shape.lineTo(0.7, 0.8);
-        shape.lineTo(0.7, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.9, 0);
-        shape.lineTo(0.7, 0);
-        shape.lineTo(0.7, 0.6);
-        shape.lineTo(0.3, 0.6);
-        shape.lineTo(0.3, 0);
-        shape.lineTo(0.1, 0);
-        break;
-
-      case 'I':
-        // Create letter I
-        shape.moveTo(0.2, 0);
-        shape.lineTo(0.2, 0.2);
-        shape.lineTo(0.4, 0.2);
-        shape.lineTo(0.4, height - 0.2);
-        shape.lineTo(0.2, height - 0.2);
-        shape.lineTo(0.2, height);
-        shape.lineTo(0.8, height);
-        shape.lineTo(0.8, height - 0.2);
-        shape.lineTo(0.6, height - 0.2);
-        shape.lineTo(0.6, 0.2);
-        shape.lineTo(0.8, 0.2);
-        shape.lineTo(0.8, 0);
-        shape.lineTo(0.2, 0);
-        break;
-
-      case 'J':
-        // Create letter J
-        shape.moveTo(0.1, 0.4);
-        shape.bezierCurveTo(0.1, 0.1, 0.2, 0, 0.4, 0);
-        shape.bezierCurveTo(0.6, 0, 0.7, 0.1, 0.7, 0.4);
-        shape.lineTo(0.7, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.9, 0.4);
-        shape.bezierCurveTo(0.9, 0.05, 0.75, -0.1, 0.4, -0.1);
-        shape.bezierCurveTo(0.05, -0.1, -0.1, 0.05, -0.1, 0.4);
-        shape.lineTo(0.1, 0.4);
-        
-        // Hole
-        const holeJ = new THREE.Path();
-        holeJ.moveTo(0.1, 0.4);
-        holeJ.bezierCurveTo(0.1, 0.2, 0.25, 0.1, 0.4, 0.1);
-        holeJ.bezierCurveTo(0.55, 0.1, 0.7, 0.2, 0.7, 0.4);
-        holeJ.lineTo(0.7, height - 0.1);
-        holeJ.lineTo(0.5, height - 0.1);
-        holeJ.lineTo(0.5, 0.4);
-        holeJ.bezierCurveTo(0.5, 0.3, 0.45, 0.25, 0.4, 0.25);
-        holeJ.bezierCurveTo(0.35, 0.25, 0.3, 0.3, 0.3, 0.4);
-        holeJ.lineTo(0.1, 0.4);
-        shape.holes.push(holeJ);
-        break;
-
-      case 'K':
-        // Create letter K
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.3, height);
-        shape.lineTo(0.3, 0.8);
-        shape.lineTo(0.5, 0.8);
-        shape.lineTo(0.8, height);
-        shape.lineTo(1.0, height);
-        shape.lineTo(0.6, 0.7);
-        shape.lineTo(1.0, 0);
-        shape.lineTo(0.8, 0);
-        shape.lineTo(0.5, 0.6);
-        shape.lineTo(0.3, 0.6);
-        shape.lineTo(0.3, 0);
-        shape.lineTo(0.1, 0);
-        break;
-
-      case 'L':
-        // Create letter L
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.3, height);
-        shape.lineTo(0.3, 0.2);
-        shape.lineTo(0.8, 0.2);
-        shape.lineTo(0.8, 0);
-        shape.lineTo(0.1, 0);
-        break;
-
-      case 'M':
-        // Create letter M
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.3, height);
-        shape.lineTo(0.3, 0.4);
-        shape.lineTo(0.5, 0.8);
-        shape.lineTo(0.7, 0.4);
-        shape.lineTo(0.7, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.9, 0);
-        shape.lineTo(0.7, 0);
-        shape.lineTo(0.7, 0.6);
-        shape.lineTo(0.6, 0.4);
-        shape.lineTo(0.4, 0.4);
-        shape.lineTo(0.3, 0.6);
-        shape.lineTo(0.3, 0);
-        shape.lineTo(0.1, 0);
-        break;
-
-      case 'N':
-        // Create letter N
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.3, height);
-        shape.lineTo(0.3, 0.4);
-        shape.lineTo(0.7, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.9, 0);
-        shape.lineTo(0.7, 0);
-        shape.lineTo(0.7, 1.0);
-        shape.lineTo(0.3, 0.4);
-        shape.lineTo(0.3, 0);
-        shape.lineTo(0.1, 0);
-        break;
-
-      case 'O':
-        // Create letter O
-        shape.moveTo(0.5, 0);
-        shape.bezierCurveTo(0.8, 0, 1.0, 0.2, 1.0, 0.7);
-        shape.bezierCurveTo(1.0, 1.2, 0.8, height, 0.5, height);
-        shape.bezierCurveTo(0.2, height, 0, 1.2, 0, 0.7);
-        shape.bezierCurveTo(0, 0.2, 0.2, 0, 0.5, 0);
-        
-        // Create hole
-        const holeO = new THREE.Path();
-        holeO.moveTo(0.5, 0.15);
-        holeO.bezierCurveTo(0.7, 0.15, 0.8, 0.3, 0.8, 0.7);
-        holeO.bezierCurveTo(0.8, 1.1, 0.7, height - 0.15, 0.5, height - 0.15);
-        holeO.bezierCurveTo(0.3, height - 0.15, 0.2, 1.1, 0.2, 0.7);
-        holeO.bezierCurveTo(0.2, 0.3, 0.3, 0.15, 0.5, 0.15);
-        shape.holes.push(holeO);
-        break;
-
-      case 'P':
-        // Create letter P
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.6, height);
-        shape.bezierCurveTo(0.8, height, 0.9, height - 0.2, 0.9, height - 0.4);
-        shape.bezierCurveTo(0.9, height - 0.6, 0.8, height - 0.8, 0.6, height - 0.8);
-        shape.lineTo(0.3, height - 0.8);
-        shape.lineTo(0.3, 0);
-        shape.lineTo(0.1, 0);
-        
-        // Hole
-        const holeP = new THREE.Path();
-        holeP.moveTo(0.3, height - 0.2);
-        holeP.lineTo(0.6, height - 0.2);
-        holeP.bezierCurveTo(0.7, height - 0.2, 0.7, height - 0.4, 0.7, height - 0.5);
-        holeP.bezierCurveTo(0.7, height - 0.6, 0.7, height - 0.8, 0.6, height - 0.8);
-        holeP.lineTo(0.3, height - 0.8);
-        holeP.lineTo(0.3, height - 0.2);
-        shape.holes.push(holeP);
-        break;
-
-      case 'Q':
-        // Create letter Q (like O but with tail)
-        shape.moveTo(0.5, 0);
-        shape.bezierCurveTo(0.8, 0, 1.0, 0.2, 1.0, 0.7);
-        shape.bezierCurveTo(1.0, 1.2, 0.8, height, 0.5, height);
-        shape.bezierCurveTo(0.2, height, 0, 1.2, 0, 0.7);
-        shape.bezierCurveTo(0, 0.2, 0.2, 0, 0.5, 0);
-        
-        // Add tail
-        shape.lineTo(0.7, -0.2);
-        shape.lineTo(0.9, -0.1);
-        shape.lineTo(0.7, 0.1);
-        shape.lineTo(0.6, 0.05);
-        shape.lineTo(0.5, 0);
-        
-        // Create hole
-        const holeQ = new THREE.Path();
-        holeQ.moveTo(0.5, 0.15);
-        holeQ.bezierCurveTo(0.7, 0.15, 0.8, 0.3, 0.8, 0.7);
-        holeQ.bezierCurveTo(0.8, 1.1, 0.7, height - 0.15, 0.5, height - 0.15);
-        holeQ.bezierCurveTo(0.3, height - 0.15, 0.2, 1.1, 0.2, 0.7);
-        holeQ.bezierCurveTo(0.2, 0.3, 0.3, 0.15, 0.5, 0.15);
-        shape.holes.push(holeQ);
-        break;
-
-      case 'R':
-        // Create letter R
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.6, height);
-        shape.bezierCurveTo(0.8, height, 0.9, height - 0.2, 0.9, height - 0.4);
-        shape.bezierCurveTo(0.9, height - 0.6, 0.8, height - 0.8, 0.6, height - 0.8);
-        shape.lineTo(0.9, 0);
-        shape.lineTo(0.7, 0);
-        shape.lineTo(0.5, height - 0.8);
-        shape.lineTo(0.3, height - 0.8);
-        shape.lineTo(0.3, 0);
-        shape.lineTo(0.1, 0);
-        
-        // Hole
-        const holeR = new THREE.Path();
-        holeR.moveTo(0.3, height - 0.2);
-        holeR.lineTo(0.6, height - 0.2);
-        holeR.bezierCurveTo(0.7, height - 0.2, 0.7, height - 0.4, 0.7, height - 0.5);
-        holeR.bezierCurveTo(0.7, height - 0.6, 0.7, height - 0.8, 0.6, height - 0.8);
-        holeR.lineTo(0.3, height - 0.8);
-        holeR.lineTo(0.3, height - 0.2);
-        shape.holes.push(holeR);
-        break;
-
-      case 'S':
-        // Create letter S
-        shape.moveTo(0.9, 0.3);
-        shape.bezierCurveTo(0.9, 0.1, 0.8, 0, 0.6, 0);
-        shape.bezierCurveTo(0.3, 0, 0.1, 0.1, 0.1, 0.3);
-        shape.bezierCurveTo(0.1, 0.5, 0.3, 0.6, 0.6, 0.7);
-        shape.bezierCurveTo(0.7, 0.75, 0.8, 0.8, 0.8, 0.9);
-        shape.bezierCurveTo(0.8, 1.1, 0.7, height, 0.4, height);
-        shape.bezierCurveTo(0.2, height, 0.1, height - 0.1, 0.1, height - 0.3);
-        shape.lineTo(0.3, height - 0.3);
-        shape.bezierCurveTo(0.3, height - 0.15, 0.35, height - 0.1, 0.4, height - 0.1);
-        shape.bezierCurveTo(0.55, height - 0.1, 0.6, height - 0.2, 0.6, height - 0.3);
-        shape.bezierCurveTo(0.6, height - 0.4, 0.55, height - 0.45, 0.4, height - 0.5);
-        shape.bezierCurveTo(0.2, height - 0.6, 0.1, height - 0.7, 0.1, height - 0.9);
-        shape.bezierCurveTo(0.1, height - 1.1, 0.2, height - 1.2, 0.6, height - 1.2);
-        shape.bezierCurveTo(0.8, height - 1.2, 0.9, height - 1.1, 0.9, height - 0.9);
-        shape.lineTo(0.7, height - 0.9);
-        shape.bezierCurveTo(0.7, height - 1.05, 0.65, height - 1.1, 0.6, height - 1.1);
-        shape.bezierCurveTo(0.45, height - 1.1, 0.4, height - 1.0, 0.4, height - 0.9);
-        shape.bezierCurveTo(0.4, height - 0.8, 0.45, height - 0.75, 0.6, height - 0.7);
-        shape.bezierCurveTo(0.8, height - 0.6, 0.9, height - 0.5, 0.9, height - 0.3);
-        shape.lineTo(0.9, 0.3);
-        break;
-
-      case 'T':
-        // Create letter T
-        shape.moveTo(0.1, height - 0.2);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.9, height - 0.2);
-        shape.lineTo(0.6, height - 0.2);
-        shape.lineTo(0.6, 0);
-        shape.lineTo(0.4, 0);
-        shape.lineTo(0.4, height - 0.2);
-        shape.lineTo(0.1, height - 0.2);
-        break;
-
-      case 'U':
-        // Create letter U
-        shape.moveTo(0.1, height);
-        shape.lineTo(0.1, 0.4);
-        shape.bezierCurveTo(0.1, 0.1, 0.2, 0, 0.5, 0);
-        shape.bezierCurveTo(0.8, 0, 0.9, 0.1, 0.9, 0.4);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.7, height);
-        shape.lineTo(0.7, 0.4);
-        shape.bezierCurveTo(0.7, 0.2, 0.65, 0.15, 0.5, 0.15);
-        shape.bezierCurveTo(0.35, 0.15, 0.3, 0.2, 0.3, 0.4);
-        shape.lineTo(0.3, height);
-        shape.lineTo(0.1, height);
-        break;
-
-      case 'V':
-        // Create letter V
-        shape.moveTo(0.1, height);
-        shape.lineTo(0.3, height);
-        shape.lineTo(0.5, 0.2);
-        shape.lineTo(0.7, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.6, 0);
-        shape.lineTo(0.4, 0);
-        shape.lineTo(0.1, height);
-        break;
-
-      case 'W':
-        // Create letter W
-        shape.moveTo(0.1, height);
-        shape.lineTo(0.2, height);
-        shape.lineTo(0.3, 0.2);
-        shape.lineTo(0.4, 0.8);
-        shape.lineTo(0.5, 0.6);
-        shape.lineTo(0.6, 0.8);
-        shape.lineTo(0.7, 0.2);
-        shape.lineTo(0.8, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.75, 0);
-        shape.lineTo(0.65, 0);
-        shape.lineTo(0.5, 0.4);
-        shape.lineTo(0.35, 0);
-        shape.lineTo(0.25, 0);
-        shape.lineTo(0.1, height);
-        break;
-
-      case 'X':
-        // Create letter X
-        shape.moveTo(0.1, height);
-        shape.lineTo(0.3, height);
-        shape.lineTo(0.5, 0.8);
-        shape.lineTo(0.7, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.6, 0.7);
-        shape.lineTo(0.9, 0);
-        shape.lineTo(0.7, 0);
-        shape.lineTo(0.5, 0.6);
-        shape.lineTo(0.3, 0);
-        shape.lineTo(0.1, 0);
-        shape.lineTo(0.4, 0.7);
-        shape.lineTo(0.1, height);
-        break;
-
-      case 'Y':
-        // Create letter Y
-        shape.moveTo(0.1, height);
-        shape.lineTo(0.3, height);
-        shape.lineTo(0.5, 0.8);
-        shape.lineTo(0.7, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.6, 0.6);
-        shape.lineTo(0.6, 0);
-        shape.lineTo(0.4, 0);
-        shape.lineTo(0.4, 0.6);
-        shape.lineTo(0.1, height);
-        break;
-
-      case 'Z':
-        // Create letter Z
-        shape.moveTo(0.1, height - 0.2);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.9, height - 0.2);
-        shape.lineTo(0.3, 0.2);
-        shape.lineTo(0.9, 0.2);
-        shape.lineTo(0.9, 0);
-        shape.lineTo(0.1, 0);
-        shape.lineTo(0.1, 0.2);
-        shape.lineTo(0.7, height - 0.2);
-        shape.lineTo(0.1, height - 0.2);
-        break;
-
-      case '0':
-        // Create number 0 (similar to O)
-        shape.moveTo(0.5, 0);
-        shape.bezierCurveTo(0.8, 0, 1.0, 0.2, 1.0, 0.7);
-        shape.bezierCurveTo(1.0, 1.2, 0.8, height, 0.5, height);
-        shape.bezierCurveTo(0.2, height, 0, 1.2, 0, 0.7);
-        shape.bezierCurveTo(0, 0.2, 0.2, 0, 0.5, 0);
-        
-        const hole0 = new THREE.Path();
-        hole0.moveTo(0.5, 0.15);
-        hole0.bezierCurveTo(0.7, 0.15, 0.8, 0.3, 0.8, 0.7);
-        hole0.bezierCurveTo(0.8, 1.1, 0.7, height - 0.15, 0.5, height - 0.15);
-        hole0.bezierCurveTo(0.3, height - 0.15, 0.2, 1.1, 0.2, 0.7);
-        hole0.bezierCurveTo(0.2, 0.3, 0.3, 0.15, 0.5, 0.15);
-        shape.holes.push(hole0);
-        break;
-
-      case '1':
-        // Create number 1
-        shape.moveTo(0.3, 0);
-        shape.lineTo(0.3, height - 0.3);
-        shape.lineTo(0.2, height - 0.4);
-        shape.lineTo(0.2, height);
-        shape.lineTo(0.7, height);
-        shape.lineTo(0.7, 0);
-        shape.lineTo(0.3, 0);
-        break;
-
-      case '2':
-        // Create number 2
-        shape.moveTo(0.1, height - 0.3);
-        shape.bezierCurveTo(0.1, height - 0.1, 0.2, height, 0.5, height);
-        shape.bezierCurveTo(0.8, height, 0.9, height - 0.1, 0.9, height - 0.3);
-        shape.bezierCurveTo(0.9, height - 0.5, 0.8, height - 0.6, 0.6, height - 0.7);
-        shape.lineTo(0.3, 0.2);
-        shape.lineTo(0.9, 0.2);
-        shape.lineTo(0.9, 0);
-        shape.lineTo(0.1, 0);
-        shape.lineTo(0.1, 0.2);
-        shape.lineTo(0.5, height - 0.5);
-        shape.bezierCurveTo(0.7, height - 0.4, 0.7, height - 0.3, 0.7, height - 0.3);
-        shape.bezierCurveTo(0.7, height - 0.2, 0.65, height - 0.15, 0.5, height - 0.15);
-        shape.bezierCurveTo(0.35, height - 0.15, 0.3, height - 0.2, 0.3, height - 0.3);
-        shape.lineTo(0.1, height - 0.3);
-        break;
-
-      case '3':
-        // Create number 3
-        shape.moveTo(0.1, height - 0.3);
-        shape.bezierCurveTo(0.1, height - 0.1, 0.2, height, 0.5, height);
-        shape.bezierCurveTo(0.8, height, 0.9, height - 0.1, 0.9, height - 0.3);
-        shape.bezierCurveTo(0.9, height - 0.45, 0.85, height - 0.55, 0.7, height - 0.6);
-        shape.bezierCurveTo(0.85, height - 0.65, 0.9, height - 0.75, 0.9, height - 0.9);
-        shape.bezierCurveTo(0.9, height - 1.1, 0.8, height - 1.2, 0.5, height - 1.2);
-        shape.bezierCurveTo(0.2, height - 1.2, 0.1, height - 1.1, 0.1, height - 0.9);
-        shape.lineTo(0.3, height - 0.9);
-        shape.bezierCurveTo(0.3, height - 1.0, 0.35, height - 1.05, 0.5, height - 1.05);
-        shape.bezierCurveTo(0.65, height - 1.05, 0.7, height - 1.0, 0.7, height - 0.9);
-        shape.bezierCurveTo(0.7, height - 0.8, 0.65, height - 0.75, 0.5, height - 0.75);
-        shape.lineTo(0.4, height - 0.75);
-        shape.lineTo(0.4, height - 0.55);
-        shape.lineTo(0.5, height - 0.55);
-        shape.bezierCurveTo(0.65, height - 0.55, 0.7, height - 0.5, 0.7, height - 0.4);
-        shape.bezierCurveTo(0.7, height - 0.3, 0.65, height - 0.25, 0.5, height - 0.25);
-        shape.bezierCurveTo(0.35, height - 0.25, 0.3, height - 0.3, 0.3, height - 0.4);
-        shape.lineTo(0.1, height - 0.3);
-        break;
-
-      case '4':
-        // Create number 4
-        shape.moveTo(0.6, 0);
-        shape.lineTo(0.6, 0.5);
-        shape.lineTo(0.1, 0.5);
-        shape.lineTo(0.1, 0.7);
-        shape.lineTo(0.5, height);
-        shape.lineTo(0.7, height);
-        shape.lineTo(0.7, 0.7);
-        shape.lineTo(0.9, 0.7);
-        shape.lineTo(0.9, 0.5);
-        shape.lineTo(0.8, 0.5);
-        shape.lineTo(0.8, 0);
-        shape.lineTo(0.6, 0);
-        
-        const hole4 = new THREE.Path();
-        hole4.moveTo(0.3, 0.7);
-        hole4.lineTo(0.6, 0.7);
-        hole4.lineTo(0.6, height - 0.2);
-        hole4.lineTo(0.5, height - 0.2);
-        hole4.lineTo(0.3, 0.7);
-        shape.holes.push(hole4);
-        break;
-
-      case '5':
-        // Create number 5
-        shape.moveTo(0.1, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.9, height - 0.2);
-        shape.lineTo(0.3, height - 0.2);
-        shape.lineTo(0.3, height - 0.5);
-        shape.lineTo(0.6, height - 0.5);
-        shape.bezierCurveTo(0.8, height - 0.5, 0.9, height - 0.6, 0.9, height - 0.8);
-        shape.bezierCurveTo(0.9, height - 1.0, 0.8, height - 1.1, 0.5, height - 1.1);
-        shape.bezierCurveTo(0.2, height - 1.1, 0.1, height - 1.0, 0.1, height - 0.8);
-        shape.lineTo(0.3, height - 0.8);
-        shape.bezierCurveTo(0.3, height - 0.9, 0.35, height - 0.95, 0.5, height - 0.95);
-        shape.bezierCurveTo(0.65, height - 0.95, 0.7, height - 0.9, 0.7, height - 0.8);
-        shape.bezierCurveTo(0.7, height - 0.7, 0.65, height - 0.65, 0.6, height - 0.65);
-        shape.lineTo(0.1, height - 0.65);
-        shape.lineTo(0.1, height);
-        break;
-
-      case '6':
-        // Create number 6
-        shape.moveTo(0.5, height);
-        shape.bezierCurveTo(0.2, height, 0.1, height - 0.2, 0.1, height - 0.7);
-        shape.bezierCurveTo(0.1, height - 1.2, 0.2, height - 1.4, 0.5, height - 1.4);
-        shape.bezierCurveTo(0.7, height - 1.4, 0.8, height - 1.3, 0.8, height - 1.1);
-        shape.lineTo(0.6, height - 1.1);
-        shape.bezierCurveTo(0.6, height - 1.2, 0.55, height - 1.25, 0.5, height - 1.25);
-        shape.bezierCurveTo(0.35, height - 1.25, 0.3, height - 1.1, 0.3, height - 0.7);
-        shape.bezierCurveTo(0.3, height - 0.6, 0.35, height - 0.55, 0.5, height - 0.55);
-        shape.bezierCurveTo(0.7, height - 0.55, 0.8, height - 0.4, 0.8, height - 0.25);
-        shape.bezierCurveTo(0.8, height - 0.1, 0.7, 0, 0.5, 0);
-        shape.bezierCurveTo(0.3, 0, 0.2, height - 0.1, 0.2, height - 0.25);
-        shape.bezierCurveTo(0.2, height - 0.4, 0.3, height - 0.55, 0.5, height - 0.55);
-        
-        const hole6 = new THREE.Path();
-        hole6.moveTo(0.5, height - 0.4);
-        hole6.bezierCurveTo(0.6, height - 0.4, 0.6, height - 0.3, 0.6, height - 0.25);
-        hole6.bezierCurveTo(0.6, height - 0.2, 0.6, height - 0.15, 0.5, height - 0.15);
-        hole6.bezierCurveTo(0.4, height - 0.15, 0.4, height - 0.2, 0.4, height - 0.25);
-        hole6.bezierCurveTo(0.4, height - 0.3, 0.4, height - 0.4, 0.5, height - 0.4);
-        shape.holes.push(hole6);
-        break;
-
-      case '7':
-        // Create number 7
-        shape.moveTo(0.1, height - 0.2);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.9, height - 0.2);
-        shape.lineTo(0.4, 0);
-        shape.lineTo(0.2, 0);
-        shape.lineTo(0.7, height - 0.2);
-        shape.lineTo(0.1, height - 0.2);
-        break;
-
-      case '8':
-        // Create number 8
-        shape.moveTo(0.5, 0);
-        shape.bezierCurveTo(0.8, 0, 0.9, 0.1, 0.9, 0.3);
-        shape.bezierCurveTo(0.9, 0.45, 0.85, 0.55, 0.7, 0.6);
-        shape.bezierCurveTo(0.85, 0.65, 0.9, 0.75, 0.9, 0.9);
-        shape.bezierCurveTo(0.9, 1.1, 0.8, height, 0.5, height);
-        shape.bezierCurveTo(0.2, height, 0.1, 1.1, 0.1, 0.9);
-        shape.bezierCurveTo(0.1, 0.75, 0.15, 0.65, 0.3, 0.6);
-        shape.bezierCurveTo(0.15, 0.55, 0.1, 0.45, 0.1, 0.3);
-        shape.bezierCurveTo(0.1, 0.1, 0.2, 0, 0.5, 0);
-        
-        // Top hole
-        const hole8Top = new THREE.Path();
-        hole8Top.moveTo(0.5, height - 0.15);
-        hole8Top.bezierCurveTo(0.65, height - 0.15, 0.7, height - 0.25, 0.7, height - 0.35);
-        hole8Top.bezierCurveTo(0.7, height - 0.45, 0.65, height - 0.55, 0.5, height - 0.55);
-        hole8Top.bezierCurveTo(0.35, height - 0.55, 0.3, height - 0.45, 0.3, height - 0.35);
-        hole8Top.bezierCurveTo(0.3, height - 0.25, 0.35, height - 0.15, 0.5, height - 0.15);
-        shape.holes.push(hole8Top);
-        
-        // Bottom hole
-        const hole8Bottom = new THREE.Path();
-        hole8Bottom.moveTo(0.5, height - 0.75);
-        hole8Bottom.bezierCurveTo(0.65, height - 0.75, 0.7, height - 0.85, 0.7, height - 0.95);
-        hole8Bottom.bezierCurveTo(0.7, height - 1.05, 0.65, height - 1.15, 0.5, height - 1.15);
-        hole8Bottom.bezierCurveTo(0.35, height - 1.15, 0.3, height - 1.05, 0.3, height - 0.95);
-        hole8Bottom.bezierCurveTo(0.3, height - 0.85, 0.35, height - 0.75, 0.5, height - 0.75);
-        shape.holes.push(hole8Bottom);
-        break;
-
-      case '9':
-        // Create number 9
-        shape.moveTo(0.5, 0);
-        shape.bezierCurveTo(0.8, 0, 0.9, 0.2, 0.9, 0.7);
-        shape.bezierCurveTo(0.9, 1.2, 0.8, height, 0.5, height);
-        shape.bezierCurveTo(0.3, height, 0.2, 1.1, 0.2, 0.9);
-        shape.lineTo(0.4, 0.9);
-        shape.bezierCurveTo(0.4, 1.0, 0.45, 1.05, 0.5, 1.05);
-        shape.bezierCurveTo(0.65, 1.05, 0.7, 0.9, 0.7, 0.7);
-        shape.bezierCurveTo(0.7, 0.6, 0.65, 0.55, 0.5, 0.55);
-        shape.bezierCurveTo(0.3, 0.55, 0.2, 0.4, 0.2, 0.25);
-        shape.bezierCurveTo(0.2, 0.1, 0.3, 0, 0.5, 0);
-        
-        const hole9 = new THREE.Path();
-        hole9.moveTo(0.5, 0.4);
-        hole9.bezierCurveTo(0.4, 0.4, 0.4, 0.3, 0.4, 0.25);
-        hole9.bezierCurveTo(0.4, 0.2, 0.4, 0.15, 0.5, 0.15);
-        hole9.bezierCurveTo(0.6, 0.15, 0.6, 0.2, 0.6, 0.25);
-        hole9.bezierCurveTo(0.6, 0.3, 0.6, 0.4, 0.5, 0.4);
-        shape.holes.push(hole9);
-        break;
-
-      case ' ':
-        // Space character - create a very thin invisible shape
-        shape.moveTo(0, 0);
-        shape.lineTo(0.3, 0);
-        shape.lineTo(0.3, 0.01);
-        shape.lineTo(0, 0.01);
-        shape.lineTo(0, 0);
-        break;
-
-      default:
-        // Default rectangular block for unsupported characters
-        shape.moveTo(0.1, 0);
-        shape.lineTo(0.9, 0);
-        shape.lineTo(0.9, height);
-        shape.lineTo(0.1, height);
-        shape.lineTo(0.1, 0);
-        break;
-    }
-    
-    return shape;
-  };
-
   // Function to create 3D text geometry
   const create3DText = (text: string) => {
+    // Create text geometry using THREE.js TextGeometry approach
+    // Since we can't load fonts dynamically, we'll create a simplified 3D text using shapes
     const group = new THREE.Group();
+    
+    // Create each character as a simple extruded shape
     const chars = text.split('');
     let xOffset = 0;
-    const charSpacing = 1.2;
-    const extrudeDepth = 0.3;
+    const charWidth = 0.8;
+    const charHeight = 1.2;
+    const extrudeDepth = 0.2;
     
     chars.forEach((char, index) => {
       if (char === ' ') {
-        xOffset += charSpacing * 0.5;
+        xOffset += charWidth * 0.5;
         return;
       }
       
-      const charShape = createLetterShape(char);
+      // Create a simple rectangular shape for each character
+      // In a real implementation, you'd use proper font loading
+      const charShape = new THREE.Shape();
+      
+      // Create different shapes for different characters
+      switch (char.toUpperCase()) {
+        case 'A':
+          // Create an A shape
+          charShape.moveTo(0, 0);
+          charShape.lineTo(charWidth * 0.5, charHeight);
+          charShape.lineTo(charWidth, 0);
+          charShape.lineTo(charWidth * 0.8, 0);
+          charShape.lineTo(charWidth * 0.65, charHeight * 0.4);
+          charShape.lineTo(charWidth * 0.35, charHeight * 0.4);
+          charShape.lineTo(charWidth * 0.2, 0);
+          charShape.lineTo(0, 0);
+          break;
+          
+        case 'B':
+          // Create a B shape
+          charShape.moveTo(0, 0);
+          charShape.lineTo(0, charHeight);
+          charShape.lineTo(charWidth * 0.7, charHeight);
+          charShape.bezierCurveTo(charWidth * 0.9, charHeight, charWidth, charHeight * 0.8, charWidth, charHeight * 0.6);
+          charShape.bezierCurveTo(charWidth, charHeight * 0.4, charWidth * 0.9, charHeight * 0.5, charWidth * 0.7, charHeight * 0.5);
+          charShape.lineTo(charWidth * 0.2, charHeight * 0.5);
+          charShape.lineTo(charWidth * 0.7, charHeight * 0.5);
+          charShape.bezierCurveTo(charWidth * 0.9, charHeight * 0.5, charWidth, charHeight * 0.3, charWidth, charHeight * 0.1);
+          charShape.bezierCurveTo(charWidth, -0.1, charWidth * 0.9, 0, charWidth * 0.7, 0);
+          charShape.lineTo(0, 0);
+          break;
+          
+        case 'C':
+          // Create a C shape
+          charShape.moveTo(charWidth, charHeight * 0.8);
+          charShape.bezierCurveTo(charWidth, charHeight, charWidth * 0.8, charHeight, charWidth * 0.5, charHeight);
+          charShape.bezierCurveTo(charWidth * 0.2, charHeight, 0, charHeight * 0.8, 0, charHeight * 0.5);
+          charShape.bezierCurveTo(0, charHeight * 0.2, charWidth * 0.2, 0, charWidth * 0.5, 0);
+          charShape.bezierCurveTo(charWidth * 0.8, 0, charWidth, charHeight * 0.2, charWidth, charHeight * 0.2);
+          charShape.lineTo(charWidth * 0.8, charHeight * 0.3);
+          charShape.bezierCurveTo(charWidth * 0.8, charHeight * 0.15, charWidth * 0.7, charHeight * 0.15, charWidth * 0.5, charHeight * 0.15);
+          charShape.bezierCurveTo(charWidth * 0.3, charHeight * 0.15, charWidth * 0.15, charHeight * 0.3, charWidth * 0.15, charHeight * 0.5);
+          charShape.bezierCurveTo(charWidth * 0.15, charHeight * 0.7, charWidth * 0.3, charHeight * 0.85, charWidth * 0.5, charHeight * 0.85);
+          charShape.bezierCurveTo(charWidth * 0.7, charHeight * 0.85, charWidth * 0.8, charHeight * 0.7, charWidth * 0.8, charHeight * 0.7);
+          charShape.lineTo(charWidth, charHeight * 0.8);
+          break;
+          
+        case 'O':
+          // Create an O shape (circle with hole)
+          charShape.moveTo(charWidth * 0.5, 0);
+          charShape.bezierCurveTo(charWidth * 0.8, 0, charWidth, charHeight * 0.2, charWidth, charHeight * 0.5);
+          charShape.bezierCurveTo(charWidth, charHeight * 0.8, charWidth * 0.8, charHeight, charWidth * 0.5, charHeight);
+          charShape.bezierCurveTo(charWidth * 0.2, charHeight, 0, charHeight * 0.8, 0, charHeight * 0.5);
+          charShape.bezierCurveTo(0, charHeight * 0.2, charWidth * 0.2, 0, charWidth * 0.5, 0);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(charWidth * 0.5, charHeight * 0.15);
+          hole.bezierCurveTo(charWidth * 0.7, charHeight * 0.15, charWidth * 0.85, charHeight * 0.3, charWidth * 0.85, charHeight * 0.5);
+          hole.bezierCurveTo(charWidth * 0.85, charHeight * 0.7, charWidth * 0.7, charHeight * 0.85, charWidth * 0.5, charHeight * 0.85);
+          hole.bezierCurveTo(charWidth * 0.3, charHeight * 0.85, charWidth * 0.15, charHeight * 0.7, charWidth * 0.15, charHeight * 0.5);
+          hole.bezierCurveTo(charWidth * 0.15, charHeight * 0.3, charWidth * 0.3, charHeight * 0.15, charWidth * 0.5, charHeight * 0.15);
+          charShape.holes.push(hole);
+          break;
+          
+        default:
+          // Default rectangular shape for other characters
+          charShape.moveTo(0, 0);
+          charShape.lineTo(charWidth, 0);
+          charShape.lineTo(charWidth, charHeight);
+          charShape.lineTo(0, charHeight);
+          charShape.lineTo(0, 0);
+          break;
+      }
       
       const extrudeSettings = {
         depth: extrudeDepth,
         bevelEnabled: true,
-        bevelSegments: 3,
+        bevelSegments: 2,
         steps: 2,
-        bevelSize: 0.05,
-        bevelThickness: 0.05
+        bevelSize: 0.02,
+        bevelThickness: 0.02
       };
       
       const charGeometry = new THREE.ExtrudeGeometry(charShape, extrudeSettings);
-      const charMaterial = new THREE.MeshStandardMaterial({ 
-        color: '#4a90e2',
-        metalness: 0.1,
-        roughness: 0.3
-      });
+      const charMaterial = new THREE.MeshStandardMaterial({ color: '#4a90e2' });
       const charMesh = new THREE.Mesh(charGeometry, charMaterial);
       
       charMesh.position.x = xOffset;
-      charMesh.position.y = -0.7; // Center vertically
+      charMesh.position.y = -charHeight / 2; // Center vertically
       
       group.add(charMesh);
-      xOffset += charSpacing;
+      xOffset += charWidth + 0.1; // Add spacing between characters
     });
     
     // Center the entire text group
@@ -1315,7 +676,7 @@ const Toolbar: React.FC = () => {
                       </div>
                       <h4 className="text-sm font-medium text-white/90 mb-2">Create 3D Text</h4>
                       <p className="text-xs text-white/60 mb-4">
-                        Enter text to convert into extruded 3D letters
+                        Enter text to convert into a 3D extruded object
                       </p>
                     </div>
 
@@ -1327,7 +688,7 @@ const Toolbar: React.FC = () => {
                         <input
                           type="text"
                           value={textInput}
-                          onChange={(e) => setTextInput(e.target.value.toUpperCase())}
+                          onChange={(e) => setTextInput(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               handleTextCreate();
@@ -1335,10 +696,10 @@ const Toolbar: React.FC = () => {
                           }}
                           placeholder="Enter your text..."
                           className="w-full bg-[#1a1a1a] border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50 focus:bg-[#0a0a0a]"
-                          maxLength={15}
+                          maxLength={20}
                         />
                         <div className="text-xs text-white/50 mt-1">
-                          {textInput.length}/15 characters
+                          {textInput.length}/20 characters
                         </div>
                       </div>
 
@@ -1356,12 +717,12 @@ const Toolbar: React.FC = () => {
                     </div>
 
                     <div className="text-xs text-white/50 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                      <div className="font-medium text-blue-400 mb-1">💡 Features:</div>
+                      <div className="font-medium text-blue-400 mb-1">💡 Tips:</div>
                       <ul className="space-y-1">
-                        <li>• All letters A-Z and numbers 0-9</li>
-                        <li>• Proper letter shapes with holes</li>
-                        <li>• Automatic spacing and centering</li>
-                        <li>• Beveled edges for 3D effect</li>
+                        <li>• Keep text short for best results</li>
+                        <li>• Letters A, B, C, O have custom shapes</li>
+                        <li>• Other characters use simple blocks</li>
+                        <li>• Text will be extruded into 3D</li>
                       </ul>
                     </div>
                   </div>
