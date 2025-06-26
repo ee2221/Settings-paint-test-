@@ -152,11 +152,14 @@ const Toolbar: React.FC = () => {
     // Create geometry from shapes
     let geometry: THREE.BufferGeometry;
     
+    // Initialize geometries array to track all created geometries for cleanup
+    const geometries: THREE.BufferGeometry[] = [];
+    
     if (shapes.length === 1) {
       geometry = new THREE.ExtrudeGeometry(shapes[0], extrudeSettings);
+      geometries.push(geometry);
     } else {
-      // Merge multiple letter geometries
-      const geometries: THREE.BufferGeometry[] = [];
+      // Create individual letter geometries
       shapes.forEach(shape => {
         const letterGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         geometries.push(letterGeometry);
@@ -219,12 +222,14 @@ const Toolbar: React.FC = () => {
     geometry.scale(scale, scale, scale);
     geometry.translate(-center.x * scale, -center.y * scale, -center.z * scale);
     
-    // Clean up individual geometries
-    shapes.forEach((_, index) => {
-      if (geometries && geometries[index]) {
-        geometries[index].dispose();
-      }
-    });
+    // Clean up individual geometries (except the final merged one)
+    if (shapes.length > 1) {
+      geometries.forEach((geom) => {
+        if (geom !== geometry) {
+          geom.dispose();
+        }
+      });
+    }
 
     return geometry;
   };
