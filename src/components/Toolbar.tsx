@@ -109,31 +109,33 @@ const Toolbar: React.FC = () => {
       name: 'Star',
       icon: Star,
       geometry: () => {
-        // Create a star shape
+        // Create a 5-pointed star shape
         const starShape = new THREE.Shape();
         const outerRadius = 10;
         const innerRadius = 4;
-        const spikes = 5;
+        const spikes = 5; // Exactly 5 points
         
-        let rot = Math.PI / 2 * 3;
-        let x = 0;
-        let y = outerRadius;
-        const step = Math.PI / spikes;
+        let rot = Math.PI / 2 * 3; // Start at top
+        const step = Math.PI / spikes; // Angle between each spike
 
+        // Start at the top point
         starShape.moveTo(0, outerRadius);
         
         for (let i = 0; i < spikes; i++) {
-          x = Math.cos(rot) * outerRadius;
-          y = Math.sin(rot) * outerRadius;
+          // Outer point (spike tip)
+          let x = Math.cos(rot) * outerRadius;
+          let y = Math.sin(rot) * outerRadius;
           starShape.lineTo(x, y);
           rot += step;
 
+          // Inner point (between spikes)
           x = Math.cos(rot) * innerRadius;
           y = Math.sin(rot) * innerRadius;
           starShape.lineTo(x, y);
           rot += step;
         }
         
+        // Close the shape back to the starting point
         starShape.lineTo(0, outerRadius);
 
         const extrudeSettings = {
