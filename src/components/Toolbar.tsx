@@ -74,17 +74,17 @@ const Toolbar: React.FC = () => {
       name: '3D Text',
       icon: Type,
       geometry: () => {
-        // Create a simple text geometry using TextGeometry
-        const loader = new THREE.FontLoader();
-        
+        // Create a simple text geometry using a placeholder box
         // For now, create a placeholder box that represents text
-        // In a real implementation, you'd load a font and create TextGeometry
         const textGeometry = new THREE.BoxGeometry(2, 0.5, 0.2);
         
         // Add a comment for future font loading implementation
         // TODO: Load font and create actual TextGeometry
+        // This would require importing FontLoader from 'three/examples/jsm/loaders/FontLoader'
+        // and TextGeometry from 'three/examples/jsm/geometries/TextGeometry'
+        // const loader = new FontLoader();
         // const font = loader.load('path/to/font.json', (font) => {
-        //   const textGeometry = new THREE.TextGeometry('TEXT', {
+        //   const textGeometry = new TextGeometry('TEXT', {
         //     font: font,
         //     size: 0.5,
         //     height: 0.1,
