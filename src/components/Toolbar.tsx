@@ -1,20 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Sphere, 
-  Cylinder, 
-  Pyramid,
-  Torus,
-  Cone,
-  Lightbulb,
-  Trees,
-  Mountain,
-  Flower,
-  Type,
-  Plus,
-  ChevronDown,
-  ChevronRight
-} from 'lucide-react';
+import { Box, Cherry as Sphere, Cylinder, Pyramid, Torus, Cone, Lightbulb, Trees, Mountain, Flower, Type, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
