@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star, Dot, Minus } from 'lucide-react';
+import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star, Dot, Minus, Type } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
@@ -16,6 +16,8 @@ const Toolbar: React.FC = () => {
   
   const [showObjectMenu, setShowObjectMenu] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [textInput, setTextInput] = useState('Hello');
 
   // Custom Circle Icon Component for Sphere
   const CircleIcon = ({ className }: { className?: string }) => (
@@ -31,6 +33,201 @@ const Toolbar: React.FC = () => {
       <circle cx="12" cy="12" r="4" />
     </svg>
   );
+
+  // Function to create 3D text geometry
+  const create3DText = (text: string) => {
+    // Create text shape using canvas and path
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return new THREE.BoxGeometry(1, 1, 1); // Fallback
+
+    // Set up canvas for text measurement
+    const fontSize = 100;
+    context.font = `bold ${fontSize}px Arial, sans-serif`;
+    const textMetrics = context.measureText(text);
+    const textWidth = textMetrics.width;
+    const textHeight = fontSize;
+
+    // Create text shape using THREE.js TextGeometry alternative
+    // Since we don't have font loading, we'll create a simple extruded text using shapes
+    const shapes: THREE.Shape[] = [];
+    
+    // For simplicity, create letter-like shapes for common characters
+    const createLetterShape = (char: string, offsetX: number) => {
+      const shape = new THREE.Shape();
+      const letterWidth = fontSize * 0.6;
+      const letterHeight = fontSize;
+      
+      switch (char.toUpperCase()) {
+        case 'A':
+          // Create A shape
+          shape.moveTo(offsetX, 0);
+          shape.lineTo(offsetX + letterWidth / 2, letterHeight);
+          shape.lineTo(offsetX + letterWidth, 0);
+          shape.lineTo(offsetX + letterWidth * 0.8, 0);
+          shape.lineTo(offsetX + letterWidth * 0.65, letterHeight * 0.3);
+          shape.lineTo(offsetX + letterWidth * 0.35, letterHeight * 0.3);
+          shape.lineTo(offsetX + letterWidth * 0.2, 0);
+          shape.lineTo(offsetX, 0);
+          break;
+        case 'B':
+          // Create B shape
+          shape.moveTo(offsetX, 0);
+          shape.lineTo(offsetX, letterHeight);
+          shape.lineTo(offsetX + letterWidth * 0.7, letterHeight);
+          shape.bezierCurveTo(
+            offsetX + letterWidth * 0.9, letterHeight,
+            offsetX + letterWidth * 0.9, letterHeight * 0.75,
+            offsetX + letterWidth * 0.7, letterHeight * 0.6
+          );
+          shape.lineTo(offsetX + letterWidth * 0.8, letterHeight * 0.5);
+          shape.bezierCurveTo(
+            offsetX + letterWidth, letterHeight * 0.4,
+            offsetX + letterWidth, letterHeight * 0.1,
+            offsetX + letterWidth * 0.7, 0
+          );
+          shape.lineTo(offsetX, 0);
+          break;
+        case 'C':
+          // Create C shape
+          shape.moveTo(offsetX + letterWidth, letterHeight * 0.8);
+          shape.bezierCurveTo(
+            offsetX + letterWidth * 0.8, letterHeight,
+            offsetX + letterWidth * 0.2, letterHeight,
+            offsetX, letterHeight * 0.5
+          );
+          shape.bezierCurveTo(
+            offsetX, letterHeight * 0.2,
+            offsetX + letterWidth * 0.2, 0,
+            offsetX + letterWidth * 0.8, 0
+          );
+          shape.lineTo(offsetX + letterWidth, letterHeight * 0.2);
+          break;
+        default:
+          // Create a simple rectangular block for unknown characters
+          shape.moveTo(offsetX, 0);
+          shape.lineTo(offsetX + letterWidth, 0);
+          shape.lineTo(offsetX + letterWidth, letterHeight);
+          shape.lineTo(offsetX, letterHeight);
+          shape.lineTo(offsetX, 0);
+      }
+      return shape;
+    };
+
+    // Create shapes for each character
+    let currentOffset = 0;
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      if (char === ' ') {
+        currentOffset += fontSize * 0.3; // Space width
+        continue;
+      }
+      
+      const letterShape = createLetterShape(char, currentOffset);
+      shapes.push(letterShape);
+      currentOffset += fontSize * 0.7; // Letter spacing
+    }
+
+    // If no valid shapes, create a simple block
+    if (shapes.length === 0) {
+      const fallbackShape = new THREE.Shape();
+      fallbackShape.moveTo(0, 0);
+      fallbackShape.lineTo(textWidth / 10, 0);
+      fallbackShape.lineTo(textWidth / 10, textHeight / 10);
+      fallbackShape.lineTo(0, textHeight / 10);
+      fallbackShape.lineTo(0, 0);
+      shapes.push(fallbackShape);
+    }
+
+    // Extrude settings
+    const extrudeSettings = {
+      depth: fontSize * 0.2,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      steps: 2,
+      bevelSize: fontSize * 0.02,
+      bevelThickness: fontSize * 0.02
+    };
+
+    // Create geometry from shapes
+    let geometry: THREE.BufferGeometry;
+    
+    if (shapes.length === 1) {
+      geometry = new THREE.ExtrudeGeometry(shapes[0], extrudeSettings);
+    } else {
+      // Merge multiple letter geometries
+      const geometries: THREE.BufferGeometry[] = [];
+      shapes.forEach(shape => {
+        const letterGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        geometries.push(letterGeometry);
+      });
+      
+      // Merge all letter geometries
+      geometry = new THREE.BufferGeometry();
+      let totalVertices = 0;
+      let totalIndices = 0;
+      
+      geometries.forEach(geom => {
+        totalVertices += geom.attributes.position.count;
+        if (geom.index) {
+          totalIndices += geom.index.count;
+        }
+      });
+      
+      const positions = new Float32Array(totalVertices * 3);
+      const normals = new Float32Array(totalVertices * 3);
+      const indices = new Uint32Array(totalIndices);
+      
+      let vertexOffset = 0;
+      let indexOffset = 0;
+      let vertexCount = 0;
+      
+      geometries.forEach(geom => {
+        const posAttr = geom.attributes.position;
+        const normAttr = geom.attributes.normal;
+        
+        positions.set(posAttr.array, vertexOffset * 3);
+        normals.set(normAttr.array, vertexOffset * 3);
+        
+        if (geom.index) {
+          const geomIndices = geom.index.array;
+          for (let i = 0; i < geomIndices.length; i++) {
+            indices[indexOffset + i] = geomIndices[i] + vertexCount;
+          }
+          indexOffset += geomIndices.length;
+        }
+        
+        vertexOffset += posAttr.count;
+        vertexCount += posAttr.count;
+      });
+      
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    }
+
+    // Scale and center the text
+    geometry.computeBoundingBox();
+    const box = geometry.boundingBox!;
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    
+    // Scale to reasonable size (max dimension = 2 units)
+    const maxDimension = Math.max(size.x, size.y, size.z);
+    const scale = 2 / maxDimension;
+    
+    geometry.scale(scale, scale, scale);
+    geometry.translate(-center.x * scale, -center.y * scale, -center.z * scale);
+    
+    // Clean up individual geometries
+    shapes.forEach((_, index) => {
+      if (geometries && geometries[index]) {
+        geometries[index].dispose();
+      }
+    });
+
+    return geometry;
+  };
 
   // Basic geometric shapes
   const basicShapes = [
@@ -154,6 +351,13 @@ const Toolbar: React.FC = () => {
         return geometry;
       },
       color: '#ffd700'
+    },
+    {
+      name: '3D Text',
+      icon: Type,
+      geometry: () => create3DText(textInput),
+      color: '#00bcd4',
+      isText: true
     }
   ];
 
@@ -349,11 +553,31 @@ const Toolbar: React.FC = () => {
   ];
 
   const handleObjectSelect = (shape: typeof basicShapes[0] | typeof natureObjects[0]) => {
-    startObjectPlacement({
-      geometry: shape.geometry,
-      name: shape.name,
-      color: shape.color
-    });
+    if ('isText' in shape && shape.isText) {
+      // For 3D text, show input dialog first
+      setShowTextInput(true);
+    } else {
+      startObjectPlacement({
+        geometry: shape.geometry,
+        name: shape.name,
+        color: shape.color
+      });
+      setShowObjectMenu(false);
+    }
+  };
+
+  const handleTextSubmit = () => {
+    if (textInput.trim()) {
+      const textShape = basicShapes.find(s => s.name === '3D Text');
+      if (textShape) {
+        startObjectPlacement({
+          geometry: () => create3DText(textInput.trim()),
+          name: `3D Text: "${textInput.trim()}"`,
+          color: textShape.color
+        });
+      }
+    }
+    setShowTextInput(false);
     setShowObjectMenu(false);
   };
 
@@ -618,6 +842,63 @@ const Toolbar: React.FC = () => {
           );
         })}
       </div>
+
+      {/* 3D Text Input Modal */}
+      {showTextInput && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[#2a2a2a] border border-white/10 rounded-xl p-6 w-96 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <Type className="w-6 h-6 text-blue-400" />
+              <h3 className="text-lg font-semibold text-white/90">Create 3D Text</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">
+                  Enter your text:
+                </label>
+                <input
+                  type="text"
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleTextSubmit();
+                    } else if (e.key === 'Escape') {
+                      setShowTextInput(false);
+                    }
+                  }}
+                  className="w-full bg-[#1a1a1a] border border-white/10 rounded-lg px-3 py-2 text-white/90 focus:outline-none focus:border-blue-500/50"
+                  placeholder="Hello World"
+                  autoFocus
+                />
+              </div>
+              
+              <div className="text-xs text-white/50">
+                <p>• Text will be extruded into 3D geometry</p>
+                <p>• Simple letters work best (A-Z, numbers)</p>
+                <p>• Keep text short for better performance</p>
+              </div>
+              
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleTextSubmit}
+                  disabled={!textInput.trim()}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/30 disabled:cursor-not-allowed text-white py-2 px-4 rounded-lg transition-colors font-medium"
+                >
+                  Create 3D Text
+                </button>
+                <button
+                  onClick={() => setShowTextInput(false)}
+                  className="px-4 py-2 bg-[#1a1a1a] hover:bg-[#3a3a3a] text-white/70 hover:text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
