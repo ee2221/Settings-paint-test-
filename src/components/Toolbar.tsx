@@ -34,17 +34,352 @@ const Toolbar: React.FC = () => {
     </svg>
   );
 
-  // Function to create 3D text geometry
+  // Enhanced function to create letter shapes
+  const createLetterShape = (char: string) => {
+    const shape = new THREE.Shape();
+    const charWidth = 0.8;
+    const charHeight = 1.2;
+    
+    // Handle both uppercase and lowercase
+    const upperChar = char.toUpperCase();
+    const isLowercase = char !== upperChar;
+    
+    // Adjust dimensions for lowercase letters
+    const height = isLowercase ? charHeight * 0.7 : charHeight;
+    const width = charWidth;
+    
+    switch (upperChar) {
+      case 'A':
+        if (isLowercase) {
+          // Lowercase 'a' - circular with vertical line
+          shape.moveTo(width * 0.3, 0);
+          shape.bezierCurveTo(width * 0.1, 0, 0, height * 0.2, 0, height * 0.4);
+          shape.bezierCurveTo(0, height * 0.6, width * 0.1, height * 0.8, width * 0.3, height * 0.8);
+          shape.lineTo(width * 0.7, height * 0.8);
+          shape.lineTo(width * 0.7, 0);
+          shape.lineTo(width * 0.5, 0);
+          shape.lineTo(width * 0.5, height * 0.6);
+          shape.lineTo(width * 0.3, height * 0.6);
+          shape.bezierCurveTo(width * 0.2, height * 0.6, width * 0.15, height * 0.5, width * 0.15, height * 0.4);
+          shape.bezierCurveTo(width * 0.15, height * 0.3, width * 0.2, height * 0.2, width * 0.3, height * 0.2);
+          shape.lineTo(width * 0.5, height * 0.2);
+          shape.lineTo(width * 0.5, 0);
+          shape.lineTo(width * 0.3, 0);
+        } else {
+          // Uppercase 'A'
+          shape.moveTo(width * 0.1, 0);
+          shape.lineTo(width * 0.5, height);
+          shape.lineTo(width * 0.9, 0);
+          shape.lineTo(width * 0.75, 0);
+          shape.lineTo(width * 0.65, height * 0.3);
+          shape.lineTo(width * 0.35, height * 0.3);
+          shape.lineTo(width * 0.25, 0);
+          shape.lineTo(width * 0.1, 0);
+          
+          // Create hole for crossbar
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.42, height * 0.45);
+          hole.lineTo(width * 0.58, height * 0.45);
+          hole.lineTo(width * 0.55, height * 0.55);
+          hole.lineTo(width * 0.45, height * 0.55);
+          hole.lineTo(width * 0.42, height * 0.45);
+          shape.holes.push(hole);
+        }
+        break;
+        
+      case 'B':
+        if (isLowercase) {
+          // Lowercase 'b'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height * 1.4); // Ascender
+          shape.lineTo(width * 0.15, height * 1.4);
+          shape.lineTo(width * 0.15, height * 0.8);
+          shape.lineTo(width * 0.6, height * 0.8);
+          shape.bezierCurveTo(width * 0.85, height * 0.8, width, height * 0.65, width, height * 0.4);
+          shape.bezierCurveTo(width, height * 0.15, width * 0.85, 0, width * 0.6, 0);
+          shape.lineTo(0, 0);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.15, height * 0.15);
+          hole.lineTo(width * 0.6, height * 0.15);
+          hole.bezierCurveTo(width * 0.75, height * 0.15, width * 0.85, height * 0.25, width * 0.85, height * 0.4);
+          hole.bezierCurveTo(width * 0.85, height * 0.55, width * 0.75, height * 0.65, width * 0.6, height * 0.65);
+          hole.lineTo(width * 0.15, height * 0.65);
+          hole.lineTo(width * 0.15, height * 0.15);
+          shape.holes.push(hole);
+        } else {
+          // Uppercase 'B'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width * 0.6, height);
+          shape.bezierCurveTo(width * 0.8, height, width * 0.9, height * 0.85, width * 0.9, height * 0.75);
+          shape.bezierCurveTo(width * 0.9, height * 0.65, width * 0.85, height * 0.55, width * 0.75, height * 0.5);
+          shape.bezierCurveTo(width * 0.85, height * 0.45, width * 0.9, height * 0.35, width * 0.9, height * 0.25);
+          shape.bezierCurveTo(width * 0.9, height * 0.15, width * 0.8, 0, width * 0.6, 0);
+          shape.lineTo(0, 0);
+          
+          // Create holes for both bumps
+          const hole1 = new THREE.Path();
+          hole1.moveTo(width * 0.15, height * 0.55);
+          hole1.lineTo(width * 0.6, height * 0.55);
+          hole1.bezierCurveTo(width * 0.7, height * 0.55, width * 0.75, height * 0.65, width * 0.75, height * 0.75);
+          hole1.bezierCurveTo(width * 0.75, height * 0.8, width * 0.7, height * 0.85, width * 0.6, height * 0.85);
+          hole1.lineTo(width * 0.15, height * 0.85);
+          hole1.lineTo(width * 0.15, height * 0.55);
+          shape.holes.push(hole1);
+          
+          const hole2 = new THREE.Path();
+          hole2.moveTo(width * 0.15, height * 0.15);
+          hole2.lineTo(width * 0.6, height * 0.15);
+          hole2.bezierCurveTo(width * 0.7, height * 0.15, width * 0.75, height * 0.2, width * 0.75, height * 0.25);
+          hole2.bezierCurveTo(width * 0.75, height * 0.35, width * 0.7, height * 0.4, width * 0.6, height * 0.4);
+          hole2.lineTo(width * 0.15, height * 0.4);
+          hole2.lineTo(width * 0.15, height * 0.15);
+          shape.holes.push(hole2);
+        }
+        break;
+        
+      case 'C':
+        if (isLowercase) {
+          // Lowercase 'c'
+          shape.moveTo(width * 0.8, height * 0.3);
+          shape.bezierCurveTo(width * 0.8, height * 0.1, width * 0.65, 0, width * 0.4, 0);
+          shape.bezierCurveTo(width * 0.15, 0, 0, height * 0.15, 0, height * 0.4);
+          shape.bezierCurveTo(0, height * 0.65, width * 0.15, height * 0.8, width * 0.4, height * 0.8);
+          shape.bezierCurveTo(width * 0.65, height * 0.8, width * 0.8, height * 0.7, width * 0.8, height * 0.5);
+          shape.lineTo(width * 0.65, height * 0.5);
+          shape.bezierCurveTo(width * 0.65, height * 0.6, width * 0.55, height * 0.65, width * 0.4, height * 0.65);
+          shape.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
+          shape.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
+          shape.bezierCurveTo(width * 0.55, height * 0.15, width * 0.65, height * 0.2, width * 0.65, height * 0.3);
+          shape.lineTo(width * 0.8, height * 0.3);
+        } else {
+          // Uppercase 'C' (existing code)
+          shape.moveTo(width, height * 0.8);
+          shape.bezierCurveTo(width, height, width * 0.8, height, width * 0.5, height);
+          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.5);
+          shape.bezierCurveTo(0, height * 0.2, width * 0.2, 0, width * 0.5, 0);
+          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.2, width, height * 0.2);
+          shape.lineTo(width * 0.8, height * 0.3);
+          shape.bezierCurveTo(width * 0.8, height * 0.15, width * 0.7, height * 0.15, width * 0.5, height * 0.15);
+          shape.bezierCurveTo(width * 0.3, height * 0.15, width * 0.15, height * 0.3, width * 0.15, height * 0.5);
+          shape.bezierCurveTo(width * 0.15, height * 0.7, width * 0.3, height * 0.85, width * 0.5, height * 0.85);
+          shape.bezierCurveTo(width * 0.7, height * 0.85, width * 0.8, height * 0.7, width * 0.8, height * 0.7);
+          shape.lineTo(width, height * 0.8);
+        }
+        break;
+        
+      case 'D':
+        if (isLowercase) {
+          // Lowercase 'd'
+          shape.moveTo(width * 0.7, 0);
+          shape.lineTo(width * 0.7, height * 1.4); // Ascender
+          shape.lineTo(width * 0.85, height * 1.4);
+          shape.lineTo(width * 0.85, 0);
+          shape.lineTo(width * 0.4, 0);
+          shape.bezierCurveTo(width * 0.15, 0, 0, height * 0.15, 0, height * 0.4);
+          shape.bezierCurveTo(0, height * 0.65, width * 0.15, height * 0.8, width * 0.4, height * 0.8);
+          shape.lineTo(width * 0.7, height * 0.8);
+          shape.lineTo(width * 0.7, 0);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.15, height * 0.4);
+          hole.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
+          hole.lineTo(width * 0.7, height * 0.15);
+          hole.lineTo(width * 0.7, height * 0.65);
+          hole.lineTo(width * 0.4, height * 0.65);
+          hole.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
+          shape.holes.push(hole);
+        } else {
+          // Uppercase 'D'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width * 0.6, height);
+          shape.bezierCurveTo(width * 0.85, height, width, height * 0.8, width, height * 0.5);
+          shape.bezierCurveTo(width, height * 0.2, width * 0.85, 0, width * 0.6, 0);
+          shape.lineTo(0, 0);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.15, height * 0.15);
+          hole.lineTo(width * 0.6, height * 0.15);
+          hole.bezierCurveTo(width * 0.75, height * 0.15, width * 0.85, height * 0.25, width * 0.85, height * 0.5);
+          hole.bezierCurveTo(width * 0.85, height * 0.75, width * 0.75, height * 0.85, width * 0.6, height * 0.85);
+          hole.lineTo(width * 0.15, height * 0.85);
+          hole.lineTo(width * 0.15, height * 0.15);
+          shape.holes.push(hole);
+        }
+        break;
+        
+      case 'E':
+        if (isLowercase) {
+          // Lowercase 'e'
+          shape.moveTo(width * 0.8, height * 0.3);
+          shape.lineTo(width * 0.15, height * 0.3);
+          shape.lineTo(width * 0.15, height * 0.45);
+          shape.lineTo(width * 0.7, height * 0.45);
+          shape.bezierCurveTo(width * 0.8, height * 0.5, width * 0.85, height * 0.6, width * 0.85, height * 0.7);
+          shape.bezierCurveTo(width * 0.85, height * 0.75, width * 0.7, height * 0.8, width * 0.4, height * 0.8);
+          shape.bezierCurveTo(width * 0.15, height * 0.8, 0, height * 0.65, 0, height * 0.4);
+          shape.bezierCurveTo(0, height * 0.15, width * 0.15, 0, width * 0.4, 0);
+          shape.bezierCurveTo(width * 0.65, 0, width * 0.8, height * 0.1, width * 0.8, height * 0.3);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.15, height * 0.15);
+          hole.bezierCurveTo(width * 0.25, height * 0.15, width * 0.7, height * 0.15, width * 0.7, height * 0.15);
+          hole.lineTo(width * 0.7, height * 0.3);
+          hole.lineTo(width * 0.15, height * 0.3);
+          hole.lineTo(width * 0.15, height * 0.15);
+          shape.holes.push(hole);
+        } else {
+          // Uppercase 'E'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width, height);
+          shape.lineTo(width, height * 0.85);
+          shape.lineTo(width * 0.15, height * 0.85);
+          shape.lineTo(width * 0.15, height * 0.6);
+          shape.lineTo(width * 0.8, height * 0.6);
+          shape.lineTo(width * 0.8, height * 0.4);
+          shape.lineTo(width * 0.15, height * 0.4);
+          shape.lineTo(width * 0.15, height * 0.15);
+          shape.lineTo(width, height * 0.15);
+          shape.lineTo(width, 0);
+          shape.lineTo(0, 0);
+        }
+        break;
+        
+      case 'O':
+        if (isLowercase) {
+          // Lowercase 'o'
+          shape.moveTo(width * 0.4, 0);
+          shape.bezierCurveTo(width * 0.15, 0, 0, height * 0.15, 0, height * 0.4);
+          shape.bezierCurveTo(0, height * 0.65, width * 0.15, height * 0.8, width * 0.4, height * 0.8);
+          shape.bezierCurveTo(width * 0.65, height * 0.8, width * 0.8, height * 0.65, width * 0.8, height * 0.4);
+          shape.bezierCurveTo(width * 0.8, height * 0.15, width * 0.65, 0, width * 0.4, 0);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.4, height * 0.15);
+          hole.bezierCurveTo(width * 0.55, height * 0.15, width * 0.65, height * 0.25, width * 0.65, height * 0.4);
+          hole.bezierCurveTo(width * 0.65, height * 0.55, width * 0.55, height * 0.65, width * 0.4, height * 0.65);
+          hole.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
+          hole.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
+          shape.holes.push(hole);
+        } else {
+          // Uppercase 'O' (existing code)
+          shape.moveTo(width * 0.5, 0);
+          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.2, width, height * 0.5);
+          shape.bezierCurveTo(width, height * 0.8, width * 0.8, height, width * 0.5, height);
+          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.5);
+          shape.bezierCurveTo(0, height * 0.2, width * 0.2, 0, width * 0.5, 0);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.5, height * 0.15);
+          hole.bezierCurveTo(width * 0.7, height * 0.15, width * 0.85, height * 0.3, width * 0.85, height * 0.5);
+          hole.bezierCurveTo(width * 0.85, height * 0.7, width * 0.7, height * 0.85, width * 0.5, height * 0.85);
+          hole.bezierCurveTo(width * 0.3, height * 0.85, width * 0.15, height * 0.7, width * 0.15, height * 0.5);
+          hole.bezierCurveTo(width * 0.15, height * 0.3, width * 0.3, height * 0.15, width * 0.5, height * 0.15);
+          shape.holes.push(hole);
+        }
+        break;
+        
+      case 'L':
+        if (isLowercase) {
+          // Lowercase 'l'
+          shape.moveTo(width * 0.3, 0);
+          shape.lineTo(width * 0.3, height * 1.4); // Ascender
+          shape.lineTo(width * 0.5, height * 1.4);
+          shape.lineTo(width * 0.5, 0);
+          shape.lineTo(width * 0.3, 0);
+        } else {
+          // Uppercase 'L'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width * 0.15, height);
+          shape.lineTo(width * 0.15, height * 0.15);
+          shape.lineTo(width, height * 0.15);
+          shape.lineTo(width, 0);
+          shape.lineTo(0, 0);
+        }
+        break;
+        
+      case 'H':
+        if (isLowercase) {
+          // Lowercase 'h'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height * 1.4); // Ascender
+          shape.lineTo(width * 0.15, height * 1.4);
+          shape.lineTo(width * 0.15, height * 0.5);
+          shape.lineTo(width * 0.65, height * 0.5);
+          shape.lineTo(width * 0.65, height * 1.4);
+          shape.lineTo(width * 0.8, height * 1.4);
+          shape.lineTo(width * 0.8, 0);
+          shape.lineTo(width * 0.65, 0);
+          shape.lineTo(width * 0.65, height * 0.35);
+          shape.lineTo(width * 0.15, height * 0.35);
+          shape.lineTo(width * 0.15, 0);
+          shape.lineTo(0, 0);
+        } else {
+          // Uppercase 'H'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width * 0.15, height);
+          shape.lineTo(width * 0.15, height * 0.6);
+          shape.lineTo(width * 0.65, height * 0.6);
+          shape.lineTo(width * 0.65, height);
+          shape.lineTo(width * 0.8, height);
+          shape.lineTo(width * 0.8, 0);
+          shape.lineTo(width * 0.65, 0);
+          shape.lineTo(width * 0.65, height * 0.4);
+          shape.lineTo(width * 0.15, height * 0.4);
+          shape.lineTo(width * 0.15, 0);
+          shape.lineTo(0, 0);
+        }
+        break;
+        
+      case ' ':
+        // Space character - empty shape
+        shape.moveTo(0, 0);
+        shape.lineTo(width * 0.3, 0);
+        shape.lineTo(width * 0.3, height * 0.1);
+        shape.lineTo(0, height * 0.1);
+        shape.lineTo(0, 0);
+        break;
+        
+      default:
+        // Default rectangular shape for other characters
+        if (isLowercase) {
+          shape.moveTo(0, 0);
+          shape.lineTo(width, 0);
+          shape.lineTo(width, height);
+          shape.lineTo(0, height);
+          shape.lineTo(0, 0);
+        } else {
+          shape.moveTo(0, 0);
+          shape.lineTo(width, 0);
+          shape.lineTo(width, height);
+          shape.lineTo(0, height);
+          shape.lineTo(0, 0);
+        }
+        break;
+    }
+    
+    return shape;
+  };
+
+  // Enhanced function to create 3D text geometry
   const create3DText = (text: string) => {
-    // Create text geometry using THREE.js TextGeometry approach
-    // Since we can't load fonts dynamically, we'll create a simplified 3D text using shapes
     const group = new THREE.Group();
     
-    // Create each character as a simple extruded shape
     const chars = text.split('');
     let xOffset = 0;
     const charWidth = 0.8;
-    const charHeight = 1.2;
+    const charSpacing = 0.1;
     const extrudeDepth = 0.2;
     
     chars.forEach((char, index) => {
@@ -53,80 +388,7 @@ const Toolbar: React.FC = () => {
         return;
       }
       
-      // Create a simple rectangular shape for each character
-      // In a real implementation, you'd use proper font loading
-      const charShape = new THREE.Shape();
-      
-      // Create different shapes for different characters
-      switch (char.toUpperCase()) {
-        case 'A':
-          // Create an A shape
-          charShape.moveTo(0, 0);
-          charShape.lineTo(charWidth * 0.5, charHeight);
-          charShape.lineTo(charWidth, 0);
-          charShape.lineTo(charWidth * 0.8, 0);
-          charShape.lineTo(charWidth * 0.65, charHeight * 0.4);
-          charShape.lineTo(charWidth * 0.35, charHeight * 0.4);
-          charShape.lineTo(charWidth * 0.2, 0);
-          charShape.lineTo(0, 0);
-          break;
-          
-        case 'B':
-          // Create a B shape
-          charShape.moveTo(0, 0);
-          charShape.lineTo(0, charHeight);
-          charShape.lineTo(charWidth * 0.7, charHeight);
-          charShape.bezierCurveTo(charWidth * 0.9, charHeight, charWidth, charHeight * 0.8, charWidth, charHeight * 0.6);
-          charShape.bezierCurveTo(charWidth, charHeight * 0.4, charWidth * 0.9, charHeight * 0.5, charWidth * 0.7, charHeight * 0.5);
-          charShape.lineTo(charWidth * 0.2, charHeight * 0.5);
-          charShape.lineTo(charWidth * 0.7, charHeight * 0.5);
-          charShape.bezierCurveTo(charWidth * 0.9, charHeight * 0.5, charWidth, charHeight * 0.3, charWidth, charHeight * 0.1);
-          charShape.bezierCurveTo(charWidth, -0.1, charWidth * 0.9, 0, charWidth * 0.7, 0);
-          charShape.lineTo(0, 0);
-          break;
-          
-        case 'C':
-          // Create a C shape
-          charShape.moveTo(charWidth, charHeight * 0.8);
-          charShape.bezierCurveTo(charWidth, charHeight, charWidth * 0.8, charHeight, charWidth * 0.5, charHeight);
-          charShape.bezierCurveTo(charWidth * 0.2, charHeight, 0, charHeight * 0.8, 0, charHeight * 0.5);
-          charShape.bezierCurveTo(0, charHeight * 0.2, charWidth * 0.2, 0, charWidth * 0.5, 0);
-          charShape.bezierCurveTo(charWidth * 0.8, 0, charWidth, charHeight * 0.2, charWidth, charHeight * 0.2);
-          charShape.lineTo(charWidth * 0.8, charHeight * 0.3);
-          charShape.bezierCurveTo(charWidth * 0.8, charHeight * 0.15, charWidth * 0.7, charHeight * 0.15, charWidth * 0.5, charHeight * 0.15);
-          charShape.bezierCurveTo(charWidth * 0.3, charHeight * 0.15, charWidth * 0.15, charHeight * 0.3, charWidth * 0.15, charHeight * 0.5);
-          charShape.bezierCurveTo(charWidth * 0.15, charHeight * 0.7, charWidth * 0.3, charHeight * 0.85, charWidth * 0.5, charHeight * 0.85);
-          charShape.bezierCurveTo(charWidth * 0.7, charHeight * 0.85, charWidth * 0.8, charHeight * 0.7, charWidth * 0.8, charHeight * 0.7);
-          charShape.lineTo(charWidth, charHeight * 0.8);
-          break;
-          
-        case 'O':
-          // Create an O shape (circle with hole)
-          charShape.moveTo(charWidth * 0.5, 0);
-          charShape.bezierCurveTo(charWidth * 0.8, 0, charWidth, charHeight * 0.2, charWidth, charHeight * 0.5);
-          charShape.bezierCurveTo(charWidth, charHeight * 0.8, charWidth * 0.8, charHeight, charWidth * 0.5, charHeight);
-          charShape.bezierCurveTo(charWidth * 0.2, charHeight, 0, charHeight * 0.8, 0, charHeight * 0.5);
-          charShape.bezierCurveTo(0, charHeight * 0.2, charWidth * 0.2, 0, charWidth * 0.5, 0);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(charWidth * 0.5, charHeight * 0.15);
-          hole.bezierCurveTo(charWidth * 0.7, charHeight * 0.15, charWidth * 0.85, charHeight * 0.3, charWidth * 0.85, charHeight * 0.5);
-          hole.bezierCurveTo(charWidth * 0.85, charHeight * 0.7, charWidth * 0.7, charHeight * 0.85, charWidth * 0.5, charHeight * 0.85);
-          hole.bezierCurveTo(charWidth * 0.3, charHeight * 0.85, charWidth * 0.15, charHeight * 0.7, charWidth * 0.15, charHeight * 0.5);
-          hole.bezierCurveTo(charWidth * 0.15, charHeight * 0.3, charWidth * 0.3, charHeight * 0.15, charWidth * 0.5, charHeight * 0.15);
-          charShape.holes.push(hole);
-          break;
-          
-        default:
-          // Default rectangular shape for other characters
-          charShape.moveTo(0, 0);
-          charShape.lineTo(charWidth, 0);
-          charShape.lineTo(charWidth, charHeight);
-          charShape.lineTo(0, charHeight);
-          charShape.lineTo(0, 0);
-          break;
-      }
+      const charShape = createLetterShape(char);
       
       const extrudeSettings = {
         depth: extrudeDepth,
@@ -142,10 +404,10 @@ const Toolbar: React.FC = () => {
       const charMesh = new THREE.Mesh(charGeometry, charMaterial);
       
       charMesh.position.x = xOffset;
-      charMesh.position.y = -charHeight / 2; // Center vertically
+      charMesh.position.y = -0.6; // Center vertically
       
       group.add(charMesh);
-      xOffset += charWidth + 0.1; // Add spacing between characters
+      xOffset += charWidth + charSpacing;
     });
     
     // Center the entire text group
@@ -719,10 +981,10 @@ const Toolbar: React.FC = () => {
                     <div className="text-xs text-white/50 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
                       <div className="font-medium text-blue-400 mb-1">💡 Tips:</div>
                       <ul className="space-y-1">
-                        <li>• Keep text short for best results</li>
-                        <li>• Letters A, B, C, O have custom shapes</li>
+                        <li>• Supports both uppercase and lowercase</li>
+                        <li>• Letters A, B, C, D, E, H, L, O have custom shapes</li>
                         <li>• Other characters use simple blocks</li>
-                        <li>• Text will be extruded into 3D</li>
+                        <li>• Text will be extruded into 3D with bevels</li>
                       </ul>
                     </div>
                   </div>
