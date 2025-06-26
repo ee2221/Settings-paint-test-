@@ -34,7 +34,7 @@ const Toolbar: React.FC = () => {
     </svg>
   );
 
-  // Enhanced function to create letter shapes
+  // Complete alphabet function to create letter shapes
   const createLetterShape = (char: string) => {
     const shape = new THREE.Shape();
     const charWidth = 0.8;
@@ -155,7 +155,7 @@ const Toolbar: React.FC = () => {
           shape.bezierCurveTo(width * 0.55, height * 0.15, width * 0.65, height * 0.2, width * 0.65, height * 0.3);
           shape.lineTo(width * 0.8, height * 0.3);
         } else {
-          // Uppercase 'C' (existing code)
+          // Uppercase 'C'
           shape.moveTo(width, height * 0.8);
           shape.bezierCurveTo(width, height, width * 0.8, height, width * 0.5, height);
           shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.5);
@@ -252,59 +252,79 @@ const Toolbar: React.FC = () => {
         }
         break;
         
-      case 'O':
+      case 'F':
         if (isLowercase) {
-          // Lowercase 'o'
-          shape.moveTo(width * 0.4, 0);
-          shape.bezierCurveTo(width * 0.15, 0, 0, height * 0.15, 0, height * 0.4);
-          shape.bezierCurveTo(0, height * 0.65, width * 0.15, height * 0.8, width * 0.4, height * 0.8);
-          shape.bezierCurveTo(width * 0.65, height * 0.8, width * 0.8, height * 0.65, width * 0.8, height * 0.4);
-          shape.bezierCurveTo(width * 0.8, height * 0.15, width * 0.65, 0, width * 0.4, 0);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.4, height * 0.15);
-          hole.bezierCurveTo(width * 0.55, height * 0.15, width * 0.65, height * 0.25, width * 0.65, height * 0.4);
-          hole.bezierCurveTo(width * 0.65, height * 0.55, width * 0.55, height * 0.65, width * 0.4, height * 0.65);
-          hole.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
-          hole.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
-          shape.holes.push(hole);
+          // Lowercase 'f'
+          shape.moveTo(width * 0.3, 0);
+          shape.lineTo(width * 0.3, height * 1.1);
+          shape.bezierCurveTo(width * 0.3, height * 1.3, width * 0.4, height * 1.4, width * 0.6, height * 1.4);
+          shape.lineTo(width * 0.8, height * 1.4);
+          shape.lineTo(width * 0.8, height * 1.25);
+          shape.lineTo(width * 0.6, height * 1.25);
+          shape.bezierCurveTo(width * 0.5, height * 1.25, width * 0.45, height * 1.2, width * 0.45, height * 1.1);
+          shape.lineTo(width * 0.45, height * 0.8);
+          shape.lineTo(width * 0.7, height * 0.8);
+          shape.lineTo(width * 0.7, height * 0.65);
+          shape.lineTo(width * 0.45, height * 0.65);
+          shape.lineTo(width * 0.45, 0);
+          shape.lineTo(width * 0.3, 0);
         } else {
-          // Uppercase 'O' (existing code)
-          shape.moveTo(width * 0.5, 0);
-          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.2, width, height * 0.5);
-          shape.bezierCurveTo(width, height * 0.8, width * 0.8, height, width * 0.5, height);
-          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.5);
-          shape.bezierCurveTo(0, height * 0.2, width * 0.2, 0, width * 0.5, 0);
-          
-          // Create hole
-          const hole = new THREE.Path();
-          hole.moveTo(width * 0.5, height * 0.15);
-          hole.bezierCurveTo(width * 0.7, height * 0.15, width * 0.85, height * 0.3, width * 0.85, height * 0.5);
-          hole.bezierCurveTo(width * 0.85, height * 0.7, width * 0.7, height * 0.85, width * 0.5, height * 0.85);
-          hole.bezierCurveTo(width * 0.3, height * 0.85, width * 0.15, height * 0.7, width * 0.15, height * 0.5);
-          hole.bezierCurveTo(width * 0.15, height * 0.3, width * 0.3, height * 0.15, width * 0.5, height * 0.15);
-          shape.holes.push(hole);
+          // Uppercase 'F'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width, height);
+          shape.lineTo(width, height * 0.85);
+          shape.lineTo(width * 0.15, height * 0.85);
+          shape.lineTo(width * 0.15, height * 0.6);
+          shape.lineTo(width * 0.8, height * 0.6);
+          shape.lineTo(width * 0.8, height * 0.4);
+          shape.lineTo(width * 0.15, height * 0.4);
+          shape.lineTo(width * 0.15, 0);
+          shape.lineTo(0, 0);
         }
         break;
         
-      case 'L':
+      case 'G':
         if (isLowercase) {
-          // Lowercase 'l'
-          shape.moveTo(width * 0.3, 0);
-          shape.lineTo(width * 0.3, height * 1.4); // Ascender
-          shape.lineTo(width * 0.5, height * 1.4);
-          shape.lineTo(width * 0.5, 0);
-          shape.lineTo(width * 0.3, 0);
+          // Lowercase 'g'
+          shape.moveTo(width * 0.85, height * 0.8);
+          shape.lineTo(width * 0.85, height * -0.3); // Descender
+          shape.bezierCurveTo(width * 0.85, height * -0.5, width * 0.7, height * -0.6, width * 0.4, height * -0.6);
+          shape.lineTo(width * 0.2, height * -0.6);
+          shape.lineTo(width * 0.2, height * -0.45);
+          shape.lineTo(width * 0.4, height * -0.45);
+          shape.bezierCurveTo(width * 0.6, height * -0.45, width * 0.7, height * -0.4, width * 0.7, height * -0.3);
+          shape.lineTo(width * 0.7, 0);
+          shape.lineTo(width * 0.4, 0);
+          shape.bezierCurveTo(width * 0.15, 0, 0, height * 0.15, 0, height * 0.4);
+          shape.bezierCurveTo(0, height * 0.65, width * 0.15, height * 0.8, width * 0.4, height * 0.8);
+          shape.lineTo(width * 0.85, height * 0.8);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.15, height * 0.4);
+          hole.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
+          hole.lineTo(width * 0.7, height * 0.15);
+          hole.lineTo(width * 0.7, height * 0.65);
+          hole.lineTo(width * 0.4, height * 0.65);
+          hole.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
+          shape.holes.push(hole);
         } else {
-          // Uppercase 'L'
-          shape.moveTo(0, 0);
-          shape.lineTo(0, height);
-          shape.lineTo(width * 0.15, height);
-          shape.lineTo(width * 0.15, height * 0.15);
-          shape.lineTo(width, height * 0.15);
-          shape.lineTo(width, 0);
-          shape.lineTo(0, 0);
+          // Uppercase 'G'
+          shape.moveTo(width, height * 0.8);
+          shape.bezierCurveTo(width, height, width * 0.8, height, width * 0.5, height);
+          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.5);
+          shape.bezierCurveTo(0, height * 0.2, width * 0.2, 0, width * 0.5, 0);
+          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.2, width, height * 0.4);
+          shape.lineTo(width * 0.6, height * 0.4);
+          shape.lineTo(width * 0.6, height * 0.55);
+          shape.lineTo(width * 0.85, height * 0.55);
+          shape.lineTo(width * 0.85, height * 0.3);
+          shape.bezierCurveTo(width * 0.85, height * 0.15, width * 0.7, height * 0.15, width * 0.5, height * 0.15);
+          shape.bezierCurveTo(width * 0.3, height * 0.15, width * 0.15, height * 0.3, width * 0.15, height * 0.5);
+          shape.bezierCurveTo(width * 0.15, height * 0.7, width * 0.3, height * 0.85, width * 0.5, height * 0.85);
+          shape.bezierCurveTo(width * 0.7, height * 0.85, width * 0.85, height * 0.7, width * 0.85, height * 0.7);
+          shape.lineTo(width, height * 0.8);
         }
         break;
         
@@ -339,6 +359,621 @@ const Toolbar: React.FC = () => {
           shape.lineTo(width * 0.15, height * 0.4);
           shape.lineTo(width * 0.15, 0);
           shape.lineTo(0, 0);
+        }
+        break;
+        
+      case 'I':
+        if (isLowercase) {
+          // Lowercase 'i'
+          shape.moveTo(width * 0.3, 0);
+          shape.lineTo(width * 0.3, height * 0.8);
+          shape.lineTo(width * 0.5, height * 0.8);
+          shape.lineTo(width * 0.5, 0);
+          shape.lineTo(width * 0.3, 0);
+          
+          // Dot above
+          shape.moveTo(width * 0.3, height * 1.0);
+          shape.lineTo(width * 0.5, height * 1.0);
+          shape.lineTo(width * 0.5, height * 1.2);
+          shape.lineTo(width * 0.3, height * 1.2);
+          shape.lineTo(width * 0.3, height * 1.0);
+        } else {
+          // Uppercase 'I'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height * 0.15);
+          shape.lineTo(width * 0.3, height * 0.15);
+          shape.lineTo(width * 0.3, height * 0.85);
+          shape.lineTo(0, height * 0.85);
+          shape.lineTo(0, height);
+          shape.lineTo(width, height);
+          shape.lineTo(width, height * 0.85);
+          shape.lineTo(width * 0.7, height * 0.85);
+          shape.lineTo(width * 0.7, height * 0.15);
+          shape.lineTo(width, height * 0.15);
+          shape.lineTo(width, 0);
+          shape.lineTo(0, 0);
+        }
+        break;
+        
+      case 'J':
+        if (isLowercase) {
+          // Lowercase 'j'
+          shape.moveTo(width * 0.4, height * -0.6); // Descender
+          shape.bezierCurveTo(width * 0.2, height * -0.6, 0, height * -0.5, 0, height * -0.3);
+          shape.lineTo(0, height * -0.15);
+          shape.bezierCurveTo(0, height * -0.35, width * 0.1, height * -0.45, width * 0.4, height * -0.45);
+          shape.bezierCurveTo(width * 0.6, height * -0.45, width * 0.7, height * -0.35, width * 0.7, height * -0.15);
+          shape.lineTo(width * 0.7, height * 0.8);
+          shape.lineTo(width * 0.85, height * 0.8);
+          shape.lineTo(width * 0.85, height * -0.15);
+          shape.bezierCurveTo(width * 0.85, height * -0.45, width * 0.7, height * -0.6, width * 0.4, height * -0.6);
+          
+          // Dot above
+          shape.moveTo(width * 0.7, height * 1.0);
+          shape.lineTo(width * 0.85, height * 1.0);
+          shape.lineTo(width * 0.85, height * 1.2);
+          shape.lineTo(width * 0.7, height * 1.2);
+          shape.lineTo(width * 0.7, height * 1.0);
+        } else {
+          // Uppercase 'J'
+          shape.moveTo(width * 0.3, 0);
+          shape.bezierCurveTo(width * 0.1, 0, 0, height * 0.1, 0, height * 0.3);
+          shape.lineTo(0, height * 0.45);
+          shape.bezierCurveTo(0, height * 0.2, width * 0.2, height * 0.15, width * 0.3, height * 0.15);
+          shape.bezierCurveTo(width * 0.5, height * 0.15, width * 0.65, height * 0.2, width * 0.65, height * 0.45);
+          shape.lineTo(width * 0.65, height * 0.85);
+          shape.lineTo(width * 0.3, height * 0.85);
+          shape.lineTo(width * 0.3, height);
+          shape.lineTo(width, height);
+          shape.lineTo(width, 0);
+          shape.lineTo(width * 0.3, 0);
+        }
+        break;
+        
+      case 'K':
+        if (isLowercase) {
+          // Lowercase 'k'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height * 1.4); // Ascender
+          shape.lineTo(width * 0.15, height * 1.4);
+          shape.lineTo(width * 0.15, height * 0.5);
+          shape.lineTo(width * 0.4, height * 0.5);
+          shape.lineTo(width * 0.7, height * 0.8);
+          shape.lineTo(width * 0.9, height * 0.8);
+          shape.lineTo(width * 0.55, height * 0.4);
+          shape.lineTo(width * 0.9, 0);
+          shape.lineTo(width * 0.7, 0);
+          shape.lineTo(width * 0.4, height * 0.35);
+          shape.lineTo(width * 0.15, height * 0.35);
+          shape.lineTo(width * 0.15, 0);
+          shape.lineTo(0, 0);
+        } else {
+          // Uppercase 'K'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width * 0.15, height);
+          shape.lineTo(width * 0.15, height * 0.6);
+          shape.lineTo(width * 0.4, height * 0.6);
+          shape.lineTo(width * 0.8, height);
+          shape.lineTo(width, height);
+          shape.lineTo(width * 0.55, height * 0.5);
+          shape.lineTo(width, 0);
+          shape.lineTo(width * 0.8, 0);
+          shape.lineTo(width * 0.4, height * 0.4);
+          shape.lineTo(width * 0.15, height * 0.4);
+          shape.lineTo(width * 0.15, 0);
+          shape.lineTo(0, 0);
+        }
+        break;
+        
+      case 'L':
+        if (isLowercase) {
+          // Lowercase 'l'
+          shape.moveTo(width * 0.3, 0);
+          shape.lineTo(width * 0.3, height * 1.4); // Ascender
+          shape.lineTo(width * 0.5, height * 1.4);
+          shape.lineTo(width * 0.5, 0);
+          shape.lineTo(width * 0.3, 0);
+        } else {
+          // Uppercase 'L'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width * 0.15, height);
+          shape.lineTo(width * 0.15, height * 0.15);
+          shape.lineTo(width, height * 0.15);
+          shape.lineTo(width, 0);
+          shape.lineTo(0, 0);
+        }
+        break;
+        
+      case 'M':
+        if (isLowercase) {
+          // Lowercase 'm'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height * 0.8);
+          shape.lineTo(width * 0.12, height * 0.8);
+          shape.lineTo(width * 0.12, height * 0.15);
+          shape.lineTo(width * 0.25, height * 0.15);
+          shape.lineTo(width * 0.25, height * 0.8);
+          shape.lineTo(width * 0.37, height * 0.8);
+          shape.lineTo(width * 0.37, height * 0.15);
+          shape.lineTo(width * 0.5, height * 0.15);
+          shape.lineTo(width * 0.5, height * 0.8);
+          shape.lineTo(width * 0.62, height * 0.8);
+          shape.lineTo(width * 0.62, height * 0.15);
+          shape.lineTo(width * 0.75, height * 0.15);
+          shape.lineTo(width * 0.75, height * 0.8);
+          shape.lineTo(width * 0.87, height * 0.8);
+          shape.lineTo(width * 0.87, 0);
+          shape.lineTo(0, 0);
+        } else {
+          // Uppercase 'M'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width * 0.15, height);
+          shape.lineTo(width * 0.15, height * 0.3);
+          shape.lineTo(width * 0.4, height * 0.8);
+          shape.lineTo(width * 0.6, height * 0.8);
+          shape.lineTo(width * 0.85, height * 0.3);
+          shape.lineTo(width * 0.85, height);
+          shape.lineTo(width, height);
+          shape.lineTo(width, 0);
+          shape.lineTo(width * 0.85, 0);
+          shape.lineTo(width * 0.85, height * 0.7);
+          shape.lineTo(width * 0.65, height * 0.3);
+          shape.lineTo(width * 0.35, height * 0.3);
+          shape.lineTo(width * 0.15, height * 0.7);
+          shape.lineTo(width * 0.15, 0);
+          shape.lineTo(0, 0);
+        }
+        break;
+        
+      case 'N':
+        if (isLowercase) {
+          // Lowercase 'n'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height * 0.8);
+          shape.lineTo(width * 0.15, height * 0.8);
+          shape.lineTo(width * 0.15, height * 0.15);
+          shape.lineTo(width * 0.65, height * 0.15);
+          shape.lineTo(width * 0.65, height * 0.8);
+          shape.lineTo(width * 0.8, height * 0.8);
+          shape.lineTo(width * 0.8, 0);
+          shape.lineTo(0, 0);
+        } else {
+          // Uppercase 'N'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width * 0.15, height);
+          shape.lineTo(width * 0.15, height * 0.3);
+          shape.lineTo(width * 0.65, height * 0.8);
+          shape.lineTo(width * 0.8, height * 0.8);
+          shape.lineTo(width * 0.8, 0);
+          shape.lineTo(width * 0.65, 0);
+          shape.lineTo(width * 0.65, height * 0.7);
+          shape.lineTo(width * 0.15, height * 0.2);
+          shape.lineTo(0, height * 0.2);
+          shape.lineTo(0, 0);
+        }
+        break;
+        
+      case 'O':
+        if (isLowercase) {
+          // Lowercase 'o'
+          shape.moveTo(width * 0.4, 0);
+          shape.bezierCurveTo(width * 0.15, 0, 0, height * 0.15, 0, height * 0.4);
+          shape.bezierCurveTo(0, height * 0.65, width * 0.15, height * 0.8, width * 0.4, height * 0.8);
+          shape.bezierCurveTo(width * 0.65, height * 0.8, width * 0.8, height * 0.65, width * 0.8, height * 0.4);
+          shape.bezierCurveTo(width * 0.8, height * 0.15, width * 0.65, 0, width * 0.4, 0);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.4, height * 0.15);
+          hole.bezierCurveTo(width * 0.55, height * 0.15, width * 0.65, height * 0.25, width * 0.65, height * 0.4);
+          hole.bezierCurveTo(width * 0.65, height * 0.55, width * 0.55, height * 0.65, width * 0.4, height * 0.65);
+          hole.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
+          hole.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
+          shape.holes.push(hole);
+        } else {
+          // Uppercase 'O'
+          shape.moveTo(width * 0.5, 0);
+          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.2, width, height * 0.5);
+          shape.bezierCurveTo(width, height * 0.8, width * 0.8, height, width * 0.5, height);
+          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.5);
+          shape.bezierCurveTo(0, height * 0.2, width * 0.2, 0, width * 0.5, 0);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.5, height * 0.15);
+          hole.bezierCurveTo(width * 0.7, height * 0.15, width * 0.85, height * 0.3, width * 0.85, height * 0.5);
+          hole.bezierCurveTo(width * 0.85, height * 0.7, width * 0.7, height * 0.85, width * 0.5, height * 0.85);
+          hole.bezierCurveTo(width * 0.3, height * 0.85, width * 0.15, height * 0.7, width * 0.15, height * 0.5);
+          hole.bezierCurveTo(width * 0.15, height * 0.3, width * 0.3, height * 0.15, width * 0.5, height * 0.15);
+          shape.holes.push(hole);
+        }
+        break;
+        
+      case 'P':
+        if (isLowercase) {
+          // Lowercase 'p'
+          shape.moveTo(0, height * -0.6); // Descender
+          shape.lineTo(0, height * 0.8);
+          shape.lineTo(width * 0.6, height * 0.8);
+          shape.bezierCurveTo(width * 0.85, height * 0.8, width, height * 0.65, width, height * 0.4);
+          shape.bezierCurveTo(width, height * 0.15, width * 0.85, 0, width * 0.6, 0);
+          shape.lineTo(width * 0.15, 0);
+          shape.lineTo(width * 0.15, height * -0.6);
+          shape.lineTo(0, height * -0.6);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.15, height * 0.15);
+          hole.lineTo(width * 0.6, height * 0.15);
+          hole.bezierCurveTo(width * 0.75, height * 0.15, width * 0.85, height * 0.25, width * 0.85, height * 0.4);
+          hole.bezierCurveTo(width * 0.85, height * 0.55, width * 0.75, height * 0.65, width * 0.6, height * 0.65);
+          hole.lineTo(width * 0.15, height * 0.65);
+          hole.lineTo(width * 0.15, height * 0.15);
+          shape.holes.push(hole);
+        } else {
+          // Uppercase 'P'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width * 0.6, height);
+          shape.bezierCurveTo(width * 0.85, height, width, height * 0.8, width, height * 0.65);
+          shape.bezierCurveTo(width, height * 0.5, width * 0.85, height * 0.4, width * 0.6, height * 0.4);
+          shape.lineTo(width * 0.15, height * 0.4);
+          shape.lineTo(width * 0.15, 0);
+          shape.lineTo(0, 0);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.15, height * 0.55);
+          hole.lineTo(width * 0.6, height * 0.55);
+          hole.bezierCurveTo(width * 0.75, height * 0.55, width * 0.85, height * 0.65, width * 0.85, height * 0.75);
+          hole.bezierCurveTo(width * 0.85, height * 0.8, width * 0.75, height * 0.85, width * 0.6, height * 0.85);
+          hole.lineTo(width * 0.15, height * 0.85);
+          hole.lineTo(width * 0.15, height * 0.55);
+          shape.holes.push(hole);
+        }
+        break;
+        
+      case 'Q':
+        if (isLowercase) {
+          // Lowercase 'q'
+          shape.moveTo(width * 0.85, height * -0.6); // Descender
+          shape.lineTo(width * 0.85, height * 0.8);
+          shape.lineTo(width * 0.4, height * 0.8);
+          shape.bezierCurveTo(width * 0.15, height * 0.8, 0, height * 0.65, 0, height * 0.4);
+          shape.bezierCurveTo(0, height * 0.15, width * 0.15, 0, width * 0.4, 0);
+          shape.lineTo(width * 0.7, 0);
+          shape.lineTo(width * 0.7, height * -0.6);
+          shape.lineTo(width * 0.85, height * -0.6);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.15, height * 0.4);
+          hole.bezierCurveTo(width * 0.15, height * 0.25, width * 0.25, height * 0.15, width * 0.4, height * 0.15);
+          hole.lineTo(width * 0.7, height * 0.15);
+          hole.lineTo(width * 0.7, height * 0.65);
+          hole.lineTo(width * 0.4, height * 0.65);
+          hole.bezierCurveTo(width * 0.25, height * 0.65, width * 0.15, height * 0.55, width * 0.15, height * 0.4);
+          shape.holes.push(hole);
+        } else {
+          // Uppercase 'Q'
+          shape.moveTo(width * 0.5, 0);
+          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.2, width, height * 0.5);
+          shape.bezierCurveTo(width, height * 0.8, width * 0.8, height, width * 0.5, height);
+          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.5);
+          shape.bezierCurveTo(0, height * 0.2, width * 0.2, 0, width * 0.5, 0);
+          
+          // Add tail
+          shape.moveTo(width * 0.7, height * 0.3);
+          shape.lineTo(width * 0.9, height * 0.1);
+          shape.lineTo(width, height * 0.2);
+          shape.lineTo(width * 0.8, height * 0.4);
+          shape.lineTo(width * 0.7, height * 0.3);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.5, height * 0.15);
+          hole.bezierCurveTo(width * 0.7, height * 0.15, width * 0.85, height * 0.3, width * 0.85, height * 0.5);
+          hole.bezierCurveTo(width * 0.85, height * 0.7, width * 0.7, height * 0.85, width * 0.5, height * 0.85);
+          hole.bezierCurveTo(width * 0.3, height * 0.85, width * 0.15, height * 0.7, width * 0.15, height * 0.5);
+          hole.bezierCurveTo(width * 0.15, height * 0.3, width * 0.3, height * 0.15, width * 0.5, height * 0.15);
+          shape.holes.push(hole);
+        }
+        break;
+        
+      case 'R':
+        if (isLowercase) {
+          // Lowercase 'r'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height * 0.8);
+          shape.lineTo(width * 0.15, height * 0.8);
+          shape.lineTo(width * 0.15, height * 0.65);
+          shape.lineTo(width * 0.4, height * 0.65);
+          shape.bezierCurveTo(width * 0.6, height * 0.65, width * 0.7, height * 0.7, width * 0.7, height * 0.8);
+          shape.lineTo(width * 0.85, height * 0.8);
+          shape.bezierCurveTo(width * 0.85, height * 0.6, width * 0.7, height * 0.5, width * 0.4, height * 0.5);
+          shape.lineTo(width * 0.15, height * 0.5);
+          shape.lineTo(width * 0.15, 0);
+          shape.lineTo(0, 0);
+        } else {
+          // Uppercase 'R'
+          shape.moveTo(0, 0);
+          shape.lineTo(0, height);
+          shape.lineTo(width * 0.6, height);
+          shape.bezierCurveTo(width * 0.85, height, width, height * 0.8, width, height * 0.65);
+          shape.bezierCurveTo(width, height * 0.5, width * 0.85, height * 0.4, width * 0.6, height * 0.4);
+          shape.lineTo(width * 0.8, 0);
+          shape.lineTo(width * 0.6, 0);
+          shape.lineTo(width * 0.4, height * 0.4);
+          shape.lineTo(width * 0.15, height * 0.4);
+          shape.lineTo(width * 0.15, 0);
+          shape.lineTo(0, 0);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(width * 0.15, height * 0.55);
+          hole.lineTo(width * 0.6, height * 0.55);
+          hole.bezierCurveTo(width * 0.75, height * 0.55, width * 0.85, height * 0.65, width * 0.85, height * 0.75);
+          hole.bezierCurveTo(width * 0.85, height * 0.8, width * 0.75, height * 0.85, width * 0.6, height * 0.85);
+          hole.lineTo(width * 0.15, height * 0.85);
+          hole.lineTo(width * 0.15, height * 0.55);
+          shape.holes.push(hole);
+        }
+        break;
+        
+      case 'S':
+        if (isLowercase) {
+          // Lowercase 's'
+          shape.moveTo(width * 0.7, height * 0.2);
+          shape.bezierCurveTo(width * 0.7, height * 0.1, width * 0.6, 0, width * 0.4, 0);
+          shape.bezierCurveTo(width * 0.2, 0, 0, height * 0.1, 0, height * 0.25);
+          shape.bezierCurveTo(0, height * 0.35, width * 0.1, height * 0.4, width * 0.3, height * 0.4);
+          shape.lineTo(width * 0.5, height * 0.4);
+          shape.bezierCurveTo(width * 0.6, height * 0.4, width * 0.7, height * 0.45, width * 0.7, height * 0.55);
+          shape.bezierCurveTo(width * 0.7, height * 0.65, width * 0.6, height * 0.8, width * 0.4, height * 0.8);
+          shape.bezierCurveTo(width * 0.2, height * 0.8, 0, height * 0.7, 0, height * 0.6);
+          shape.lineTo(width * 0.15, height * 0.6);
+          shape.bezierCurveTo(width * 0.15, height * 0.65, width * 0.25, height * 0.65, width * 0.4, height * 0.65);
+          shape.bezierCurveTo(width * 0.5, height * 0.65, width * 0.55, height * 0.6, width * 0.55, height * 0.55);
+          shape.bezierCurveTo(width * 0.55, height * 0.5, width * 0.5, height * 0.55, width * 0.4, height * 0.55);
+          shape.lineTo(width * 0.3, height * 0.55);
+          shape.bezierCurveTo(width * 0.1, height * 0.55, 0, height * 0.45, 0, height * 0.25);
+          shape.bezierCurveTo(0, height * 0.1, width * 0.1, 0, width * 0.4, 0);
+          shape.bezierCurveTo(width * 0.6, 0, width * 0.7, height * 0.1, width * 0.7, height * 0.2);
+        } else {
+          // Uppercase 'S'
+          shape.moveTo(width, height * 0.8);
+          shape.bezierCurveTo(width, height, width * 0.8, height, width * 0.5, height);
+          shape.bezierCurveTo(width * 0.2, height, 0, height * 0.8, 0, height * 0.6);
+          shape.bezierCurveTo(0, height * 0.4, width * 0.2, height * 0.5, width * 0.5, height * 0.5);
+          shape.bezierCurveTo(width * 0.8, height * 0.5, width, height * 0.4, width, height * 0.2);
+          shape.bezierCurveTo(width, 0, width * 0.8, 0, width * 0.5, 0);
+          shape.bezierCurveTo(width * 0.2, 0, 0, height * 0.2, 0, height * 0.2);
+          shape.lineTo(width * 0.2, height * 0.3);
+          shape.bezierCurveTo(width * 0.2, height * 0.15, width * 0.3, height * 0.15, width * 0.5, height * 0.15);
+          shape.bezierCurveTo(width * 0.7, height * 0.15, width * 0.8, height * 0.25, width * 0.8, height * 0.35);
+          shape.bezierCurveTo(width * 0.8, height * 0.45, width * 0.7, height * 0.35, width * 0.5, height * 0.35);
+          shape.bezierCurveTo(width * 0.3, height * 0.35, width * 0.2, height * 0.55, width * 0.2, height * 0.65);
+          shape.bezierCurveTo(width * 0.2, height * 0.75, width * 0.3, height * 0.85, width * 0.5, height * 0.85);
+          shape.bezierCurveTo(width * 0.7, height * 0.85, width * 0.8, height * 0.75, width * 0.8, height * 0.7);
+          shape.lineTo(width, height * 0.8);
+        }
+        break;
+        
+      case 'T':
+        if (isLowercase) {
+          // Lowercase 't'
+          shape.moveTo(width * 0.3, 0);
+          shape.lineTo(width * 0.3, height * 1.1);
+          shape.lineTo(width * 0.45, height * 1.1);
+          shape.lineTo(width * 0.45, height * 0.8);
+          shape.lineTo(width * 0.7, height * 0.8);
+          shape.lineTo(width * 0.7, height * 0.65);
+          shape.lineTo(width * 0.45, height * 0.65);
+          shape.lineTo(width * 0.45, 0);
+          shape.lineTo(width * 0.3, 0);
+        } else {
+          // Uppercase 'T'
+          shape.moveTo(0, height * 0.85);
+          shape.lineTo(0, height);
+          shape.lineTo(width, height);
+          shape.lineTo(width, height * 0.85);
+          shape.lineTo(width * 0.575, height * 0.85);
+          shape.lineTo(width * 0.575, 0);
+          shape.lineTo(width * 0.425, 0);
+          shape.lineTo(width * 0.425, height * 0.85);
+          shape.lineTo(0, height * 0.85);
+        }
+        break;
+        
+      case 'U':
+        if (isLowercase) {
+          // Lowercase 'u'
+          shape.moveTo(0, height * 0.8);
+          shape.lineTo(0, height * 0.25);
+          shape.bezierCurveTo(0, height * 0.1, width * 0.1, 0, width * 0.25, 0);
+          shape.lineTo(width * 0.55, 0);
+          shape.bezierCurveTo(width * 0.7, 0, width * 0.8, height * 0.1, width * 0.8, height * 0.25);
+          shape.lineTo(width * 0.8, height * 0.8);
+          shape.lineTo(width * 0.65, height * 0.8);
+          shape.lineTo(width * 0.65, height * 0.25);
+          shape.bezierCurveTo(width * 0.65, height * 0.2, width * 0.6, height * 0.15, width * 0.55, height * 0.15);
+          shape.lineTo(width * 0.25, height * 0.15);
+          shape.bezierCurveTo(width * 0.2, height * 0.15, width * 0.15, height * 0.2, width * 0.15, height * 0.25);
+          shape.lineTo(width * 0.15, height * 0.8);
+          shape.lineTo(0, height * 0.8);
+        } else {
+          // Uppercase 'U'
+          shape.moveTo(0, height);
+          shape.lineTo(0, height * 0.3);
+          shape.bezierCurveTo(0, height * 0.1, width * 0.2, 0, width * 0.5, 0);
+          shape.bezierCurveTo(width * 0.8, 0, width, height * 0.1, width, height * 0.3);
+          shape.lineTo(width, height);
+          shape.lineTo(width * 0.85, height);
+          shape.lineTo(width * 0.85, height * 0.3);
+          shape.bezierCurveTo(width * 0.85, height * 0.2, width * 0.7, height * 0.15, width * 0.5, height * 0.15);
+          shape.bezierCurveTo(width * 0.3, height * 0.15, width * 0.15, height * 0.2, width * 0.15, height * 0.3);
+          shape.lineTo(width * 0.15, height);
+          shape.lineTo(0, height);
+        }
+        break;
+        
+      case 'V':
+        if (isLowercase) {
+          // Lowercase 'v'
+          shape.moveTo(0, height * 0.8);
+          shape.lineTo(width * 0.35, 0);
+          shape.lineTo(width * 0.45, 0);
+          shape.lineTo(width * 0.8, height * 0.8);
+          shape.lineTo(width * 0.65, height * 0.8);
+          shape.lineTo(width * 0.4, height * 0.2);
+          shape.lineTo(width * 0.15, height * 0.8);
+          shape.lineTo(0, height * 0.8);
+        } else {
+          // Uppercase 'V'
+          shape.moveTo(0, height);
+          shape.lineTo(width * 0.4, 0);
+          shape.lineTo(width * 0.6, 0);
+          shape.lineTo(width, height);
+          shape.lineTo(width * 0.85, height);
+          shape.lineTo(width * 0.5, height * 0.2);
+          shape.lineTo(width * 0.15, height);
+          shape.lineTo(0, height);
+        }
+        break;
+        
+      case 'W':
+        if (isLowercase) {
+          // Lowercase 'w'
+          shape.moveTo(0, height * 0.8);
+          shape.lineTo(width * 0.15, 0);
+          shape.lineTo(width * 0.25, 0);
+          shape.lineTo(width * 0.35, height * 0.6);
+          shape.lineTo(width * 0.45, 0);
+          shape.lineTo(width * 0.55, 0);
+          shape.lineTo(width * 0.65, height * 0.6);
+          shape.lineTo(width * 0.75, 0);
+          shape.lineTo(width * 0.85, 0);
+          shape.lineTo(width, height * 0.8);
+          shape.lineTo(width * 0.85, height * 0.8);
+          shape.lineTo(width * 0.75, height * 0.2);
+          shape.lineTo(width * 0.65, height * 0.8);
+          shape.lineTo(width * 0.55, height * 0.8);
+          shape.lineTo(width * 0.45, height * 0.2);
+          shape.lineTo(width * 0.35, height * 0.8);
+          shape.lineTo(width * 0.25, height * 0.8);
+          shape.lineTo(width * 0.15, height * 0.2);
+          shape.lineTo(0, height * 0.8);
+        } else {
+          // Uppercase 'W'
+          shape.moveTo(0, height);
+          shape.lineTo(width * 0.2, 0);
+          shape.lineTo(width * 0.35, 0);
+          shape.lineTo(width * 0.5, height * 0.7);
+          shape.lineTo(width * 0.65, 0);
+          shape.lineTo(width * 0.8, 0);
+          shape.lineTo(width, height);
+          shape.lineTo(width * 0.85, height);
+          shape.lineTo(width * 0.7, height * 0.2);
+          shape.lineTo(width * 0.5, height);
+          shape.lineTo(width * 0.3, height * 0.2);
+          shape.lineTo(width * 0.15, height);
+          shape.lineTo(0, height);
+        }
+        break;
+        
+      case 'X':
+        if (isLowercase) {
+          // Lowercase 'x'
+          shape.moveTo(0, height * 0.8);
+          shape.lineTo(width * 0.25, height * 0.5);
+          shape.lineTo(0, 0);
+          shape.lineTo(width * 0.2, 0);
+          shape.lineTo(width * 0.4, height * 0.35);
+          shape.lineTo(width * 0.6, 0);
+          shape.lineTo(width * 0.8, 0);
+          shape.lineTo(width * 0.55, height * 0.5);
+          shape.lineTo(width * 0.8, height * 0.8);
+          shape.lineTo(width * 0.6, height * 0.8);
+          shape.lineTo(width * 0.4, height * 0.65);
+          shape.lineTo(width * 0.2, height * 0.8);
+          shape.lineTo(0, height * 0.8);
+        } else {
+          // Uppercase 'X'
+          shape.moveTo(0, height);
+          shape.lineTo(width * 0.35, height * 0.5);
+          shape.lineTo(0, 0);
+          shape.lineTo(width * 0.2, 0);
+          shape.lineTo(width * 0.5, height * 0.35);
+          shape.lineTo(width * 0.8, 0);
+          shape.lineTo(width, 0);
+          shape.lineTo(width * 0.65, height * 0.5);
+          shape.lineTo(width, height);
+          shape.lineTo(width * 0.8, height);
+          shape.lineTo(width * 0.5, height * 0.65);
+          shape.lineTo(width * 0.2, height);
+          shape.lineTo(0, height);
+        }
+        break;
+        
+      case 'Y':
+        if (isLowercase) {
+          // Lowercase 'y'
+          shape.moveTo(0, height * 0.8);
+          shape.lineTo(width * 0.35, height * 0.3);
+          shape.lineTo(width * 0.35, height * -0.6); // Descender
+          shape.lineTo(width * 0.5, height * -0.6);
+          shape.lineTo(width * 0.5, height * 0.3);
+          shape.lineTo(width * 0.8, height * 0.8);
+          shape.lineTo(width * 0.65, height * 0.8);
+          shape.lineTo(width * 0.425, height * 0.5);
+          shape.lineTo(width * 0.15, height * 0.8);
+          shape.lineTo(0, height * 0.8);
+        } else {
+          // Uppercase 'Y'
+          shape.moveTo(0, height);
+          shape.lineTo(width * 0.425, height * 0.5);
+          shape.lineTo(width * 0.425, 0);
+          shape.lineTo(width * 0.575, 0);
+          shape.lineTo(width * 0.575, height * 0.5);
+          shape.lineTo(width, height);
+          shape.lineTo(width * 0.8, height);
+          shape.lineTo(width * 0.5, height * 0.65);
+          shape.lineTo(width * 0.2, height);
+          shape.lineTo(0, height);
+        }
+        break;
+        
+      case 'Z':
+        if (isLowercase) {
+          // Lowercase 'z'
+          shape.moveTo(0, height * 0.8);
+          shape.lineTo(0, height * 0.65);
+          shape.lineTo(width * 0.6, height * 0.65);
+          shape.lineTo(0, height * 0.15);
+          shape.lineTo(0, 0);
+          shape.lineTo(width * 0.8, 0);
+          shape.lineTo(width * 0.8, height * 0.15);
+          shape.lineTo(width * 0.2, height * 0.15);
+          shape.lineTo(width * 0.8, height * 0.65);
+          shape.lineTo(width * 0.8, height * 0.8);
+          shape.lineTo(0, height * 0.8);
+        } else {
+          // Uppercase 'Z'
+          shape.moveTo(0, height);
+          shape.lineTo(0, height * 0.85);
+          shape.lineTo(width * 0.7, height * 0.85);
+          shape.lineTo(0, height * 0.15);
+          shape.lineTo(0, 0);
+          shape.lineTo(width, 0);
+          shape.lineTo(width, height * 0.15);
+          shape.lineTo(width * 0.3, height * 0.15);
+          shape.lineTo(width, height * 0.85);
+          shape.lineTo(width, height);
+          shape.lineTo(0, height);
         }
         break;
         
@@ -979,12 +1614,12 @@ const Toolbar: React.FC = () => {
                     </div>
 
                     <div className="text-xs text-white/50 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                      <div className="font-medium text-blue-400 mb-1">💡 Tips:</div>
+                      <div className="font-medium text-blue-400 mb-1">🔤 Complete Alphabet Support:</div>
                       <ul className="space-y-1">
-                        <li>• Supports both uppercase and lowercase</li>
-                        <li>• Letters A, B, C, D, E, H, L, O have custom shapes</li>
-                        <li>• Other characters use simple blocks</li>
-                        <li>• Text will be extruded into 3D with bevels</li>
+                        <li>• <strong>All 26 letters</strong> - A-Z with unique shapes</li>
+                        <li>• <strong>Uppercase & Lowercase</strong> - Proper typography</li>
+                        <li>• <strong>Authentic Letters</strong> - A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z</li>
+                        <li>• <strong>Professional 3D</strong> - Extruded with bevels</li>
                       </ul>
                     </div>
                   </div>
