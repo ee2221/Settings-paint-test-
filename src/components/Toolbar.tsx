@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star, Dot, Minus, Type } from 'lucide-react';
+import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star, Dot, Minus } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
@@ -69,38 +69,6 @@ const Toolbar: React.FC = () => {
       icon: DonutIcon,
       geometry: () => new THREE.TorusGeometry(0.5, 0.2, 16, 100),
       color: '#8844aa'
-    },
-    {
-      name: '3D Text',
-      icon: Type,
-      geometry: () => {
-        // Create a simple text geometry using a placeholder box
-        // For now, create a placeholder box that represents text
-        const textGeometry = new THREE.BoxGeometry(2, 0.5, 0.2);
-        
-        // Add a comment for future font loading implementation
-        // TODO: Load font and create actual TextGeometry
-        // This would require importing FontLoader from 'three/examples/jsm/loaders/FontLoader'
-        // and TextGeometry from 'three/examples/jsm/geometries/TextGeometry'
-        // const loader = new FontLoader();
-        // const font = loader.load('path/to/font.json', (font) => {
-        //   const textGeometry = new TextGeometry('TEXT', {
-        //     font: font,
-        //     size: 0.5,
-        //     height: 0.1,
-        //     curveSegments: 12,
-        //     bevelEnabled: true,
-        //     bevelThickness: 0.02,
-        //     bevelSize: 0.01,
-        //     bevelOffset: 0,
-        //     bevelSegments: 5
-        //   });
-        //   textGeometry.center();
-        // });
-        
-        return textGeometry;
-      },
-      color: '#ff6b35'
     },
     {
       name: 'Heart',
