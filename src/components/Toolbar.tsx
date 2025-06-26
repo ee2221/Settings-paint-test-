@@ -1,30 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Sphere, 
-  Cylinder, 
-  Cone,
-  Torus,
-  Heart,
-  Star,
-  Type,
-  Trees,
-  Mountain,
-  Flower,
-  Sun,
-  Moon,
-  Cloud,
-  Waves,
-  Zap,
-  Move,
-  RotateCcw,
-  Scale,
-  MousePointer2,
-  Grid3X3,
-  Minus,
-  Plus,
-  X
-} from 'lucide-react';
+import { Box, Cherry as Sphere, Cylinder, Cone, Torus, Heart, Star, Type, Trees, Mountain, Flower, Sun, Moon, Cloud, Waves, Zap, Move, RotateCcw, Scale, MousePointer2, Grid3X3, Minus, Plus, X } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
