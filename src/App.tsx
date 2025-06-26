@@ -7,7 +7,7 @@ import ObjectProperties from './components/ObjectProperties';
 import EditControls from './components/EditControls';
 import CameraPerspectivePanel from './components/CameraPerspectivePanel';
 import LightingPanel from './components/LightingPanel';
-import SettingsPanel from './components/SettingsPanel';
+import SettingsPanel, { HideInterfaceButton } from './components/SettingsPanel';
 import { useSceneStore } from './store/sceneStore';
 
 function App() {
@@ -16,6 +16,9 @@ function App() {
   return (
     <div className="w-full h-screen relative">
       <Scene />
+      
+      {/* Hide Interface Button - Always visible at top center */}
+      <HideInterfaceButton />
       
       {/* Conditionally render UI panels based on hideAllMenus setting */}
       {!sceneSettings.hideAllMenus && (

@@ -402,4 +402,45 @@ const SettingsPanel: React.FC = () => {
   );
 };
 
+// Hide Interface Button Component - Top Center
+const HideInterfaceButton: React.FC = () => {
+  const { sceneSettings, updateSceneSettings } = useSceneStore();
+
+  const handleToggleInterface = () => {
+    updateSceneSettings({ hideAllMenus: !sceneSettings.hideAllMenus });
+  };
+
+  return (
+    <button
+      onClick={handleToggleInterface}
+      className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 p-3 border border-white/5 z-40 transition-all duration-200 hover:scale-105 group"
+      title={sceneSettings.hideAllMenus ? 'Show Interface' : 'Hide Interface'}
+    >
+      <div className="flex items-center gap-2">
+        {sceneSettings.hideAllMenus ? (
+          <>
+            <Eye className="w-5 h-5 text-green-400" />
+            <span className="text-sm font-medium text-white/90 hidden group-hover:block">
+              Show Interface
+            </span>
+          </>
+        ) : (
+          <>
+            <EyeOff className="w-5 h-5 text-orange-400" />
+            <span className="text-sm font-medium text-white/90 hidden group-hover:block">
+              Hide Interface
+            </span>
+          </>
+        )}
+      </div>
+      
+      {/* Tooltip */}
+      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+        {sceneSettings.hideAllMenus ? 'Show Interface (Tab)' : 'Hide Interface (Tab)'}
+      </div>
+    </button>
+  );
+};
+
 export default SettingsPanel;
+export { HideInterfaceButton };
