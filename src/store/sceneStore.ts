@@ -155,9 +155,6 @@ interface SceneState {
   isObjectLocked: (objectId: string) => boolean;
   canSelectObject: (object: THREE.Object3D) => boolean;
   saveToHistory: () => void;
-  // New Firestore functions
-  loadSceneFromData: (objects: any[], groups: Group[], lights: Light[], sceneSettings: SceneSettings) => void;
-  clearScene: () => void;
 }
 
 const cloneObject = (obj: THREE.Object3D): THREE.Object3D => {
@@ -1277,48 +1274,4 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     const obj = state.objects.find(o => o.object === object);
     return obj ? !get().isObjectLocked(obj.id) : true;
   },
-
-  // New Firestore functions
-  loadSceneFromData: (objects, groups, lights, sceneSettings) =>
-    set((state) => {
-      // Recreate light objects
-      const lightsWithObjects = lights.map(light => ({
-        ...light,
-        object: createLight(light.type, light.position, light.target)
-      }));
-
-      return {
-        objects,
-        groups,
-        lights: lightsWithObjects,
-        sceneSettings: { ...state.sceneSettings, ...sceneSettings },
-        selectedObject: null,
-        selectedLight: null,
-        transformMode: null,
-        editMode: null,
-        placementMode: false,
-        pendingObject: null
-      };
-    }),
-
-  clearScene: () =>
-    set((state) => ({
-      objects: [],
-      groups: [],
-      lights: [],
-      selectedObject: null,
-      selectedLight: null,
-      transformMode: null,
-      editMode: null,
-      placementMode: false,
-      pendingObject: null,
-      selectedElements: {
-        vertices: [],
-        edges: [],
-        faces: []
-      },
-      draggedVertex: null,
-      draggedEdge: null,
-      isDraggingEdge: false
-    })),
 }));
