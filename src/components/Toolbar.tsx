@@ -458,14 +458,14 @@ const Toolbar: React.FC = () => {
 
           {/* Object Menu */}
           {showObjectMenu && (
-            <div className="absolute left-full ml-2 top-0 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-lg z-20 min-w-80 max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="absolute left-full ml-2 top-0 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-lg z-20 min-w-80">
               {/* Header */}
-              <div className="p-3 border-b border-white/10 flex-shrink-0">
+              <div className="p-3 border-b border-white/10">
                 <h3 className="text-sm font-medium text-white/90">Add 3D Object</h3>
               </div>
 
               {/* Tabs */}
-              <div className="flex border-b border-white/10 flex-shrink-0">
+              <div className="flex border-b border-white/10">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -482,79 +482,76 @@ const Toolbar: React.FC = () => {
                 ))}
               </div>
 
-              {/* Scrollable Content Container */}
-              <div className="flex-1 overflow-y-auto">
-                {/* Tab Content */}
-                <div className="p-3">
-                  {activeTab === 'basic' && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {basicShapes.map((shape) => (
-                        <button
-                          key={shape.name}
-                          onClick={() => handleObjectSelect(shape)}
-                          className="p-3 rounded-lg hover:bg-white/5 flex flex-col items-center gap-2 transition-colors group"
-                        >
-                          <div 
-                            className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: shape.color + '20', color: shape.color }}
-                          >
-                            <shape.icon className="w-5 h-5" />
-                          </div>
-                          <span className="text-xs text-white/90 group-hover:text-white">
-                            {shape.name}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {activeTab === 'nature' && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {natureObjects.map((obj) => (
-                        <button
-                          key={obj.name}
-                          onClick={() => handleObjectSelect(obj)}
-                          className="p-3 rounded-lg hover:bg-white/5 flex flex-col items-center gap-2 transition-colors group"
-                        >
-                          <div 
-                            className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: obj.color + '20', color: obj.color }}
-                          >
-                            <obj.icon className="w-5 h-5" />
-                          </div>
-                          <span className="text-xs text-white/90 group-hover:text-white text-center">
-                            {obj.name}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Lights Section */}
-                <div className="border-t border-white/10 p-3">
-                  <h4 className="text-xs font-medium text-white/70 mb-2 uppercase tracking-wider">
-                    Lights
-                  </h4>
-                  <div className="space-y-1">
-                    {lightTools.map((light) => (
+              {/* Tab Content */}
+              <div className="p-3">
+                {activeTab === 'basic' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {basicShapes.map((shape) => (
                       <button
-                        key={light.type}
-                        onClick={() => handleLightAdd(light.type)}
-                        className="w-full p-2 rounded-lg hover:bg-white/5 flex items-center gap-3 transition-colors group"
+                        key={shape.name}
+                        onClick={() => handleObjectSelect(shape)}
+                        className="p-3 rounded-lg hover:bg-white/5 flex flex-col items-center gap-2 transition-colors group"
                       >
-                        <light.icon className="w-4 h-4 text-yellow-400" />
-                        <div className="text-left">
-                          <div className="text-sm text-white/90 group-hover:text-white">
-                            {light.title}
-                          </div>
-                          <div className="text-xs text-white/60">
-                            {light.description}
-                          </div>
+                        <div 
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: shape.color + '20', color: shape.color }}
+                        >
+                          <shape.icon className="w-5 h-5" />
                         </div>
+                        <span className="text-xs text-white/90 group-hover:text-white">
+                          {shape.name}
+                        </span>
                       </button>
                     ))}
                   </div>
+                )}
+
+                {activeTab === 'nature' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {natureObjects.map((obj) => (
+                      <button
+                        key={obj.name}
+                        onClick={() => handleObjectSelect(obj)}
+                        className="p-3 rounded-lg hover:bg-white/5 flex flex-col items-center gap-2 transition-colors group"
+                      >
+                        <div 
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: obj.color + '20', color: obj.color }}
+                        >
+                          <obj.icon className="w-5 h-5" />
+                        </div>
+                        <span className="text-xs text-white/90 group-hover:text-white text-center">
+                          {obj.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Lights Section */}
+              <div className="border-t border-white/10 p-3">
+                <h4 className="text-xs font-medium text-white/70 mb-2 uppercase tracking-wider">
+                  Lights
+                </h4>
+                <div className="space-y-1">
+                  {lightTools.map((light) => (
+                    <button
+                      key={light.type}
+                      onClick={() => handleLightAdd(light.type)}
+                      className="w-full p-2 rounded-lg hover:bg-white/5 flex items-center gap-3 transition-colors group"
+                    >
+                      <light.icon className="w-4 h-4 text-yellow-400" />
+                      <div className="text-left">
+                        <div className="text-sm text-white/90 group-hover:text-white">
+                          {light.title}
+                        </div>
+                        <div className="text-xs text-white/60">
+                          {light.description}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
