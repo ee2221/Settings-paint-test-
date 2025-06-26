@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star, Dot, Minus } from 'lucide-react';
+import { Box, Circle, Triangle, Cylinder, Cone, Cherry as Sphere, Plus, Move, RotateCw, Scale, Edit, MousePointer, ChevronDown, Lightbulb, Sun, Zap, TreePine, Flower, Mountain, Heart, Star, Dot, Minus, Type } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
@@ -16,6 +16,8 @@ const Toolbar: React.FC = () => {
   
   const [showObjectMenu, setShowObjectMenu] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
+  const [textInput, setTextInput] = useState('Hello World');
+  const [showTextInput, setShowTextInput] = useState(false);
 
   // Custom Circle Icon Component for Sphere
   const CircleIcon = ({ className }: { className?: string }) => (
@@ -31,6 +33,128 @@ const Toolbar: React.FC = () => {
       <circle cx="12" cy="12" r="4" />
     </svg>
   );
+
+  // Function to create 3D text geometry
+  const create3DText = (text: string) => {
+    // Create text geometry using THREE.js TextGeometry approach
+    // Since we can't load fonts dynamically, we'll create a simplified 3D text using shapes
+    const group = new THREE.Group();
+    
+    // Create each character as a simple extruded shape
+    const chars = text.split('');
+    let xOffset = 0;
+    const charWidth = 0.8;
+    const charHeight = 1.2;
+    const extrudeDepth = 0.2;
+    
+    chars.forEach((char, index) => {
+      if (char === ' ') {
+        xOffset += charWidth * 0.5;
+        return;
+      }
+      
+      // Create a simple rectangular shape for each character
+      // In a real implementation, you'd use proper font loading
+      const charShape = new THREE.Shape();
+      
+      // Create different shapes for different characters
+      switch (char.toUpperCase()) {
+        case 'A':
+          // Create an A shape
+          charShape.moveTo(0, 0);
+          charShape.lineTo(charWidth * 0.5, charHeight);
+          charShape.lineTo(charWidth, 0);
+          charShape.lineTo(charWidth * 0.8, 0);
+          charShape.lineTo(charWidth * 0.65, charHeight * 0.4);
+          charShape.lineTo(charWidth * 0.35, charHeight * 0.4);
+          charShape.lineTo(charWidth * 0.2, 0);
+          charShape.lineTo(0, 0);
+          break;
+          
+        case 'B':
+          // Create a B shape
+          charShape.moveTo(0, 0);
+          charShape.lineTo(0, charHeight);
+          charShape.lineTo(charWidth * 0.7, charHeight);
+          charShape.bezierCurveTo(charWidth * 0.9, charHeight, charWidth, charHeight * 0.8, charWidth, charHeight * 0.6);
+          charShape.bezierCurveTo(charWidth, charHeight * 0.4, charWidth * 0.9, charHeight * 0.5, charWidth * 0.7, charHeight * 0.5);
+          charShape.lineTo(charWidth * 0.2, charHeight * 0.5);
+          charShape.lineTo(charWidth * 0.7, charHeight * 0.5);
+          charShape.bezierCurveTo(charWidth * 0.9, charHeight * 0.5, charWidth, charHeight * 0.3, charWidth, charHeight * 0.1);
+          charShape.bezierCurveTo(charWidth, -0.1, charWidth * 0.9, 0, charWidth * 0.7, 0);
+          charShape.lineTo(0, 0);
+          break;
+          
+        case 'C':
+          // Create a C shape
+          charShape.moveTo(charWidth, charHeight * 0.8);
+          charShape.bezierCurveTo(charWidth, charHeight, charWidth * 0.8, charHeight, charWidth * 0.5, charHeight);
+          charShape.bezierCurveTo(charWidth * 0.2, charHeight, 0, charHeight * 0.8, 0, charHeight * 0.5);
+          charShape.bezierCurveTo(0, charHeight * 0.2, charWidth * 0.2, 0, charWidth * 0.5, 0);
+          charShape.bezierCurveTo(charWidth * 0.8, 0, charWidth, charHeight * 0.2, charWidth, charHeight * 0.2);
+          charShape.lineTo(charWidth * 0.8, charHeight * 0.3);
+          charShape.bezierCurveTo(charWidth * 0.8, charHeight * 0.15, charWidth * 0.7, charHeight * 0.15, charWidth * 0.5, charHeight * 0.15);
+          charShape.bezierCurveTo(charWidth * 0.3, charHeight * 0.15, charWidth * 0.15, charHeight * 0.3, charWidth * 0.15, charHeight * 0.5);
+          charShape.bezierCurveTo(charWidth * 0.15, charHeight * 0.7, charWidth * 0.3, charHeight * 0.85, charWidth * 0.5, charHeight * 0.85);
+          charShape.bezierCurveTo(charWidth * 0.7, charHeight * 0.85, charWidth * 0.8, charHeight * 0.7, charWidth * 0.8, charHeight * 0.7);
+          charShape.lineTo(charWidth, charHeight * 0.8);
+          break;
+          
+        case 'O':
+          // Create an O shape (circle with hole)
+          charShape.moveTo(charWidth * 0.5, 0);
+          charShape.bezierCurveTo(charWidth * 0.8, 0, charWidth, charHeight * 0.2, charWidth, charHeight * 0.5);
+          charShape.bezierCurveTo(charWidth, charHeight * 0.8, charWidth * 0.8, charHeight, charWidth * 0.5, charHeight);
+          charShape.bezierCurveTo(charWidth * 0.2, charHeight, 0, charHeight * 0.8, 0, charHeight * 0.5);
+          charShape.bezierCurveTo(0, charHeight * 0.2, charWidth * 0.2, 0, charWidth * 0.5, 0);
+          
+          // Create hole
+          const hole = new THREE.Path();
+          hole.moveTo(charWidth * 0.5, charHeight * 0.15);
+          hole.bezierCurveTo(charWidth * 0.7, charHeight * 0.15, charWidth * 0.85, charHeight * 0.3, charWidth * 0.85, charHeight * 0.5);
+          hole.bezierCurveTo(charWidth * 0.85, charHeight * 0.7, charWidth * 0.7, charHeight * 0.85, charWidth * 0.5, charHeight * 0.85);
+          hole.bezierCurveTo(charWidth * 0.3, charHeight * 0.85, charWidth * 0.15, charHeight * 0.7, charWidth * 0.15, charHeight * 0.5);
+          hole.bezierCurveTo(charWidth * 0.15, charHeight * 0.3, charWidth * 0.3, charHeight * 0.15, charWidth * 0.5, charHeight * 0.15);
+          charShape.holes.push(hole);
+          break;
+          
+        default:
+          // Default rectangular shape for other characters
+          charShape.moveTo(0, 0);
+          charShape.lineTo(charWidth, 0);
+          charShape.lineTo(charWidth, charHeight);
+          charShape.lineTo(0, charHeight);
+          charShape.lineTo(0, 0);
+          break;
+      }
+      
+      const extrudeSettings = {
+        depth: extrudeDepth,
+        bevelEnabled: true,
+        bevelSegments: 2,
+        steps: 2,
+        bevelSize: 0.02,
+        bevelThickness: 0.02
+      };
+      
+      const charGeometry = new THREE.ExtrudeGeometry(charShape, extrudeSettings);
+      const charMaterial = new THREE.MeshStandardMaterial({ color: '#4a90e2' });
+      const charMesh = new THREE.Mesh(charGeometry, charMaterial);
+      
+      charMesh.position.x = xOffset;
+      charMesh.position.y = -charHeight / 2; // Center vertically
+      
+      group.add(charMesh);
+      xOffset += charWidth + 0.1; // Add spacing between characters
+    });
+    
+    // Center the entire text group
+    const box = new THREE.Box3().setFromObject(group);
+    const center = box.getCenter(new THREE.Vector3());
+    group.position.x = -center.x;
+    
+    return group;
+  };
 
   // Basic geometric shapes
   const basicShapes = [
@@ -357,6 +481,18 @@ const Toolbar: React.FC = () => {
     setShowObjectMenu(false);
   };
 
+  const handleTextCreate = () => {
+    if (!textInput.trim()) return;
+    
+    startObjectPlacement({
+      geometry: () => create3DText(textInput.trim()),
+      name: `3D Text: ${textInput.trim()}`,
+      color: '#4a90e2'
+    });
+    setShowObjectMenu(false);
+    setShowTextInput(false);
+  };
+
   const handleLightAdd = (type: 'directional' | 'point' | 'spot') => {
     const position = selectedObject 
       ? [
@@ -434,7 +570,8 @@ const Toolbar: React.FC = () => {
 
   const tabs = [
     { id: 'basic', name: 'Basic', icon: Box },
-    { id: 'nature', name: 'Nature', icon: TreePine }
+    { id: 'nature', name: 'Nature', icon: TreePine },
+    { id: 'text', name: 'Text', icon: Type }
   ];
 
   return (
@@ -525,6 +662,69 @@ const Toolbar: React.FC = () => {
                         </span>
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {activeTab === 'text' && (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <div 
+                        className="w-16 h-16 mx-auto rounded-lg flex items-center justify-center mb-3"
+                        style={{ backgroundColor: '#4a90e2' + '20', color: '#4a90e2' }}
+                      >
+                        <Type className="w-8 h-8" />
+                      </div>
+                      <h4 className="text-sm font-medium text-white/90 mb-2">Create 3D Text</h4>
+                      <p className="text-xs text-white/60 mb-4">
+                        Enter text to convert into a 3D extruded object
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-white/70 mb-2">
+                          Text Content
+                        </label>
+                        <input
+                          type="text"
+                          value={textInput}
+                          onChange={(e) => setTextInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleTextCreate();
+                            }
+                          }}
+                          placeholder="Enter your text..."
+                          className="w-full bg-[#1a1a1a] border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50 focus:bg-[#0a0a0a]"
+                          maxLength={20}
+                        />
+                        <div className="text-xs text-white/50 mt-1">
+                          {textInput.length}/20 characters
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleTextCreate}
+                        disabled={!textInput.trim()}
+                        className={`w-full p-3 rounded-lg font-medium text-sm transition-all duration-200 ${
+                          textInput.trim()
+                            ? 'bg-blue-500 hover:bg-blue-600 text-white hover:scale-105 active:scale-95'
+                            : 'bg-white/10 text-white/30 cursor-not-allowed'
+                        }`}
+                      >
+                        Create 3D Text
+                      </button>
+                    </div>
+
+                    <div className="text-xs text-white/50 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                      <div className="font-medium text-blue-400 mb-1">💡 Tips:</div>
+                      <ul className="space-y-1">
+                        <li>• Keep text short for best results</li>
+                        <li>• Letters A, B, C, O have custom shapes</li>
+                        <li>• Other characters use simple blocks</li>
+                        <li>• Text will be extruded into 3D</li>
+                      </ul>
+                    </div>
                   </div>
                 )}
               </div>
