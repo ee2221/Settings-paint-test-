@@ -35,7 +35,10 @@ const SaveButton: React.FC = () => {
         const firestoreData = objectToFirestore(obj.object, obj.name);
         firestoreData.visible = obj.visible;
         firestoreData.locked = obj.locked;
-        firestoreData.groupId = obj.groupId;
+        // Only add groupId if it's defined
+        if (obj.groupId !== undefined) {
+          firestoreData.groupId = obj.groupId;
+        }
         return await saveObject(firestoreData);
       });
 
