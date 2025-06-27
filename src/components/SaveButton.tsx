@@ -33,6 +33,10 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
     if (!user) {
       setSaveStatus('error');
       setSaveMessage('Please sign in to save');
+      setTimeout(() => {
+        setSaveStatus('idle');
+        setSaveMessage('');
+      }, 3000);
       return;
     }
 
@@ -167,9 +171,9 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
       case 'saving':
         return `${baseStyles} bg-blue-500/20 border-blue-500/30 text-blue-400 cursor-wait`;
       case 'success':
-        return `${baseStyles} bg-green-500/20 border-green-500/30 text-green-400`;
+        return `${baseStyles} bg-green-500/20 border-green-500/30 text-green-400 hover:bg-green-500/30 hover:scale-105 active:scale-95`;
       case 'error':
-        return `${baseStyles} bg-red-500/20 border-red-500/30 text-red-400`;
+        return `${baseStyles} bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30 hover:scale-105 active:scale-95`;
       default:
         return `${baseStyles} bg-[#1a1a1a] border-white/5 text-white/90 hover:bg-[#2a2a2a] hover:scale-105 active:scale-95`;
     }
@@ -179,7 +183,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
   const hasContent = objects.length > 0 || groups.length > 0 || lights.length > 0;
 
   return (
-    <div className="fixed top-4 right-20 z-40">
+    <div className="fixed top-4 right-4 z-30">
       <div className="flex flex-col items-end gap-2">
         <button
           onClick={handleSave}
