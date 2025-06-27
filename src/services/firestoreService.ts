@@ -8,6 +8,7 @@ import {
   getDoc,
   query,
   orderBy,
+  where,
   serverTimestamp,
   onSnapshot,
   Timestamp
@@ -18,6 +19,7 @@ import * as THREE from 'three';
 // Types for Firestore data
 export interface FirestoreObject {
   id?: string;
+  userId?: string; // Add userId field
   name: string;
   type: string;
   position: { x: number; y: number; z: number };
@@ -36,6 +38,7 @@ export interface FirestoreObject {
 
 export interface FirestoreGroup {
   id?: string;
+  userId?: string; // Add userId field
   name: string;
   expanded: boolean;
   visible: boolean;
@@ -47,6 +50,7 @@ export interface FirestoreGroup {
 
 export interface FirestoreLight {
   id?: string;
+  userId?: string; // Add userId field
   name: string;
   type: 'directional' | 'point' | 'spot';
   position: number[];
@@ -65,6 +69,7 @@ export interface FirestoreLight {
 
 export interface FirestoreScene {
   id?: string;
+  userId?: string; // Add userId field
   name: string;
   description?: string;
   backgroundColor: string;
@@ -86,7 +91,7 @@ const COLLECTIONS = {
 } as const;
 
 // Helper function to convert THREE.js object to Firestore format
-export const objectToFirestore = (object: THREE.Object3D, name: string, id?: string): FirestoreObject => {
+export const objectToFirestore = (object: THREE.Object3D, name: string, id?: string, userId?: string): FirestoreObject => {
   const firestoreObj: FirestoreObject = {
     name,
     type: object.type,
@@ -111,6 +116,11 @@ export const objectToFirestore = (object: THREE.Object3D, name: string, id?: str
     locked: false,
     updatedAt: serverTimestamp()
   };
+
+  // Add userId if provided
+  if (userId) {
+    firestoreObj.userId = userId;
+  }
 
   if (id) {
     firestoreObj.id = id;
@@ -228,10 +238,11 @@ export const firestoreToObject = (data: FirestoreObject): THREE.Object3D | null 
   return object;
 };
 
-// Object CRUD operations
-export const saveObject = async (objectData: FirestoreObject): Promise<string> => {
+// Object CRUD operations with user scoping
+export const saveObject = async (objectData: FirestoreObject, userId: string): Promise<string> => {
   try {
-    const docRef = await addDoc(collection(db, COLLECTIONS.OBJECTS), objectData);
+    const dataWithUser = { ...objectData, userId };
+    const docRef = await addDoc(collection(db, COLLECTIONS.OBJECTS), dataWithUser);
     return docRef.id;
   } catch (error) {
     console.error('Error saving object:', error);
@@ -239,11 +250,12 @@ export const saveObject = async (objectData: FirestoreObject): Promise<string> =
   }
 };
 
-export const updateObject = async (id: string, objectData: Partial<FirestoreObject>): Promise<void> => {
+export const updateObject = async (id: string, objectData: Partial<FirestoreObject>, userId: string): Promise<void> => {
   try {
     const objectRef = doc(db, COLLECTIONS.OBJECTS, id);
     await updateDoc(objectRef, {
       ...objectData,
+      userId,
       updatedAt: serverTimestamp()
     });
   } catch (error) {
@@ -261,9 +273,13 @@ export const deleteObject = async (id: string): Promise<void> => {
   }
 };
 
-export const getObjects = async (): Promise<FirestoreObject[]> => {
+export const getObjects = async (userId: string): Promise<FirestoreObject[]> => {
   try {
-    const q = query(collection(db, COLLECTIONS.OBJECTS), orderBy('createdAt', 'desc'));
+    const q = query(
+      collection(db, COLLECTIONS.OBJECTS), 
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -294,10 +310,11 @@ export const getObject = async (id: string): Promise<FirestoreObject | null> => 
   }
 };
 
-// Group CRUD operations
-export const saveGroup = async (groupData: FirestoreGroup): Promise<string> => {
+// Group CRUD operations with user scoping
+export const saveGroup = async (groupData: FirestoreGroup, userId: string): Promise<string> => {
   try {
-    const docRef = await addDoc(collection(db, COLLECTIONS.GROUPS), groupData);
+    const dataWithUser = { ...groupData, userId };
+    const docRef = await addDoc(collection(db, COLLECTIONS.GROUPS), dataWithUser);
     return docRef.id;
   } catch (error) {
     console.error('Error saving group:', error);
@@ -305,11 +322,12 @@ export const saveGroup = async (groupData: FirestoreGroup): Promise<string> => {
   }
 };
 
-export const updateGroup = async (id: string, groupData: Partial<FirestoreGroup>): Promise<void> => {
+export const updateGroup = async (id: string, groupData: Partial<FirestoreGroup>, userId: string): Promise<void> => {
   try {
     const groupRef = doc(db, COLLECTIONS.GROUPS, id);
     await updateDoc(groupRef, {
       ...groupData,
+      userId,
       updatedAt: serverTimestamp()
     });
   } catch (error) {
@@ -327,9 +345,13 @@ export const deleteGroup = async (id: string): Promise<void> => {
   }
 };
 
-export const getGroups = async (): Promise<FirestoreGroup[]> => {
+export const getGroups = async (userId: string): Promise<FirestoreGroup[]> => {
   try {
-    const q = query(collection(db, COLLECTIONS.GROUPS), orderBy('createdAt', 'desc'));
+    const q = query(
+      collection(db, COLLECTIONS.GROUPS), 
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -341,10 +363,11 @@ export const getGroups = async (): Promise<FirestoreGroup[]> => {
   }
 };
 
-// Light CRUD operations
-export const saveLight = async (lightData: FirestoreLight): Promise<string> => {
+// Light CRUD operations with user scoping
+export const saveLight = async (lightData: FirestoreLight, userId: string): Promise<string> => {
   try {
-    const docRef = await addDoc(collection(db, COLLECTIONS.LIGHTS), lightData);
+    const dataWithUser = { ...lightData, userId };
+    const docRef = await addDoc(collection(db, COLLECTIONS.LIGHTS), dataWithUser);
     return docRef.id;
   } catch (error) {
     console.error('Error saving light:', error);
@@ -352,11 +375,12 @@ export const saveLight = async (lightData: FirestoreLight): Promise<string> => {
   }
 };
 
-export const updateLight = async (id: string, lightData: Partial<FirestoreLight>): Promise<void> => {
+export const updateLight = async (id: string, lightData: Partial<FirestoreLight>, userId: string): Promise<void> => {
   try {
     const lightRef = doc(db, COLLECTIONS.LIGHTS, id);
     await updateDoc(lightRef, {
       ...lightData,
+      userId,
       updatedAt: serverTimestamp()
     });
   } catch (error) {
@@ -374,9 +398,13 @@ export const deleteLight = async (id: string): Promise<void> => {
   }
 };
 
-export const getLights = async (): Promise<FirestoreLight[]> => {
+export const getLights = async (userId: string): Promise<FirestoreLight[]> => {
   try {
-    const q = query(collection(db, COLLECTIONS.LIGHTS), orderBy('createdAt', 'desc'));
+    const q = query(
+      collection(db, COLLECTIONS.LIGHTS), 
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -388,10 +416,11 @@ export const getLights = async (): Promise<FirestoreLight[]> => {
   }
 };
 
-// Scene CRUD operations
-export const saveScene = async (sceneData: FirestoreScene): Promise<string> => {
+// Scene CRUD operations with user scoping
+export const saveScene = async (sceneData: FirestoreScene, userId: string): Promise<string> => {
   try {
-    const docRef = await addDoc(collection(db, COLLECTIONS.SCENES), sceneData);
+    const dataWithUser = { ...sceneData, userId };
+    const docRef = await addDoc(collection(db, COLLECTIONS.SCENES), dataWithUser);
     return docRef.id;
   } catch (error) {
     console.error('Error saving scene:', error);
@@ -399,11 +428,12 @@ export const saveScene = async (sceneData: FirestoreScene): Promise<string> => {
   }
 };
 
-export const updateScene = async (id: string, sceneData: Partial<FirestoreScene>): Promise<void> => {
+export const updateScene = async (id: string, sceneData: Partial<FirestoreScene>, userId: string): Promise<void> => {
   try {
     const sceneRef = doc(db, COLLECTIONS.SCENES, id);
     await updateDoc(sceneRef, {
       ...sceneData,
+      userId,
       updatedAt: serverTimestamp()
     });
   } catch (error) {
@@ -412,9 +442,13 @@ export const updateScene = async (id: string, sceneData: Partial<FirestoreScene>
   }
 };
 
-export const getScenes = async (): Promise<FirestoreScene[]> => {
+export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
   try {
-    const q = query(collection(db, COLLECTIONS.SCENES), orderBy('createdAt', 'desc'));
+    const q = query(
+      collection(db, COLLECTIONS.SCENES), 
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -426,9 +460,13 @@ export const getScenes = async (): Promise<FirestoreScene[]> => {
   }
 };
 
-// Real-time listeners
-export const subscribeToObjects = (callback: (objects: FirestoreObject[]) => void) => {
-  const q = query(collection(db, COLLECTIONS.OBJECTS), orderBy('createdAt', 'desc'));
+// Real-time listeners with user scoping
+export const subscribeToObjects = (userId: string, callback: (objects: FirestoreObject[]) => void) => {
+  const q = query(
+    collection(db, COLLECTIONS.OBJECTS), 
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc')
+  );
   return onSnapshot(q, (querySnapshot) => {
     const objects = querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -438,8 +476,12 @@ export const subscribeToObjects = (callback: (objects: FirestoreObject[]) => voi
   });
 };
 
-export const subscribeToGroups = (callback: (groups: FirestoreGroup[]) => void) => {
-  const q = query(collection(db, COLLECTIONS.GROUPS), orderBy('createdAt', 'desc'));
+export const subscribeToGroups = (userId: string, callback: (groups: FirestoreGroup[]) => void) => {
+  const q = query(
+    collection(db, COLLECTIONS.GROUPS), 
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc')
+  );
   return onSnapshot(q, (querySnapshot) => {
     const groups = querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -449,8 +491,12 @@ export const subscribeToGroups = (callback: (groups: FirestoreGroup[]) => void) 
   });
 };
 
-export const subscribeToLights = (callback: (lights: FirestoreLight[]) => void) => {
-  const q = query(collection(db, COLLECTIONS.LIGHTS), orderBy('createdAt', 'desc'));
+export const subscribeToLights = (userId: string, callback: (lights: FirestoreLight[]) => void) => {
+  const q = query(
+    collection(db, COLLECTIONS.LIGHTS), 
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc')
+  );
   return onSnapshot(q, (querySnapshot) => {
     const lights = querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -461,11 +507,11 @@ export const subscribeToLights = (callback: (lights: FirestoreLight[]) => void) 
 };
 
 // Batch operations for better performance
-export const saveObjectsBatch = async (objects: FirestoreObject[]): Promise<void> => {
+export const saveObjectsBatch = async (objects: FirestoreObject[], userId: string): Promise<void> => {
   try {
     const batch = [];
     for (const obj of objects) {
-      batch.push(saveObject(obj));
+      batch.push(saveObject(obj, userId));
     }
     await Promise.all(batch);
   } catch (error) {

@@ -12,7 +12,11 @@ import {
   FirestoreScene
 } from '../services/firestoreService';
 
-const SaveButton: React.FC = () => {
+interface SaveButtonProps {
+  user: any;
+}
+
+const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
   const { 
     objects, 
     groups, 
@@ -26,20 +30,26 @@ const SaveButton: React.FC = () => {
   const [saveMessage, setSaveMessage] = useState('');
 
   const handleSave = async () => {
+    if (!user) {
+      setSaveStatus('error');
+      setSaveMessage('Please sign in to save');
+      return;
+    }
+
     setSaveStatus('saving');
     setSaveMessage('Saving to cloud...');
 
     try {
       // Save all objects
       const objectPromises = objects.map(async (obj) => {
-        const firestoreData = objectToFirestore(obj.object, obj.name);
+        const firestoreData = objectToFirestore(obj.object, obj.name, undefined, user.uid);
         firestoreData.visible = obj.visible;
         firestoreData.locked = obj.locked;
         // Only add groupId if it's defined
         if (obj.groupId !== undefined) {
           firestoreData.groupId = obj.groupId;
         }
-        return await saveObject(firestoreData);
+        return await saveObject(firestoreData, user.uid);
       });
 
       // Save all groups
@@ -51,7 +61,7 @@ const SaveButton: React.FC = () => {
           locked: group.locked,
           objectIds: group.objectIds
         };
-        return await saveGroup(firestoreGroup);
+        return await saveGroup(firestoreGroup, user.uid);
       });
 
       // Save all lights
@@ -70,7 +80,7 @@ const SaveButton: React.FC = () => {
           angle: light.angle,
           penumbra: light.penumbra
         };
-        return await saveLight(firestoreLight);
+        return await saveLight(firestoreLight, user.uid);
       });
 
       // Save scene settings
@@ -84,7 +94,7 @@ const SaveButton: React.FC = () => {
         cameraPerspective,
         cameraZoom
       };
-      const scenePromise = saveScene(sceneData);
+      const scenePromise = saveScene(sceneData, user.uid);
 
       // Wait for all saves to complete
       await Promise.all([
@@ -165,7 +175,7 @@ const SaveButton: React.FC = () => {
     }
   };
 
-  const isDisabled = saveStatus === 'saving';
+  const isDisabled = saveStatus === 'saving' || !user;
   const hasContent = objects.length > 0 || groups.length > 0 || lights.length > 0;
 
   return (
@@ -176,11 +186,13 @@ const SaveButton: React.FC = () => {
           disabled={isDisabled || !hasContent}
           className={getButtonStyles()}
           title={
-            !hasContent 
-              ? 'No content to save' 
-              : saveStatus === 'saving' 
-                ? 'Saving to Firebase...' 
-                : 'Save current scene to Firebase'
+            !user
+              ? 'Sign in to save'
+              : !hasContent 
+                ? 'No content to save' 
+                : saveStatus === 'saving' 
+                  ? 'Saving to Firebase...' 
+                  : 'Save current scene to Firebase'
           }
         >
           {getButtonContent()}
@@ -200,7 +212,7 @@ const SaveButton: React.FC = () => {
         )}
         
         {/* Scene Info */}
-        {hasContent && saveStatus === 'idle' && (
+        {hasContent && saveStatus === 'idle' && user && (
           <div className="bg-[#1a1a1a]/90 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/60">
             <div className="flex items-center gap-4">
               {objects.length > 0 && (

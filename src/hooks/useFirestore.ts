@@ -22,24 +22,32 @@ import {
 import * as THREE from 'three';
 
 // Hook for managing objects with Firestore
-export const useFirestoreObjects = () => {
+export const useFirestoreObjects = (userId: string | null) => {
   const [objects, setObjects] = useState<FirestoreObject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = subscribeToObjects((firestoreObjects) => {
+    if (!userId) {
+      setObjects([]);
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = subscribeToObjects(userId, (firestoreObjects) => {
       setObjects(firestoreObjects);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [userId]);
 
   const addObject = async (object: THREE.Object3D, name: string) => {
+    if (!userId) throw new Error('User not authenticated');
+    
     try {
-      const firestoreData = objectToFirestore(object, name);
-      await saveObject(firestoreData);
+      const firestoreData = objectToFirestore(object, name, undefined, userId);
+      await saveObject(firestoreData, userId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add object');
       throw err;
@@ -47,9 +55,11 @@ export const useFirestoreObjects = () => {
   };
 
   const updateObjectData = async (id: string, object: THREE.Object3D, name: string) => {
+    if (!userId) throw new Error('User not authenticated');
+    
     try {
-      const firestoreData = objectToFirestore(object, name, id);
-      await updateObject(id, firestoreData);
+      const firestoreData = objectToFirestore(object, name, id, userId);
+      await updateObject(id, firestoreData, userId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update object');
       throw err;
@@ -76,27 +86,35 @@ export const useFirestoreObjects = () => {
 };
 
 // Hook for managing groups with Firestore
-export const useFirestoreGroups = () => {
+export const useFirestoreGroups = (userId: string | null) => {
   const [groups, setGroups] = useState<FirestoreGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = subscribeToGroups((firestoreGroups) => {
+    if (!userId) {
+      setGroups([]);
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = subscribeToGroups(userId, (firestoreGroups) => {
       setGroups(firestoreGroups);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [userId]);
 
-  const addGroup = async (groupData: Omit<FirestoreGroup, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addGroup = async (groupData: Omit<FirestoreGroup, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!userId) throw new Error('User not authenticated');
+    
     try {
       await saveGroup({
         ...groupData,
         createdAt: undefined,
         updatedAt: undefined
-      });
+      }, userId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add group');
       throw err;
@@ -104,8 +122,10 @@ export const useFirestoreGroups = () => {
   };
 
   const updateGroupData = async (id: string, groupData: Partial<FirestoreGroup>) => {
+    if (!userId) throw new Error('User not authenticated');
+    
     try {
-      await updateGroup(id, groupData);
+      await updateGroup(id, groupData, userId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update group');
       throw err;
@@ -132,27 +152,35 @@ export const useFirestoreGroups = () => {
 };
 
 // Hook for managing lights with Firestore
-export const useFirestoreLights = () => {
+export const useFirestoreLights = (userId: string | null) => {
   const [lights, setLights] = useState<FirestoreLight[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = subscribeToLights((firestoreLights) => {
+    if (!userId) {
+      setLights([]);
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = subscribeToLights(userId, (firestoreLights) => {
       setLights(firestoreLights);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [userId]);
 
-  const addLight = async (lightData: Omit<FirestoreLight, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addLight = async (lightData: Omit<FirestoreLight, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!userId) throw new Error('User not authenticated');
+    
     try {
       await saveLight({
         ...lightData,
         createdAt: undefined,
         updatedAt: undefined
-      });
+      }, userId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add light');
       throw err;
@@ -160,8 +188,10 @@ export const useFirestoreLights = () => {
   };
 
   const updateLightData = async (id: string, lightData: Partial<FirestoreLight>) => {
+    if (!userId) throw new Error('User not authenticated');
+    
     try {
-      await updateLight(id, lightData);
+      await updateLight(id, lightData, userId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update light');
       throw err;
@@ -228,10 +258,10 @@ export const useThreeObjects = (firestoreObjects: FirestoreObject[]) => {
 };
 
 // Combined hook for easier integration
-export const useFirestoreScene = () => {
-  const objectsHook = useFirestoreObjects();
-  const groupsHook = useFirestoreGroups();
-  const lightsHook = useFirestoreLights();
+export const useFirestoreScene = (userId: string | null) => {
+  const objectsHook = useFirestoreObjects(userId);
+  const groupsHook = useFirestoreGroups(userId);
+  const lightsHook = useFirestoreLights(userId);
   
   const threeObjects = useThreeObjects(objectsHook.objects);
 
