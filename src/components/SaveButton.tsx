@@ -183,7 +183,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
   const hasContent = objects.length > 0 || groups.length > 0 || lights.length > 0;
 
   return (
-    <div className="fixed top-4 left-64 z-30">
+    <div className="fixed top-4 left-48 z-30">
       <div className="flex flex-col items-start gap-2">
         <button
           onClick={handleSave}
