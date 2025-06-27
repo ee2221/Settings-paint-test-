@@ -63,15 +63,15 @@ function App() {
       {/* Hide Interface Button - Always visible at top left */}
       <HideInterfaceButton />
       
-      {/* User Profile - Always visible at top right */}
+      {/* Save Button - Next to Hide Interface button when user is authenticated */}
+      {user && <SaveButton user={user} />}
+      
+      {/* User Profile - Always visible at top right when authenticated */}
       {user && (
         <div className="fixed top-4 right-4 z-40">
           <UserProfile user={user} onSignOut={handleSignOut} />
         </div>
       )}
-      
-      {/* Save Button - Visible when user is authenticated */}
-      {user && <SaveButton user={user} />}
       
       {/* Conditionally render UI panels based on hideAllMenus setting */}
       {!sceneSettings.hideAllMenus && (
