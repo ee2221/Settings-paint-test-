@@ -101,6 +101,9 @@ interface SceneState {
     name: string;
     color?: string;
   } | null;
+  // Save state
+  lastSaved: Date | null;
+  hasUnsavedChanges: boolean;
   addObject: (object: THREE.Object3D, name: string) => void;
   removeObject: (id: string) => void;
   setSelectedObject: (object: THREE.Object3D | null) => void;
@@ -155,6 +158,9 @@ interface SceneState {
   isObjectLocked: (objectId: string) => boolean;
   canSelectObject: (object: THREE.Object3D) => boolean;
   saveToHistory: () => void;
+  // Save functions
+  markSaved: () => void;
+  markUnsavedChanges: () => void;
 }
 
 const cloneObject = (obj: THREE.Object3D): THREE.Object3D => {
@@ -236,11 +242,17 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   // New placement state
   placementMode: false,
   pendingObject: null,
+  // Save state
+  lastSaved: null,
+  hasUnsavedChanges: false,
 
   updateSceneSettings: (settings) =>
-    set((state) => ({
-      sceneSettings: { ...state.sceneSettings, ...settings }
-    })),
+    set((state) => {
+      get().markUnsavedChanges();
+      return {
+        sceneSettings: { ...state.sceneSettings, ...settings }
+      };
+    }),
 
   saveToHistory: () => {
     const state = get();
@@ -270,6 +282,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       canUndo: true,
       canRedo: false
     });
+    
+    get().markUnsavedChanges();
   },
 
   addObject: (object, name) =>
@@ -379,7 +393,10 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       };
     }),
 
-  setCameraPerspective: (perspective) => set({ cameraPerspective: perspective }),
+  setCameraPerspective: (perspective) => {
+    get().markUnsavedChanges();
+    set({ cameraPerspective: perspective });
+  },
 
   toggleVisibility: (id) =>
     set((state) => {
@@ -404,6 +421,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       const newSelectedObject = (toggledObject && !toggledObject.visible && toggledObject.object === state.selectedObject)
         ? null
         : state.selectedObject;
+
+      get().markUnsavedChanges();
 
       return {
         objects: updatedObjects,
@@ -433,6 +452,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         ? null
         : state.selectedObject;
 
+      get().markUnsavedChanges();
+
       return {
         objects: updatedObjects,
         selectedObject: newSelectedObject,
@@ -453,6 +474,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         if (group?.locked) return state;
       }
 
+      get().markUnsavedChanges();
+
       return {
         objects: state.objects.map((obj) =>
           obj.id === id ? { ...obj, name } : obj
@@ -460,7 +483,10 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       };
     }),
 
-  updateObjectProperties: () => set((state) => ({ ...state })),
+  updateObjectProperties: () => {
+    get().markUnsavedChanges();
+    set((state) => ({ ...state }));
+  },
 
   updateObjectColor: (color) => 
     set((state) => {
@@ -472,6 +498,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         const material = state.selectedObject.material as THREE.MeshStandardMaterial;
         material.color.setStyle(color);
         material.needsUpdate = true;
+        
+        get().markUnsavedChanges();
       }
       return state;
     }),
@@ -487,6 +515,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         material.transparent = opacity < 1;
         material.opacity = opacity;
         material.needsUpdate = true;
+        
+        get().markUnsavedChanges();
       }
       return state;
     }),
@@ -826,6 +856,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           : group
       );
 
+      get().markUnsavedChanges();
+
       return {
         objects: updatedObjects,
         groups: updatedGroups
@@ -851,6 +883,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           ? { ...group, objectIds: group.objectIds.filter(id => id !== objectId) }
           : group
       );
+
+      get().markUnsavedChanges();
 
       return {
         objects: updatedObjects,
@@ -890,6 +924,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         ? null
         : state.selectedObject;
 
+      get().markUnsavedChanges();
+
       return {
         groups: updatedGroups,
         objects: updatedObjects,
@@ -915,6 +951,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         ? null
         : state.selectedObject;
 
+      get().markUnsavedChanges();
+
       return {
         groups: updatedGroups,
         selectedObject: newSelectedObject
@@ -925,6 +963,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     set((state) => {
       const group = state.groups.find(g => g.id === groupId);
       if (group?.locked) return state;
+
+      get().markUnsavedChanges();
 
       return {
         groups: state.groups.map(group =>
@@ -970,6 +1010,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           ? { ...obj, groupId }
           : obj
       );
+
+      get().markUnsavedChanges();
 
       return {
         groups: finalGroups,
@@ -1078,14 +1120,20 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     }),
 
   zoomIn: () =>
-    set((state) => ({
-      cameraZoom: Math.min(state.cameraZoom * 1.2, 5)
-    })),
+    set((state) => {
+      get().markUnsavedChanges();
+      return {
+        cameraZoom: Math.min(state.cameraZoom * 1.2, 5)
+      };
+    }),
 
   zoomOut: () =>
-    set((state) => ({
-      cameraZoom: Math.max(state.cameraZoom / 1.2, 0.1)
-    })),
+    set((state) => {
+      get().markUnsavedChanges();
+      return {
+        cameraZoom: Math.max(state.cameraZoom / 1.2, 0.1)
+      };
+    }),
 
   // Enhanced placement functions
   startObjectPlacement: (objectDef) =>
@@ -1226,6 +1274,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         return light;
       });
 
+      get().markUnsavedChanges();
+
       return {
         lights: updatedLights,
         selectedLight: state.selectedLight?.id === lightId 
@@ -1245,6 +1295,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       if (light?.object) {
         light.object.visible = light.visible;
       }
+
+      get().markUnsavedChanges();
 
       return { lights: updatedLights };
     }),
@@ -1274,4 +1326,16 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     const obj = state.objects.find(o => o.object === object);
     return obj ? !get().isObjectLocked(obj.id) : true;
   },
+
+  // Save functions
+  markSaved: () => 
+    set({
+      lastSaved: new Date(),
+      hasUnsavedChanges: false
+    }),
+
+  markUnsavedChanges: () =>
+    set({
+      hasUnsavedChanges: true
+    }),
 }));
