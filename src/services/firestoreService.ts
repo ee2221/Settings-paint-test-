@@ -140,33 +140,33 @@ export const objectToFirestore = (object: THREE.Object3D, name: string, id?: str
     };
   }
 
-  // Extract geometry parameters
+  // Extract geometry parameters with default values to prevent undefined
   if (object instanceof THREE.Mesh) {
     const geometry = object.geometry;
     if (geometry instanceof THREE.BoxGeometry) {
       firestoreObj.geometryParams = {
-        width: geometry.parameters.width,
-        height: geometry.parameters.height,
-        depth: geometry.parameters.depth
+        width: geometry.parameters.width ?? 1,
+        height: geometry.parameters.height ?? 1,
+        depth: geometry.parameters.depth ?? 1
       };
     } else if (geometry instanceof THREE.SphereGeometry) {
       firestoreObj.geometryParams = {
-        radius: geometry.parameters.radius,
-        widthSegments: geometry.parameters.widthSegments,
-        heightSegments: geometry.parameters.heightSegments
+        radius: geometry.parameters.radius ?? 0.5,
+        widthSegments: geometry.parameters.widthSegments ?? 32,
+        heightSegments: geometry.parameters.heightSegments ?? 16
       };
     } else if (geometry instanceof THREE.CylinderGeometry) {
       firestoreObj.geometryParams = {
-        radiusTop: geometry.parameters.radiusTop,
-        radiusBottom: geometry.parameters.radiusBottom,
-        height: geometry.parameters.height,
-        radialSegments: geometry.parameters.radialSegments
+        radiusTop: geometry.parameters.radiusTop ?? 0.5,
+        radiusBottom: geometry.parameters.radiusBottom ?? 0.5,
+        height: geometry.parameters.height ?? 1,
+        radialSegments: geometry.parameters.radialSegments ?? 32
       };
     } else if (geometry instanceof THREE.ConeGeometry) {
       firestoreObj.geometryParams = {
-        radius: geometry.parameters.radius,
-        height: geometry.parameters.height,
-        radialSegments: geometry.parameters.radialSegments
+        radius: geometry.parameters.radius ?? 0.5,
+        height: geometry.parameters.height ?? 1,
+        radialSegments: geometry.parameters.radialSegments ?? 32
       };
     }
   }
