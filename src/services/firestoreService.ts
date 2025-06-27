@@ -1,0 +1,488 @@
+import { 
+  collection, 
+  doc, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  getDocs, 
+  getDoc,
+  query,
+  orderBy,
+  serverTimestamp,
+  onSnapshot,
+  Timestamp
+} from 'firebase/firestore';
+import { db } from '../config/firebase';
+import * as THREE from 'three';
+
+// Types for Firestore data
+export interface FirestoreObject {
+  id?: string;
+  name: string;
+  type: string;
+  position: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number };
+  scale: { x: number; y: number; z: number };
+  color: string;
+  opacity: number;
+  visible: boolean;
+  locked: boolean;
+  groupId?: string;
+  geometryParams?: any;
+  materialParams?: any;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+export interface FirestoreGroup {
+  id?: string;
+  name: string;
+  expanded: boolean;
+  visible: boolean;
+  locked: boolean;
+  objectIds: string[];
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+export interface FirestoreLight {
+  id?: string;
+  name: string;
+  type: 'directional' | 'point' | 'spot';
+  position: number[];
+  target: number[];
+  intensity: number;
+  color: string;
+  visible: boolean;
+  castShadow: boolean;
+  distance: number;
+  decay: number;
+  angle: number;
+  penumbra: number;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+export interface FirestoreScene {
+  id?: string;
+  name: string;
+  description?: string;
+  backgroundColor: string;
+  showGrid: boolean;
+  gridSize: number;
+  gridDivisions: number;
+  cameraPerspective: string;
+  cameraZoom: number;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+// Collection names
+const COLLECTIONS = {
+  OBJECTS: 'objects',
+  GROUPS: 'groups',
+  LIGHTS: 'lights',
+  SCENES: 'scenes'
+} as const;
+
+// Helper function to convert THREE.js object to Firestore format
+export const objectToFirestore = (object: THREE.Object3D, name: string, id?: string): FirestoreObject => {
+  const firestoreObj: FirestoreObject = {
+    name,
+    type: object.type,
+    position: {
+      x: object.position.x,
+      y: object.position.y,
+      z: object.position.z
+    },
+    rotation: {
+      x: object.rotation.x,
+      y: object.rotation.y,
+      z: object.rotation.z
+    },
+    scale: {
+      x: object.scale.x,
+      y: object.scale.y,
+      z: object.scale.z
+    },
+    color: '#44aa88', // Default color
+    opacity: 1,
+    visible: object.visible,
+    locked: false,
+    updatedAt: serverTimestamp()
+  };
+
+  if (id) {
+    firestoreObj.id = id;
+  } else {
+    firestoreObj.createdAt = serverTimestamp();
+  }
+
+  // Extract material properties if it's a mesh
+  if (object instanceof THREE.Mesh && object.material instanceof THREE.MeshStandardMaterial) {
+    firestoreObj.color = '#' + object.material.color.getHexString();
+    firestoreObj.opacity = object.material.opacity;
+    
+    firestoreObj.materialParams = {
+      transparent: object.material.transparent,
+      metalness: object.material.metalness,
+      roughness: object.material.roughness
+    };
+  }
+
+  // Extract geometry parameters
+  if (object instanceof THREE.Mesh) {
+    const geometry = object.geometry;
+    if (geometry instanceof THREE.BoxGeometry) {
+      firestoreObj.geometryParams = {
+        width: geometry.parameters.width,
+        height: geometry.parameters.height,
+        depth: geometry.parameters.depth
+      };
+    } else if (geometry instanceof THREE.SphereGeometry) {
+      firestoreObj.geometryParams = {
+        radius: geometry.parameters.radius,
+        widthSegments: geometry.parameters.widthSegments,
+        heightSegments: geometry.parameters.heightSegments
+      };
+    } else if (geometry instanceof THREE.CylinderGeometry) {
+      firestoreObj.geometryParams = {
+        radiusTop: geometry.parameters.radiusTop,
+        radiusBottom: geometry.parameters.radiusBottom,
+        height: geometry.parameters.height,
+        radialSegments: geometry.parameters.radialSegments
+      };
+    } else if (geometry instanceof THREE.ConeGeometry) {
+      firestoreObj.geometryParams = {
+        radius: geometry.parameters.radius,
+        height: geometry.parameters.height,
+        radialSegments: geometry.parameters.radialSegments
+      };
+    }
+  }
+
+  return firestoreObj;
+};
+
+// Helper function to convert Firestore data back to THREE.js object
+export const firestoreToObject = (data: FirestoreObject): THREE.Object3D | null => {
+  let object: THREE.Object3D | null = null;
+
+  // Create geometry based on type and parameters
+  if (data.type === 'Mesh' && data.geometryParams) {
+    let geometry: THREE.BufferGeometry;
+    
+    if (data.geometryParams.width !== undefined) {
+      // Box geometry
+      geometry = new THREE.BoxGeometry(
+        data.geometryParams.width,
+        data.geometryParams.height,
+        data.geometryParams.depth
+      );
+    } else if (data.geometryParams.radius !== undefined && data.geometryParams.widthSegments !== undefined) {
+      // Sphere geometry
+      geometry = new THREE.SphereGeometry(
+        data.geometryParams.radius,
+        data.geometryParams.widthSegments,
+        data.geometryParams.heightSegments
+      );
+    } else if (data.geometryParams.radiusTop !== undefined) {
+      // Cylinder geometry
+      geometry = new THREE.CylinderGeometry(
+        data.geometryParams.radiusTop,
+        data.geometryParams.radiusBottom,
+        data.geometryParams.height,
+        data.geometryParams.radialSegments
+      );
+    } else if (data.geometryParams.radius !== undefined && data.geometryParams.radialSegments !== undefined) {
+      // Cone geometry
+      geometry = new THREE.ConeGeometry(
+        data.geometryParams.radius,
+        data.geometryParams.height,
+        data.geometryParams.radialSegments
+      );
+    } else {
+      // Default to box
+      geometry = new THREE.BoxGeometry(1, 1, 1);
+    }
+
+    // Create material
+    const material = new THREE.MeshStandardMaterial({
+      color: data.color,
+      transparent: data.opacity < 1,
+      opacity: data.opacity,
+      ...data.materialParams
+    });
+
+    object = new THREE.Mesh(geometry, material);
+  }
+
+  if (object) {
+    // Set transform properties
+    object.position.set(data.position.x, data.position.y, data.position.z);
+    object.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
+    object.scale.set(data.scale.x, data.scale.y, data.scale.z);
+    object.visible = data.visible;
+  }
+
+  return object;
+};
+
+// Object CRUD operations
+export const saveObject = async (objectData: FirestoreObject): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, COLLECTIONS.OBJECTS), objectData);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving object:', error);
+    throw error;
+  }
+};
+
+export const updateObject = async (id: string, objectData: Partial<FirestoreObject>): Promise<void> => {
+  try {
+    const objectRef = doc(db, COLLECTIONS.OBJECTS, id);
+    await updateDoc(objectRef, {
+      ...objectData,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating object:', error);
+    throw error;
+  }
+};
+
+export const deleteObject = async (id: string): Promise<void> => {
+  try {
+    await deleteDoc(doc(db, COLLECTIONS.OBJECTS, id));
+  } catch (error) {
+    console.error('Error deleting object:', error);
+    throw error;
+  }
+};
+
+export const getObjects = async (): Promise<FirestoreObject[]> => {
+  try {
+    const q = query(collection(db, COLLECTIONS.OBJECTS), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as FirestoreObject));
+  } catch (error) {
+    console.error('Error getting objects:', error);
+    throw error;
+  }
+};
+
+export const getObject = async (id: string): Promise<FirestoreObject | null> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.OBJECTS, id);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return {
+        id: docSnap.id,
+        ...docSnap.data()
+      } as FirestoreObject;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error('Error getting object:', error);
+    throw error;
+  }
+};
+
+// Group CRUD operations
+export const saveGroup = async (groupData: FirestoreGroup): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, COLLECTIONS.GROUPS), groupData);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving group:', error);
+    throw error;
+  }
+};
+
+export const updateGroup = async (id: string, groupData: Partial<FirestoreGroup>): Promise<void> => {
+  try {
+    const groupRef = doc(db, COLLECTIONS.GROUPS, id);
+    await updateDoc(groupRef, {
+      ...groupData,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating group:', error);
+    throw error;
+  }
+};
+
+export const deleteGroup = async (id: string): Promise<void> => {
+  try {
+    await deleteDoc(doc(db, COLLECTIONS.GROUPS, id));
+  } catch (error) {
+    console.error('Error deleting group:', error);
+    throw error;
+  }
+};
+
+export const getGroups = async (): Promise<FirestoreGroup[]> => {
+  try {
+    const q = query(collection(db, COLLECTIONS.GROUPS), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as FirestoreGroup));
+  } catch (error) {
+    console.error('Error getting groups:', error);
+    throw error;
+  }
+};
+
+// Light CRUD operations
+export const saveLight = async (lightData: FirestoreLight): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, COLLECTIONS.LIGHTS), lightData);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving light:', error);
+    throw error;
+  }
+};
+
+export const updateLight = async (id: string, lightData: Partial<FirestoreLight>): Promise<void> => {
+  try {
+    const lightRef = doc(db, COLLECTIONS.LIGHTS, id);
+    await updateDoc(lightRef, {
+      ...lightData,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating light:', error);
+    throw error;
+  }
+};
+
+export const deleteLight = async (id: string): Promise<void> => {
+  try {
+    await deleteDoc(doc(db, COLLECTIONS.LIGHTS, id));
+  } catch (error) {
+    console.error('Error deleting light:', error);
+    throw error;
+  }
+};
+
+export const getLights = async (): Promise<FirestoreLight[]> => {
+  try {
+    const q = query(collection(db, COLLECTIONS.LIGHTS), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as FirestoreLight));
+  } catch (error) {
+    console.error('Error getting lights:', error);
+    throw error;
+  }
+};
+
+// Scene CRUD operations
+export const saveScene = async (sceneData: FirestoreScene): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, COLLECTIONS.SCENES), sceneData);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving scene:', error);
+    throw error;
+  }
+};
+
+export const updateScene = async (id: string, sceneData: Partial<FirestoreScene>): Promise<void> => {
+  try {
+    const sceneRef = doc(db, COLLECTIONS.SCENES, id);
+    await updateDoc(sceneRef, {
+      ...sceneData,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating scene:', error);
+    throw error;
+  }
+};
+
+export const getScenes = async (): Promise<FirestoreScene[]> => {
+  try {
+    const q = query(collection(db, COLLECTIONS.SCENES), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as FirestoreScene));
+  } catch (error) {
+    console.error('Error getting scenes:', error);
+    throw error;
+  }
+};
+
+// Real-time listeners
+export const subscribeToObjects = (callback: (objects: FirestoreObject[]) => void) => {
+  const q = query(collection(db, COLLECTIONS.OBJECTS), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (querySnapshot) => {
+    const objects = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as FirestoreObject));
+    callback(objects);
+  });
+};
+
+export const subscribeToGroups = (callback: (groups: FirestoreGroup[]) => void) => {
+  const q = query(collection(db, COLLECTIONS.GROUPS), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (querySnapshot) => {
+    const groups = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as FirestoreGroup));
+    callback(groups);
+  });
+};
+
+export const subscribeToLights = (callback: (lights: FirestoreLight[]) => void) => {
+  const q = query(collection(db, COLLECTIONS.LIGHTS), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (querySnapshot) => {
+    const lights = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as FirestoreLight));
+    callback(lights);
+  });
+};
+
+// Batch operations for better performance
+export const saveObjectsBatch = async (objects: FirestoreObject[]): Promise<void> => {
+  try {
+    const batch = [];
+    for (const obj of objects) {
+      batch.push(saveObject(obj));
+    }
+    await Promise.all(batch);
+  } catch (error) {
+    console.error('Error saving objects batch:', error);
+    throw error;
+  }
+};
+
+export const deleteObjectsBatch = async (ids: string[]): Promise<void> => {
+  try {
+    const batch = [];
+    for (const id of ids) {
+      batch.push(deleteObject(id));
+    }
+    await Promise.all(batch);
+  } catch (error) {
+    console.error('Error deleting objects batch:', error);
+    throw error;
+  }
+};
