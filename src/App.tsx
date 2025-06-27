@@ -60,18 +60,17 @@ function App() {
     <div className="w-full h-screen relative">
       <Scene />
       
-      {/* Hide Interface Button - Always visible at top left */}
-      <HideInterfaceButton />
-      
-      {/* Save Button - Next to Hide Interface button when user is authenticated */}
-      {user && <SaveButton user={user} />}
-      
-      {/* User Profile - Always visible at top right when authenticated */}
-      {user && (
-        <div className="fixed top-4 right-4 z-40">
-          <UserProfile user={user} onSignOut={handleSignOut} />
-        </div>
-      )}
+      {/* Top Left Controls - Arranged horizontally */}
+      <div className="fixed top-4 left-4 flex items-center gap-4 z-50">
+        {/* Hide Interface Button */}
+        <HideInterfaceButton />
+        
+        {/* Save Button - When user is authenticated */}
+        {user && <SaveButton user={user} />}
+        
+        {/* User Profile - When user is authenticated */}
+        {user && <UserProfile user={user} onSignOut={handleSignOut} />}
+      </div>
       
       {/* Conditionally render UI panels based on hideAllMenus setting */}
       {!sceneSettings.hideAllMenus && (

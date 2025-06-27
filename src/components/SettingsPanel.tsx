@@ -413,7 +413,7 @@ const HideInterfaceButton: React.FC = () => {
   return (
     <button
       onClick={handleToggleInterface}
-      className="fixed top-4 left-4 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 p-3 border border-white/5 z-30 transition-all duration-200 hover:scale-105 group"
+      className="bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 p-3 border border-white/5 transition-all duration-200 hover:scale-105 group"
       title={sceneSettings.hideAllMenus ? 'Show Interface (Tab)' : 'Hide Interface (Tab)'}
     >
       <div className="flex items-center gap-2">
