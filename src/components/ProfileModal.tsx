@@ -72,13 +72,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
 
     try {
       if (auth.currentUser) {
-        // Get the current origin and ensure it uses the correct protocol
-        const currentOrigin = window.location.origin;
-        
-        await sendEmailVerification(auth.currentUser, {
-          url: currentOrigin,
-          handleCodeInApp: false
-        });
+        // Send verification email without custom continue URL to avoid domain issues
+        await sendEmailVerification(auth.currentUser);
         
         setMessage({ 
           type: 'success', 
@@ -147,12 +142,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
       await reauthenticateWithCredential(auth.currentUser, credential);
       await updateEmail(auth.currentUser, accountData.email);
       
-      // Send verification email for the new email address
-      const currentOrigin = window.location.origin;
-      await sendEmailVerification(auth.currentUser, {
-        url: currentOrigin,
-        handleCodeInApp: false
-      });
+      // Send verification email for the new email address without custom continue URL
+      await sendEmailVerification(auth.currentUser);
       
       setMessage({ 
         type: 'success', 

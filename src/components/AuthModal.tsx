@@ -101,13 +101,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
 
   const sendVerificationEmail = async (user: any) => {
     try {
-      // Get the current origin and ensure it uses the correct protocol
-      const currentOrigin = window.location.origin;
-      
-      await sendEmailVerification(user, {
-        url: currentOrigin,
-        handleCodeInApp: false
-      });
+      // Send verification email without custom continue URL to avoid domain issues
+      await sendEmailVerification(user);
       return true;
     } catch (error) {
       console.error('Error sending verification email:', error);
