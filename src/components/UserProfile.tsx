@@ -7,7 +7,9 @@ import {
   Mail,
   Calendar,
   Shield,
-  Edit3
+  Edit3,
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
@@ -117,9 +119,19 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onSignOut }) => {
                 <div className="flex items-center gap-3 text-sm">
                   <Shield className="w-4 h-4 text-white/50" />
                   <span className="text-white/70">Status:</span>
-                  <span className="text-green-400">
-                    {user.emailVerified ? 'Verified' : 'Unverified'}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    {user.emailVerified ? (
+                      <>
+                        <CheckCircle className="w-3 h-3 text-green-400" />
+                        <span className="text-green-400">Verified</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle className="w-3 h-3 text-orange-400" />
+                        <span className="text-orange-400">Unverified</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 

@@ -11,14 +11,17 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  Upload
+  Upload,
+  Send,
+  Shield
 } from 'lucide-react';
 import { 
   updateProfile, 
   updateEmail, 
   updatePassword,
   reauthenticateWithCredential,
-  EmailAuthProvider
+  EmailAuthProvider,
+  sendEmailVerification
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
@@ -63,6 +66,43 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
     setTimeout(() => setMessage(null), 5000);
   };
 
+  const handleSendVerificationEmail = async () => {
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      if (auth.currentUser) {
+        await sendEmailVerification(auth.currentUser, {
+          url: window.location.origin,
+          handleCodeInApp: false
+        });
+        
+        setMessage({ 
+          type: 'success', 
+          text: 'Verification email sent! Please check your inbox and verify your email address.' 
+        });
+        clearMessage();
+      }
+    } catch (error: any) {
+      console.error('Error sending verification email:', error);
+      let errorMessage = 'Failed to send verification email';
+      
+      switch (error.code) {
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many requests. Please wait before requesting another verification email.';
+          break;
+        case 'auth/user-not-found':
+          errorMessage = 'User not found. Please sign in again.';
+          break;
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
+      clearMessage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -104,7 +144,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
       await reauthenticateWithCredential(auth.currentUser, credential);
       await updateEmail(auth.currentUser, accountData.email);
       
-      setMessage({ type: 'success', text: 'Email updated successfully! Please verify your new email.' });
+      // Send verification email for the new email address
+      await sendEmailVerification(auth.currentUser, {
+        url: window.location.origin,
+        handleCodeInApp: false
+      });
+      
+      setMessage({ 
+        type: 'success', 
+        text: 'Email updated successfully! A verification email has been sent to your new email address.' 
+      });
       setAccountData({ ...accountData, currentPassword: '' });
       clearMessage();
     } catch (error: any) {
@@ -356,57 +405,102 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
 
           {/* Account Tab */}
           {activeTab === 'account' && (
-            <form onSubmit={handleEmailUpdate} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={accountData.email}
-                  onChange={(e) => setAccountData({ ...accountData, email: e.target.value })}
-                  className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-2">
-                  Current Password (required to change email)
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPasswords.current ? 'text' : 'password'}
-                    value={accountData.currentPassword}
-                    onChange={(e) => setAccountData({ ...accountData, currentPassword: e.target.value })}
-                    className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 pr-10 text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50"
-                    placeholder="Enter your current password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white/70"
-                  >
-                    {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+            <div className="space-y-6">
+              {/* Email Verification Status */}
+              <div className={`p-4 rounded-lg border ${
+                user?.emailVerified 
+                  ? 'bg-green-500/10 border-green-500/20'
+                  : 'bg-orange-500/10 border-orange-500/20'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Shield className={`w-5 h-5 ${
+                      user?.emailVerified ? 'text-green-400' : 'text-orange-400'
+                    }`} />
+                    <div>
+                      <div className={`text-sm font-medium ${
+                        user?.emailVerified ? 'text-green-400' : 'text-orange-400'
+                      }`}>
+                        Email {user?.emailVerified ? 'Verified' : 'Not Verified'}
+                      </div>
+                      <div className="text-xs text-white/60 mt-0.5">
+                        {user?.emailVerified 
+                          ? 'Your email address has been verified'
+                          : 'Please verify your email address for enhanced security'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  {!user?.emailVerified && (
+                    <button
+                      onClick={handleSendVerificationEmail}
+                      disabled={loading}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-xs rounded-lg font-medium transition-colors"
+                    >
+                      {loading ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Send className="w-3 h-3" />
+                      )}
+                      {loading ? 'Sending...' : 'Verify Email'}
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Save className="w-5 h-5" />
-                )}
-                {loading ? 'Updating...' : 'Update Email'}
-              </button>
-            </form>
+              {/* Email Update Form */}
+              <form onSubmit={handleEmailUpdate} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={accountData.email}
+                    onChange={(e) => setAccountData({ ...accountData, email: e.target.value })}
+                    className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50"
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-2">
+                    Current Password (required to change email)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.current ? 'text' : 'password'}
+                      value={accountData.currentPassword}
+                      onChange={(e) => setAccountData({ ...accountData, currentPassword: e.target.value })}
+                      className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 pr-10 text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50"
+                      placeholder="Enter your current password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white/70"
+                    >
+                      {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Save className="w-5 h-5" />
+                  )}
+                  {loading ? 'Updating...' : 'Update Email'}
+                </button>
+              </form>
+            </div>
           )}
 
           {/* Security Tab */}

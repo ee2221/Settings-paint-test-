@@ -9,12 +9,15 @@ import {
   UserPlus, 
   X,
   AlertCircle,
-  Loader2
+  Loader2,
+  CheckCircle,
+  Send
 } from 'lucide-react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  sendEmailVerification
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
@@ -29,6 +32,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showVerificationSent, setShowVerificationSent] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -46,6 +50,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
     });
     setError('');
     setShowPassword(false);
+    setShowVerificationSent(false);
   };
 
   const handleClose = () => {
@@ -94,6 +99,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
     return true;
   };
 
+  const sendVerificationEmail = async (user: any) => {
+    try {
+      await sendEmailVerification(user, {
+        url: window.location.origin, // Redirect back to the app after verification
+        handleCodeInApp: false
+      });
+      return true;
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -105,7 +123,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
     try {
       if (isLogin) {
         // Sign in existing user
-        await signInWithEmailAndPassword(auth, formData.email, formData.password);
+        const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+        
+        // Check if email is verified
+        if (!userCredential.user.emailVerified) {
+          // Optionally send verification email again for unverified users
+          await sendVerificationEmail(userCredential.user);
+          console.log('User signed in but email not verified. Verification email sent.');
+        }
+        
+        onAuthSuccess();
+        handleClose();
       } else {
         // Create new user
         const userCredential = await createUserWithEmailAndPassword(
@@ -118,10 +146,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
         await updateProfile(userCredential.user, {
           displayName: formData.name.trim()
         });
+
+        // Send email verification
+        const verificationSent = await sendVerificationEmail(userCredential.user);
+        
+        if (verificationSent) {
+          setShowVerificationSent(true);
+          // Don't close the modal immediately, show verification message
+          setTimeout(() => {
+            onAuthSuccess();
+            handleClose();
+          }, 3000); // Give user time to see the verification message
+        } else {
+          // Even if verification email fails, still proceed with authentication
+          onAuthSuccess();
+          handleClose();
+        }
       }
-      
-      onAuthSuccess();
-      handleClose();
     } catch (error: any) {
       console.error('Auth error:', error);
       
@@ -182,6 +223,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Verification Success Message */}
+        {showVerificationSent && (
+          <div className="p-6 border-b border-white/10">
+            <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+              <div>
+                <div className="text-sm font-medium text-green-400">Account Created Successfully!</div>
+                <div className="text-xs text-white/60 mt-1">
+                  A verification email has been sent to {formData.email}. Please check your inbox and verify your email address.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -273,6 +329,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
             </div>
           )}
 
+          {/* Email Verification Info (signup only) */}
+          {!isLogin && !showVerificationSent && (
+            <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <Send className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-blue-400">
+                <div className="font-medium">Email Verification</div>
+                <div className="text-white/60 mt-0.5">
+                  We'll send a verification email to confirm your account after signup.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Error message */}
           {error && (
             <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
@@ -284,9 +353,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
           {/* Submit button */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || showVerificationSent}
             className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-              loading
+              loading || showVerificationSent
                 ? 'bg-gray-600 cursor-not-allowed text-white/50'
                 : isLogin
                   ? 'bg-blue-500 hover:bg-blue-600 text-white'
@@ -297,6 +366,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span>{isLogin ? 'Signing In...' : 'Creating Account...'}</span>
+              </>
+            ) : showVerificationSent ? (
+              <>
+                <CheckCircle className="w-5 h-5" />
+                <span>Account Created!</span>
               </>
             ) : (
               <>
@@ -311,19 +385,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
           </button>
 
           {/* Toggle mode */}
-          <div className="text-center pt-4 border-t border-white/10">
-            <p className="text-sm text-white/60">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
-              <button
-                type="button"
-                onClick={toggleMode}
-                disabled={loading}
-                className="ml-2 text-blue-400 hover:text-blue-300 font-medium transition-colors disabled:opacity-50"
-              >
-                {isLogin ? 'Sign Up' : 'Sign In'}
-              </button>
-            </p>
-          </div>
+          {!showVerificationSent && (
+            <div className="text-center pt-4 border-t border-white/10">
+              <p className="text-sm text-white/60">
+                {isLogin ? "Don't have an account?" : "Already have an account?"}
+                <button
+                  type="button"
+                  onClick={toggleMode}
+                  disabled={loading}
+                  className="ml-2 text-blue-400 hover:text-blue-300 font-medium transition-colors disabled:opacity-50"
+                >
+                  {isLogin ? 'Sign Up' : 'Sign In'}
+                </button>
+              </p>
+            </div>
+          )}
         </form>
       </div>
     </div>
