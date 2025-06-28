@@ -72,8 +72,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
 
     try {
       if (auth.currentUser) {
+        // Get the current origin and ensure it uses the correct protocol
+        const currentOrigin = window.location.origin;
+        
         await sendEmailVerification(auth.currentUser, {
-          url: window.location.origin,
+          url: currentOrigin,
           handleCodeInApp: false
         });
         
@@ -145,8 +148,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
       await updateEmail(auth.currentUser, accountData.email);
       
       // Send verification email for the new email address
+      const currentOrigin = window.location.origin;
       await sendEmailVerification(auth.currentUser, {
-        url: window.location.origin,
+        url: currentOrigin,
         handleCodeInApp: false
       });
       
