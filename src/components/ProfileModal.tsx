@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   X, 
   User, 
@@ -13,7 +13,8 @@ import {
   Loader2,
   Upload,
   Send,
-  Shield
+  Shield,
+  Clock
 } from 'lucide-react';
 import { 
   updateProfile, 
@@ -36,6 +37,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Email verification cooldown state
+  const [emailCooldown, setEmailCooldown] = useState(0);
+  const [cooldownInterval, setCooldownInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Profile form state
   const [profileData, setProfileData] = useState({
@@ -62,6 +67,32 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
     confirm: false
   });
 
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownInterval) {
+        clearInterval(cooldownInterval);
+      }
+    };
+  }, [cooldownInterval]);
+
+  const startEmailCooldown = (seconds: number = 60) => {
+    setEmailCooldown(seconds);
+    
+    const interval = setInterval(() => {
+      setEmailCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setCooldownInterval(null);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    setCooldownInterval(interval);
+  };
+
   const clearMessage = () => {
     setTimeout(() => setMessage(null), 5000);
   };
@@ -79,15 +110,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
           type: 'success', 
           text: 'Verification email sent! Please check your inbox and verify your email address.' 
         });
+        
+        // Start cooldown after successful send
+        startEmailCooldown(60);
         clearMessage();
       }
     } catch (error: any) {
       console.error('Error sending verification email:', error);
       let errorMessage = 'Failed to send verification email';
+      let cooldownTime = 60; // Default cooldown
       
       switch (error.code) {
         case 'auth/too-many-requests':
           errorMessage = 'Too many requests. Please wait before requesting another verification email.';
+          cooldownTime = 120; // Longer cooldown for rate limiting
           break;
         case 'auth/user-not-found':
           errorMessage = 'User not found. Please sign in again.';
@@ -95,6 +131,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
       }
       
       setMessage({ type: 'error', text: errorMessage });
+      
+      // Start cooldown even on error to prevent spam
+      if (error.code === 'auth/too-many-requests') {
+        startEmailCooldown(cooldownTime);
+      }
+      
       clearMessage();
     } finally {
       setLoading(false);
@@ -150,6 +192,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
         text: 'Email updated successfully! A verification email has been sent to your new email address.' 
       });
       setAccountData({ ...accountData, currentPassword: '' });
+      
+      // Start cooldown after email update verification send
+      startEmailCooldown(60);
       clearMessage();
     } catch (error: any) {
       console.error('Email update error:', error);
@@ -167,6 +212,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
           break;
         case 'auth/requires-recent-login':
           errorMessage = 'Please sign out and sign in again before changing email';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many requests. Please wait before trying again.';
+          startEmailCooldown(120);
           break;
       }
       
@@ -268,6 +317,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
     { id: 'account', label: 'Account', icon: Mail },
     { id: 'security', label: 'Security', icon: Lock }
   ] as const;
+
+  const isEmailVerificationDisabled = loading || emailCooldown > 0;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -429,15 +480,22 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                   {!user?.emailVerified && (
                     <button
                       onClick={handleSendVerificationEmail}
-                      disabled={loading}
+                      disabled={isEmailVerificationDisabled}
                       className="flex items-center gap-2 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-xs rounded-lg font-medium transition-colors"
                     >
                       {loading ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : emailCooldown > 0 ? (
+                        <Clock className="w-3 h-3" />
                       ) : (
                         <Send className="w-3 h-3" />
                       )}
-                      {loading ? 'Sending...' : 'Verify Email'}
+                      {loading 
+                        ? 'Sending...' 
+                        : emailCooldown > 0 
+                          ? `Wait ${emailCooldown}s`
+                          : 'Verify Email'
+                      }
                     </button>
                   )}
                 </div>
