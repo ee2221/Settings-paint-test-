@@ -249,7 +249,7 @@ const VertexPoints = ({ geometry, object }) => {
         <mesh
           key={i}
           position={vertex}
-          onClick={(e) => {
+          onDoubleClick={(e) => {
             e.stopPropagation();
             if (editMode === 'vertex' && !objectLocked) {
               startVertexDrag(i, vertex);
