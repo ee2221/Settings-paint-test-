@@ -171,7 +171,7 @@ export const getScene = async (id: string): Promise<FirestoreScene | null> => {
 
 // Object conversion functions
 export const objectToFirestore = (obj: any): Partial<FirestoreObject> => {
-  return {
+  const firestoreObj: Partial<FirestoreObject> = {
     type: obj.type || 'mesh',
     position: {
       x: obj.position?.x || 0,
@@ -188,10 +188,19 @@ export const objectToFirestore = (obj: any): Partial<FirestoreObject> => {
       y: obj.scale?.y || 1,
       z: obj.scale?.z || 1
     },
-    color: obj.color,
     material: obj.material,
     geometry: obj.geometry
   };
+
+  // Extract color from material if it exists and is valid
+  if (obj.isMesh && obj.material && obj.material.color && typeof obj.material.color.getHexString === 'function') {
+    firestoreObj.color = `#${obj.material.color.getHexString()}`;
+  } else if (obj.color && typeof obj.color === 'string') {
+    firestoreObj.color = obj.color;
+  }
+  // If no valid color is found, we simply don't include the color field
+
+  return firestoreObj;
 };
 
 export const firestoreToObject = (firestoreObj: FirestoreObject): any => {
