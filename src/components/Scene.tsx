@@ -487,6 +487,9 @@ const VertexDragController = () => {
     const handlePointerMove = (event: PointerEvent) => {
       if (!isDraggingRef.current || !draggedVertex) return;
 
+      // Prevent default to stop any browser behavior
+      event.preventDefault();
+
       // Get normalized device coordinates
       const rect = gl.domElement.getBoundingClientRect();
       const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -529,8 +532,8 @@ const VertexDragController = () => {
       }
     };
 
-    // Add event listeners
-    window.addEventListener('pointermove', handlePointerMove);
+    // Add event listeners with passive: false to allow preventDefault
+    window.addEventListener('pointermove', handlePointerMove, { passive: false });
     window.addEventListener('pointerup', handlePointerUp);
     window.addEventListener('contextmenu', handleRightClick);
     window.addEventListener('keydown', handleKeyDown);
@@ -600,7 +603,7 @@ const SceneLights = () => {
 // Camera controller component
 const CameraController = () => {
   const { camera } = useThree();
-  const { cameraPerspective, cameraZoom } = useSceneStore();
+  const { cameraPerspective, cameraZoom, draggedVertex, isDraggingEdge } = useSceneStore();
   const controlsRef = useRef();
 
   useEffect(() => {
@@ -702,6 +705,7 @@ const CameraController = () => {
       enablePan={true}
       enableZoom={true}
       enableRotate={true}
+      enabled={!draggedVertex && !isDraggingEdge} // Disable controls when dragging vertices or edges
     />
   );
 };
