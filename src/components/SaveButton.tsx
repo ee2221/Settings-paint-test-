@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Save, Cloud, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Save, Cloud, Check, AlertCircle, Loader2, Camera } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import { 
   saveObject, 
@@ -29,6 +29,34 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [saveMessage, setSaveMessage] = useState('');
 
+  // Function to capture scene screenshot
+  const captureSceneScreenshot = (): Promise<string> => {
+    return new Promise((resolve) => {
+      const canvas = document.querySelector('canvas');
+      if (canvas) {
+        // Create a smaller thumbnail version
+        const thumbnailCanvas = document.createElement('canvas');
+        const ctx = thumbnailCanvas.getContext('2d');
+        
+        thumbnailCanvas.width = 400;
+        thumbnailCanvas.height = 300;
+        
+        if (ctx) {
+          // Draw the scene canvas to the thumbnail canvas (scaled down)
+          ctx.drawImage(canvas, 0, 0, 400, 300);
+          
+          // Convert to data URL
+          const dataURL = thumbnailCanvas.toDataURL('image/jpeg', 0.8);
+          resolve(dataURL);
+        } else {
+          resolve('');
+        }
+      } else {
+        resolve('');
+      }
+    });
+  };
+
   const handleSave = async () => {
     if (!user) {
       setSaveStatus('error');
@@ -41,9 +69,12 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
     }
 
     setSaveStatus('saving');
-    setSaveMessage('Saving to cloud...');
+    setSaveMessage('Capturing scene and saving to cloud...');
 
     try {
+      // Capture scene screenshot
+      const thumbnail = await captureSceneScreenshot();
+      
       // Save all objects
       const objectPromises = objects.map(async (obj) => {
         const firestoreData = objectToFirestore(obj.object, obj.name, undefined, user.uid);
@@ -87,16 +118,21 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
         return await saveLight(firestoreLight, user.uid);
       });
 
-      // Save scene settings
+      // Save scene settings with thumbnail and metadata
       const sceneData: FirestoreScene = {
         name: `Scene ${new Date().toLocaleString()}`,
         description: 'Auto-saved scene',
-        backgroundColor: sceneSettings.backgroundColor,
-        showGrid: sceneSettings.showGrid,
-        gridSize: sceneSettings.gridSize,
-        gridDivisions: sceneSettings.gridDivisions,
-        cameraPerspective,
-        cameraZoom
+        sceneData: {
+          backgroundColor: sceneSettings.backgroundColor,
+          showGrid: sceneSettings.showGrid,
+          gridSize: sceneSettings.gridSize,
+          gridDivisions: sceneSettings.gridDivisions,
+          cameraPerspective,
+          cameraZoom,
+          thumbnail,
+          objectCount: objects.length,
+          lightCount: lights.length
+        }
       };
       const scenePromise = saveScene(sceneData, user.uid);
 
@@ -109,7 +145,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
       ]);
 
       setSaveStatus('success');
-      setSaveMessage(`Saved ${objects.length} objects, ${groups.length} groups, ${lights.length} lights`);
+      setSaveMessage(`Saved ${objects.length} objects, ${groups.length} groups, ${lights.length} lights with scene preview`);
       
       // Reset status after 3 seconds
       setTimeout(() => {
@@ -143,6 +179,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
         return (
           <>
             <Check className="w-5 h-5 text-green-400" />
+            <Camera className="w-4 h-4 text-green-400" />
             <span className="text-sm font-medium text-green-400">Saved!</span>
           </>
         );
@@ -195,8 +232,8 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
               : !hasContent 
                 ? 'No content to save' 
                 : saveStatus === 'saving' 
-                  ? 'Saving to Firebase...' 
-                  : 'Save current scene to Firebase'
+                  ? 'Capturing scene and saving to Firebase...' 
+                  : 'Save current scene with preview to Firebase'
           }
         >
           {getButtonContent()}
@@ -228,6 +265,10 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
               {lights.length > 0 && (
                 <span>{lights.length} light{lights.length !== 1 ? 's' : ''}</span>
               )}
+            </div>
+            <div className="flex items-center gap-1 mt-1 text-blue-400">
+              <Camera className="w-3 h-3" />
+              <span>Scene preview included</span>
             </div>
           </div>
         )}

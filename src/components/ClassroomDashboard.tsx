@@ -83,17 +83,60 @@ const ClassroomDashboard: React.FC = () => {
     
     try {
       const scenes = await getScenes(user.uid);
-      const projectsWithMetadata: Project[] = scenes.map(scene => ({
-        ...scene,
-        lastModified: scene.updatedAt?.toDate() || scene.createdAt?.toDate() || new Date(),
-        objectCount: Math.floor(Math.random() * 20) + 1, // Mock data
-        lightCount: Math.floor(Math.random() * 5) + 1, // Mock data
-        thumbnail: `https://picsum.photos/400/300?random=${scene.id}` // Mock thumbnail
-      }));
+      const projectsWithMetadata: Project[] = scenes.map(scene => {
+        // Extract thumbnail from scene data if available
+        const thumbnail = scene.sceneData?.thumbnail || generateProjectThumbnail(scene);
+        
+        return {
+          ...scene,
+          lastModified: scene.updatedAt?.toDate() || scene.createdAt?.toDate() || new Date(),
+          objectCount: scene.sceneData?.objectCount || 0,
+          lightCount: scene.sceneData?.lightCount || 0,
+          thumbnail
+        };
+      });
       setProjects(projectsWithMetadata);
     } catch (error) {
       console.error('Error loading projects:', error);
     }
+  };
+
+  const generateProjectThumbnail = (scene: FirestoreScene): string => {
+    // Generate a procedural thumbnail based on project data
+    const colors = [
+      'from-blue-500 to-purple-600',
+      'from-green-400 to-blue-500',
+      'from-purple-500 to-pink-500',
+      'from-yellow-400 to-red-500',
+      'from-indigo-500 to-purple-600',
+      'from-pink-500 to-rose-500'
+    ];
+    
+    const patterns = [
+      'bg-gradient-to-br',
+      'bg-gradient-to-tr',
+      'bg-gradient-to-bl',
+      'bg-gradient-to-tl'
+    ];
+    
+    // Use scene ID to consistently generate the same thumbnail
+    const colorIndex = (scene.id?.charCodeAt(0) || 0) % colors.length;
+    const patternIndex = (scene.id?.charCodeAt(1) || 0) % patterns.length;
+    
+    return `data:image/svg+xml,${encodeURIComponent(`
+      <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <rect width="400" height="300" fill="url(#grad)"/>
+        <circle cx="200" cy="150" r="60" fill="rgba(255,255,255,0.2)"/>
+        <rect x="150" y="100" width="100" height="100" fill="rgba(255,255,255,0.1)" rx="10"/>
+        <text x="200" y="250" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold">${scene.name.substring(0, 20)}</text>
+      </svg>
+    `)}`;
   };
 
   const filterAndSortProjects = () => {
@@ -137,13 +180,13 @@ const ClassroomDashboard: React.FC = () => {
   };
 
   const handleCreateProject = () => {
-    // Open the 3D modeling application in a new tab/window
-    window.open('/app', '_blank');
+    // Navigate to the 3D modeling application in the same tab
+    window.location.href = '/?view=app';
   };
 
   const handleOpenProject = (projectId: string) => {
-    // Open the 3D modeling application with the specific project
-    window.open(`/app?project=${projectId}`, '_blank');
+    // Navigate to the 3D modeling application with the specific project in the same tab
+    window.location.href = `/?view=app&project=${projectId}`;
   };
 
   const handleDeleteProject = async (projectId: string) => {
@@ -370,11 +413,22 @@ const ClassroomDashboard: React.FC = () => {
                 className="group bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-all duration-200 hover:scale-105"
               >
                 <div className="relative">
-                  <img
-                    src={project.thumbnail}
-                    alt={project.name}
-                    className="w-full h-48 object-cover"
-                  />
+                  <div className="w-full h-48 bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center overflow-hidden">
+                    {project.thumbnail?.startsWith('data:image/svg+xml') ? (
+                      <img
+                        src={project.thumbnail}
+                        alt={project.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-600/20 flex items-center justify-center">
+                        <div className="text-center">
+                          <Box className="w-12 h-12 text-white/40 mx-auto mb-2" />
+                          <div className="text-white/60 text-sm font-medium">{project.name}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                   <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <div className="relative">
@@ -470,11 +524,17 @@ const ClassroomDashboard: React.FC = () => {
                 key={project.id}
                 className="flex items-center gap-4 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl hover:border-white/20 transition-colors"
               >
-                <img
-                  src={project.thumbnail}
-                  alt={project.name}
-                  className="w-16 h-16 object-cover rounded-lg"
-                />
+                <div className="w-16 h-16 bg-gradient-to-br from-slate-700 to-slate-800 rounded-lg flex items-center justify-center overflow-hidden">
+                  {project.thumbnail?.startsWith('data:image/svg+xml') ? (
+                    <img
+                      src={project.thumbnail}
+                      alt={project.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Box className="w-8 h-8 text-white/40" />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-white truncate">{project.name}</h3>
                   {project.description && (
