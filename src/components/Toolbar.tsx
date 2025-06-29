@@ -1,22 +1,5 @@
 import React from 'react';
-import { 
-  Box, 
-  Sphere, 
-  Cylinder, 
-  Cone, 
-  Torus,
-  Move3D,
-  RotateCcw,
-  Scale,
-  MousePointer2,
-  Edit,
-  Navigation,
-  Trees,
-  Mountain,
-  Flower2,
-  TreePine,
-  TreeDeciduous
-} from 'lucide-react';
+import { Box, Cherry as Sphere, Cylinder, Cone, Torus, Move3D, RotateCcw, Scale, MousePointer2, Edit, Navigation, Trees, Mountain, Flower2, TreePine, TreeDeciduous } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import * as THREE from 'three';
 
