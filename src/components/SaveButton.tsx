@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Save, Cloud, Check, AlertCircle, Loader2, Camera } from 'lucide-react';
+import { Save, Cloud, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 import { 
   saveObject, 
@@ -14,10 +14,9 @@ import {
 
 interface SaveButtonProps {
   user: any;
-  projectId?: string; // Optional project ID for updating existing projects
 }
 
-const SaveButton: React.FC<SaveButtonProps> = ({ user, projectId }) => {
+const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
   const { 
     objects, 
     groups, 
@@ -29,34 +28,6 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user, projectId }) => {
   
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [saveMessage, setSaveMessage] = useState('');
-
-  // Function to capture scene screenshot
-  const captureSceneScreenshot = (): Promise<string> => {
-    return new Promise((resolve) => {
-      const canvas = document.querySelector('canvas');
-      if (canvas) {
-        // Create a smaller thumbnail version
-        const thumbnailCanvas = document.createElement('canvas');
-        const ctx = thumbnailCanvas.getContext('2d');
-        
-        thumbnailCanvas.width = 400;
-        thumbnailCanvas.height = 300;
-        
-        if (ctx) {
-          // Draw the scene canvas to the thumbnail canvas (scaled down)
-          ctx.drawImage(canvas, 0, 0, 400, 300);
-          
-          // Convert to data URL
-          const dataURL = thumbnailCanvas.toDataURL('image/jpeg', 0.8);
-          resolve(dataURL);
-        } else {
-          resolve('');
-        }
-      } else {
-        resolve('');
-      }
-    });
-  };
 
   const handleSave = async () => {
     if (!user) {
@@ -70,76 +41,40 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user, projectId }) => {
     }
 
     setSaveStatus('saving');
-    setSaveMessage('Capturing scene and saving to project database...');
+    setSaveMessage('Saving to cloud...');
 
     try {
-      // Capture scene screenshot
-      const thumbnail = await captureSceneScreenshot();
-      
-      let currentProjectId = projectId;
-      
-      // If no project ID provided, create a new project
-      if (!currentProjectId) {
-        const sceneData: FirestoreScene = {
-          name: `Scene ${new Date().toLocaleString()}`,
-          description: 'Auto-saved scene',
-          sceneData: {
-            backgroundColor: sceneSettings.backgroundColor,
-            showGrid: sceneSettings.showGrid,
-            gridSize: sceneSettings.gridSize,
-            gridDivisions: sceneSettings.gridDivisions,
-            cameraPerspective,
-            cameraZoom,
-            thumbnail,
-            objectCount: objects.length,
-            lightCount: lights.length
-          },
-          userId: user.uid
-        };
-        currentProjectId = await saveScene(sceneData, user.uid);
-        
-        // Update URL to include the new project ID
-        const url = new URL(window.location.href);
-        url.searchParams.set('project', currentProjectId);
-        window.history.replaceState({}, '', url.toString());
-      }
-
-      // Now save all objects to this project's database
+      // Save all objects
       const objectPromises = objects.map(async (obj) => {
-        const firestoreData = objectToFirestore(obj.object, obj.name, currentProjectId, user.uid);
+        const firestoreData = objectToFirestore(obj.object, obj.name, undefined, user.uid);
         firestoreData.visible = obj.visible;
         firestoreData.locked = obj.locked;
         // Only add groupId if it's defined
         if (obj.groupId !== undefined) {
           firestoreData.groupId = obj.groupId;
         }
-        return await saveObject(firestoreData, user.uid, currentProjectId!);
+        return await saveObject(firestoreData, user.uid);
       });
 
-      // Save all groups to this project's database
+      // Save all groups
       const groupPromises = groups.map(async (group) => {
         const firestoreGroup: FirestoreGroup = {
           name: group.name,
           expanded: group.expanded,
           visible: group.visible,
           locked: group.locked,
-          objectIds: group.objectIds,
-          userId: user.uid
+          objectIds: group.objectIds
         };
-        return await saveGroup(firestoreGroup, user.uid, currentProjectId!);
+        return await saveGroup(firestoreGroup, user.uid);
       });
 
-      // Save all lights to this project's database
+      // Save all lights
       const lightPromises = lights.map(async (light) => {
         const firestoreLight: FirestoreLight = {
           name: light.name,
           type: light.type,
-          position: Array.isArray(light.position) 
-            ? { x: light.position[0], y: light.position[1], z: light.position[2] }
-            : light.position,
-          target: light.target && Array.isArray(light.target)
-            ? { x: light.target[0], y: light.target[1], z: light.target[2] }
-            : light.target,
+          position: light.position,
+          target: light.target,
           intensity: light.intensity,
           color: light.color,
           visible: light.visible,
@@ -147,21 +82,34 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user, projectId }) => {
           distance: light.distance,
           decay: light.decay,
           angle: light.angle,
-          penumbra: light.penumbra,
-          userId: user.uid
+          penumbra: light.penumbra
         };
-        return await saveLight(firestoreLight, user.uid, currentProjectId!);
+        return await saveLight(firestoreLight, user.uid);
       });
+
+      // Save scene settings
+      const sceneData: FirestoreScene = {
+        name: `Scene ${new Date().toLocaleString()}`,
+        description: 'Auto-saved scene',
+        backgroundColor: sceneSettings.backgroundColor,
+        showGrid: sceneSettings.showGrid,
+        gridSize: sceneSettings.gridSize,
+        gridDivisions: sceneSettings.gridDivisions,
+        cameraPerspective,
+        cameraZoom
+      };
+      const scenePromise = saveScene(sceneData, user.uid);
 
       // Wait for all saves to complete
       await Promise.all([
         ...objectPromises,
         ...groupPromises,
-        ...lightPromises
+        ...lightPromises,
+        scenePromise
       ]);
 
       setSaveStatus('success');
-      setSaveMessage(`Saved to project database: ${objects.length} objects, ${groups.length} groups, ${lights.length} lights`);
+      setSaveMessage(`Saved ${objects.length} objects, ${groups.length} groups, ${lights.length} lights`);
       
       // Reset status after 3 seconds
       setTimeout(() => {
@@ -172,7 +120,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user, projectId }) => {
     } catch (error) {
       console.error('Save error:', error);
       setSaveStatus('error');
-      setSaveMessage('Failed to save to project database');
+      setSaveMessage('Failed to save to cloud');
       
       // Reset status after 5 seconds
       setTimeout(() => {
@@ -195,7 +143,6 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user, projectId }) => {
         return (
           <>
             <Check className="w-5 h-5 text-green-400" />
-            <Camera className="w-4 h-4 text-green-400" />
             <span className="text-sm font-medium text-green-400">Saved!</span>
           </>
         );
@@ -211,7 +158,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user, projectId }) => {
           <>
             <Cloud className="w-5 h-5" />
             <Save className="w-4 h-4" />
-            <span className="text-sm font-medium">Save Project</span>
+            <span className="text-sm font-medium">Save to Cloud</span>
           </>
         );
     }
@@ -248,10 +195,8 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user, projectId }) => {
               : !hasContent 
                 ? 'No content to save' 
                 : saveStatus === 'saving' 
-                  ? 'Saving to project database...' 
-                  : projectId 
-                    ? 'Update current project'
-                    : 'Save as new project'
+                  ? 'Saving to Firebase...' 
+                  : 'Save current scene to Firebase'
           }
         >
           {getButtonContent()}
@@ -270,7 +215,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user, projectId }) => {
           </div>
         )}
         
-        {/* Project Info */}
+        {/* Scene Info */}
         {hasContent && saveStatus === 'idle' && user && (
           <div className="bg-[#1a1a1a]/90 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/60">
             <div className="flex items-center gap-4">
@@ -283,10 +228,6 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user, projectId }) => {
               {lights.length > 0 && (
                 <span>{lights.length} light{lights.length !== 1 ? 's' : ''}</span>
               )}
-            </div>
-            <div className="flex items-center gap-1 mt-1 text-blue-400">
-              <Camera className="w-3 h-3" />
-              <span>{projectId ? 'Update project' : 'Save as new project'}</span>
             </div>
           </div>
         )}
