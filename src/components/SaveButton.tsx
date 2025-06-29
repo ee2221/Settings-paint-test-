@@ -14,9 +14,10 @@ import {
 
 interface SaveButtonProps {
   user: any;
+  projectId?: string; // Optional project ID for updating existing projects
 }
 
-const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
+const SaveButton: React.FC<SaveButtonProps> = ({ user, projectId }) => {
   const { 
     objects, 
     groups, 
@@ -69,44 +70,53 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
     }
 
     setSaveStatus('saving');
-    setSaveMessage('Capturing scene and saving to cloud...');
+    setSaveMessage('Capturing scene and saving to project database...');
 
     try {
       // Capture scene screenshot
       const thumbnail = await captureSceneScreenshot();
       
-      // Save scene settings first to get the scene ID
-      const sceneData: FirestoreScene = {
-        name: `Scene ${new Date().toLocaleString()}`,
-        description: 'Auto-saved scene',
-        sceneData: {
-          backgroundColor: sceneSettings.backgroundColor,
-          showGrid: sceneSettings.showGrid,
-          gridSize: sceneSettings.gridSize,
-          gridDivisions: sceneSettings.gridDivisions,
-          cameraPerspective,
-          cameraZoom,
-          thumbnail,
-          objectCount: objects.length,
-          lightCount: lights.length
-        },
-        userId: user.uid
-      };
-      const sceneId = await saveScene(sceneData, user.uid);
+      let currentProjectId = projectId;
+      
+      // If no project ID provided, create a new project
+      if (!currentProjectId) {
+        const sceneData: FirestoreScene = {
+          name: `Scene ${new Date().toLocaleString()}`,
+          description: 'Auto-saved scene',
+          sceneData: {
+            backgroundColor: sceneSettings.backgroundColor,
+            showGrid: sceneSettings.showGrid,
+            gridSize: sceneSettings.gridSize,
+            gridDivisions: sceneSettings.gridDivisions,
+            cameraPerspective,
+            cameraZoom,
+            thumbnail,
+            objectCount: objects.length,
+            lightCount: lights.length
+          },
+          userId: user.uid
+        };
+        currentProjectId = await saveScene(sceneData, user.uid);
+        
+        // Update URL to include the new project ID
+        const url = new URL(window.location.href);
+        url.searchParams.set('project', currentProjectId);
+        window.history.replaceState({}, '', url.toString());
+      }
 
-      // Now save all objects with the scene ID
+      // Now save all objects to this project's database
       const objectPromises = objects.map(async (obj) => {
-        const firestoreData = objectToFirestore(obj.object, obj.name, sceneId, user.uid);
+        const firestoreData = objectToFirestore(obj.object, obj.name, currentProjectId, user.uid);
         firestoreData.visible = obj.visible;
         firestoreData.locked = obj.locked;
         // Only add groupId if it's defined
         if (obj.groupId !== undefined) {
           firestoreData.groupId = obj.groupId;
         }
-        return await saveObject(firestoreData, user.uid);
+        return await saveObject(firestoreData, user.uid, currentProjectId!);
       });
 
-      // Save all groups with the scene ID
+      // Save all groups to this project's database
       const groupPromises = groups.map(async (group) => {
         const firestoreGroup: FirestoreGroup = {
           name: group.name,
@@ -114,13 +124,12 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           visible: group.visible,
           locked: group.locked,
           objectIds: group.objectIds,
-          sceneId: sceneId,
           userId: user.uid
         };
-        return await saveGroup(firestoreGroup, user.uid);
+        return await saveGroup(firestoreGroup, user.uid, currentProjectId!);
       });
 
-      // Save all lights with the scene ID
+      // Save all lights to this project's database
       const lightPromises = lights.map(async (light) => {
         const firestoreLight: FirestoreLight = {
           name: light.name,
@@ -139,13 +148,12 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           decay: light.decay,
           angle: light.angle,
           penumbra: light.penumbra,
-          sceneId: sceneId,
           userId: user.uid
         };
-        return await saveLight(firestoreLight, user.uid);
+        return await saveLight(firestoreLight, user.uid, currentProjectId!);
       });
 
-      // Wait for all sub-collection saves to complete
+      // Wait for all saves to complete
       await Promise.all([
         ...objectPromises,
         ...groupPromises,
@@ -153,7 +161,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
       ]);
 
       setSaveStatus('success');
-      setSaveMessage(`Saved ${objects.length} objects, ${groups.length} groups, ${lights.length} lights with scene preview`);
+      setSaveMessage(`Saved to project database: ${objects.length} objects, ${groups.length} groups, ${lights.length} lights`);
       
       // Reset status after 3 seconds
       setTimeout(() => {
@@ -164,7 +172,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
     } catch (error) {
       console.error('Save error:', error);
       setSaveStatus('error');
-      setSaveMessage('Failed to save to cloud');
+      setSaveMessage('Failed to save to project database');
       
       // Reset status after 5 seconds
       setTimeout(() => {
@@ -203,7 +211,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           <>
             <Cloud className="w-5 h-5" />
             <Save className="w-4 h-4" />
-            <span className="text-sm font-medium">Save to Cloud</span>
+            <span className="text-sm font-medium">Save Project</span>
           </>
         );
     }
@@ -240,8 +248,10 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
               : !hasContent 
                 ? 'No content to save' 
                 : saveStatus === 'saving' 
-                  ? 'Capturing scene and saving to Firebase...' 
-                  : 'Save current scene with preview to Firebase'
+                  ? 'Saving to project database...' 
+                  : projectId 
+                    ? 'Update current project'
+                    : 'Save as new project'
           }
         >
           {getButtonContent()}
@@ -260,7 +270,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           </div>
         )}
         
-        {/* Scene Info */}
+        {/* Project Info */}
         {hasContent && saveStatus === 'idle' && user && (
           <div className="bg-[#1a1a1a]/90 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/60">
             <div className="flex items-center gap-4">
@@ -276,7 +286,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
             </div>
             <div className="flex items-center gap-1 mt-1 text-blue-400">
               <Camera className="w-3 h-3" />
-              <span>Scene preview included</span>
+              <span>{projectId ? 'Update project' : 'Save as new project'}</span>
             </div>
           </div>
         )}

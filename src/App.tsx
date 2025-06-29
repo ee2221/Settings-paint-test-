@@ -15,6 +15,7 @@ import AuthModal from './components/AuthModal';
 import UserProfile from './components/UserProfile';
 import ClassroomDashboard from './components/ClassroomDashboard';
 import { useSceneStore } from './store/sceneStore';
+import { loadProjectData } from './services/firestoreService';
 
 function App() {
   const { sceneSettings } = useSceneStore();
@@ -22,6 +23,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'app'>('dashboard');
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -45,10 +47,32 @@ function App() {
     
     if (view === 'app' || projectId || window.location.pathname === '/app') {
       setCurrentView('app');
+      setCurrentProjectId(projectId);
+      
+      // Load project data if projectId is provided and user is authenticated
+      if (projectId && user) {
+        loadProject(projectId);
+      }
     } else {
       setCurrentView('dashboard');
     }
-  }, []);
+  }, [user]);
+
+  const loadProject = async (projectId: string) => {
+    if (!user) return;
+    
+    try {
+      const projectData = await loadProjectData(projectId, user.uid);
+      
+      // TODO: Load the project data into the scene store
+      // This would involve converting Firestore data back to Three.js objects
+      // and updating the scene store state
+      console.log('Loaded project data:', projectData);
+      
+    } catch (error) {
+      console.error('Error loading project:', error);
+    }
+  };
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
@@ -100,7 +124,7 @@ function App() {
         <HideInterfaceButton />
         
         {/* Save Button - When user is authenticated */}
-        {user && <SaveButton user={user} />}
+        {user && <SaveButton user={user} projectId={currentProjectId} />}
         
         {/* User Profile - When user is authenticated */}
         {user && <UserProfile user={user} onSignOut={handleSignOut} />}

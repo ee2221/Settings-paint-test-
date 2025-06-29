@@ -12,7 +12,8 @@ import {
   DocumentData,
   QueryDocumentSnapshot,
   onSnapshot,
-  Unsubscribe
+  Unsubscribe,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -52,7 +53,6 @@ export interface FirestoreObject {
   locked?: boolean;
   groupId?: string;
   userId: string;
-  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -65,7 +65,6 @@ export interface FirestoreGroup {
   visible?: boolean;
   locked?: boolean;
   userId: string;
-  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -85,15 +84,17 @@ export interface FirestoreLight {
   angle?: number;
   penumbra?: number;
   userId: string;
-  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
 
+// Collection names - each project gets its own subcollections
 const SCENES_COLLECTION = 'scenes';
-const OBJECTS_COLLECTION = 'objects';
-const GROUPS_COLLECTION = 'groups';
-const LIGHTS_COLLECTION = 'lights';
+
+// Helper functions to get project-specific collection paths
+const getProjectObjectsCollection = (projectId: string) => `${SCENES_COLLECTION}/${projectId}/objects`;
+const getProjectGroupsCollection = (projectId: string) => `${SCENES_COLLECTION}/${projectId}/groups`;
+const getProjectLightsCollection = (projectId: string) => `${SCENES_COLLECTION}/${projectId}/lights`;
 
 // Scene functions
 export const saveScene = async (scene: Omit<FirestoreScene, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
@@ -131,8 +132,35 @@ export const updateScene = async (id: string, updates: Partial<FirestoreScene>):
 
 export const deleteScene = async (id: string): Promise<void> => {
   try {
+    const batch = writeBatch(db);
+    
+    // Delete all objects in the project
+    const objectsQuery = query(collection(db, getProjectObjectsCollection(id)));
+    const objectsSnapshot = await getDocs(objectsQuery);
+    objectsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // Delete all groups in the project
+    const groupsQuery = query(collection(db, getProjectGroupsCollection(id)));
+    const groupsSnapshot = await getDocs(groupsQuery);
+    groupsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // Delete all lights in the project
+    const lightsQuery = query(collection(db, getProjectLightsCollection(id)));
+    const lightsSnapshot = await getDocs(lightsQuery);
+    lightsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // Delete the scene document itself
     const sceneRef = doc(db, SCENES_COLLECTION, id);
-    await deleteDoc(sceneRef);
+    batch.delete(sceneRef);
+    
+    // Commit all deletions
+    await batch.commit();
   } catch (error) {
     console.error('Error deleting scene:', error);
     throw error;
@@ -143,7 +171,8 @@ export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
   try {
     const q = query(
       collection(db, SCENES_COLLECTION),
-      where('userId', '==', userId)
+      where('userId', '==', userId),
+      orderBy('updatedAt', 'desc')
     );
     
     const querySnapshot = await getDocs(q);
@@ -154,12 +183,6 @@ export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
         id: doc.id,
         ...doc.data()
       } as FirestoreScene);
-    });
-    
-    scenes.sort((a, b) => {
-      const aTime = a.createdAt?.toMillis() || 0;
-      const bTime = b.createdAt?.toMillis() || 0;
-      return bTime - aTime;
     });
     
     return scenes;
@@ -234,7 +257,7 @@ const serializeGeometry = (geometry: any): any => {
 };
 
 // Object conversion functions
-export const objectToFirestore = (obj: any, name: string, sceneId?: string, userId?: string): FirestoreObject => {
+export const objectToFirestore = (obj: any, name: string, projectId?: string, userId?: string): FirestoreObject => {
   const firestoreObj: FirestoreObject = {
     name: name || 'Unnamed Object',
     type: obj.type || 'mesh',
@@ -253,8 +276,7 @@ export const objectToFirestore = (obj: any, name: string, sceneId?: string, user
       y: obj.scale?.y || 1,
       z: obj.scale?.z || 1
     },
-    userId: userId || '',
-    sceneId: sceneId
+    userId: userId || ''
   };
 
   // Serialize material
@@ -294,8 +316,8 @@ export const firestoreToObject = (firestoreObj: FirestoreObject): any => {
   };
 };
 
-// Object CRUD functions
-export const saveObject = async (object: Omit<FirestoreObject, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
+// Project-specific Object CRUD functions
+export const saveObject = async (object: Omit<FirestoreObject, 'id' | 'createdAt' | 'updatedAt'>, userId: string, projectId: string): Promise<string> => {
   try {
     const now = Timestamp.now();
     const objectWithTimestamps = {
@@ -305,7 +327,7 @@ export const saveObject = async (object: Omit<FirestoreObject, 'id' | 'createdAt
       updatedAt: now
     };
     
-    const docRef = await addDoc(collection(db, OBJECTS_COLLECTION), objectWithTimestamps);
+    const docRef = await addDoc(collection(db, getProjectObjectsCollection(projectId)), objectWithTimestamps);
     return docRef.id;
   } catch (error) {
     console.error('Error saving object:', error);
@@ -313,9 +335,9 @@ export const saveObject = async (object: Omit<FirestoreObject, 'id' | 'createdAt
   }
 };
 
-export const updateObject = async (id: string, updates: Partial<FirestoreObject>): Promise<void> => {
+export const updateObject = async (id: string, updates: Partial<FirestoreObject>, projectId: string): Promise<void> => {
   try {
-    const objectRef = doc(db, OBJECTS_COLLECTION, id);
+    const objectRef = doc(db, getProjectObjectsCollection(projectId), id);
     const updatesWithTimestamp = {
       ...updates,
       updatedAt: Timestamp.now()
@@ -328,9 +350,9 @@ export const updateObject = async (id: string, updates: Partial<FirestoreObject>
   }
 };
 
-export const deleteObject = async (id: string): Promise<void> => {
+export const deleteObject = async (id: string, projectId: string): Promise<void> => {
   try {
-    const objectRef = doc(db, OBJECTS_COLLECTION, id);
+    const objectRef = doc(db, getProjectObjectsCollection(projectId), id);
     await deleteDoc(objectRef);
   } catch (error) {
     console.error('Error deleting object:', error);
@@ -338,11 +360,11 @@ export const deleteObject = async (id: string): Promise<void> => {
   }
 };
 
-export const subscribeToObjects = (userId: string, sceneId: string, callback: (objects: FirestoreObject[]) => void): Unsubscribe => {
+export const subscribeToObjects = (userId: string, projectId: string, callback: (objects: FirestoreObject[]) => void): Unsubscribe => {
   const q = query(
-    collection(db, OBJECTS_COLLECTION),
+    collection(db, getProjectObjectsCollection(projectId)),
     where('userId', '==', userId),
-    where('sceneId', '==', sceneId)
+    orderBy('createdAt', 'desc')
   );
   
   return onSnapshot(q, (querySnapshot) => {
@@ -357,8 +379,8 @@ export const subscribeToObjects = (userId: string, sceneId: string, callback: (o
   });
 };
 
-// Group CRUD functions
-export const saveGroup = async (group: Omit<FirestoreGroup, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
+// Project-specific Group CRUD functions
+export const saveGroup = async (group: Omit<FirestoreGroup, 'id' | 'createdAt' | 'updatedAt'>, userId: string, projectId: string): Promise<string> => {
   try {
     const now = Timestamp.now();
     const groupWithTimestamps = {
@@ -368,7 +390,7 @@ export const saveGroup = async (group: Omit<FirestoreGroup, 'id' | 'createdAt' |
       updatedAt: now
     };
     
-    const docRef = await addDoc(collection(db, GROUPS_COLLECTION), groupWithTimestamps);
+    const docRef = await addDoc(collection(db, getProjectGroupsCollection(projectId)), groupWithTimestamps);
     return docRef.id;
   } catch (error) {
     console.error('Error saving group:', error);
@@ -376,9 +398,9 @@ export const saveGroup = async (group: Omit<FirestoreGroup, 'id' | 'createdAt' |
   }
 };
 
-export const updateGroup = async (id: string, updates: Partial<FirestoreGroup>): Promise<void> => {
+export const updateGroup = async (id: string, updates: Partial<FirestoreGroup>, projectId: string): Promise<void> => {
   try {
-    const groupRef = doc(db, GROUPS_COLLECTION, id);
+    const groupRef = doc(db, getProjectGroupsCollection(projectId), id);
     const updatesWithTimestamp = {
       ...updates,
       updatedAt: Timestamp.now()
@@ -391,9 +413,9 @@ export const updateGroup = async (id: string, updates: Partial<FirestoreGroup>):
   }
 };
 
-export const deleteGroup = async (id: string): Promise<void> => {
+export const deleteGroup = async (id: string, projectId: string): Promise<void> => {
   try {
-    const groupRef = doc(db, GROUPS_COLLECTION, id);
+    const groupRef = doc(db, getProjectGroupsCollection(projectId), id);
     await deleteDoc(groupRef);
   } catch (error) {
     console.error('Error deleting group:', error);
@@ -401,11 +423,11 @@ export const deleteGroup = async (id: string): Promise<void> => {
   }
 };
 
-export const subscribeToGroups = (userId: string, sceneId: string, callback: (groups: FirestoreGroup[]) => void): Unsubscribe => {
+export const subscribeToGroups = (userId: string, projectId: string, callback: (groups: FirestoreGroup[]) => void): Unsubscribe => {
   const q = query(
-    collection(db, GROUPS_COLLECTION),
+    collection(db, getProjectGroupsCollection(projectId)),
     where('userId', '==', userId),
-    where('sceneId', '==', sceneId)
+    orderBy('createdAt', 'desc')
   );
   
   return onSnapshot(q, (querySnapshot) => {
@@ -420,8 +442,8 @@ export const subscribeToGroups = (userId: string, sceneId: string, callback: (gr
   });
 };
 
-// Light CRUD functions
-export const saveLight = async (light: Omit<FirestoreLight, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
+// Project-specific Light CRUD functions
+export const saveLight = async (light: Omit<FirestoreLight, 'id' | 'createdAt' | 'updatedAt'>, userId: string, projectId: string): Promise<string> => {
   try {
     const now = Timestamp.now();
     const lightWithTimestamps = {
@@ -431,7 +453,7 @@ export const saveLight = async (light: Omit<FirestoreLight, 'id' | 'createdAt' |
       updatedAt: now
     };
     
-    const docRef = await addDoc(collection(db, LIGHTS_COLLECTION), lightWithTimestamps);
+    const docRef = await addDoc(collection(db, getProjectLightsCollection(projectId)), lightWithTimestamps);
     return docRef.id;
   } catch (error) {
     console.error('Error saving light:', error);
@@ -439,9 +461,9 @@ export const saveLight = async (light: Omit<FirestoreLight, 'id' | 'createdAt' |
   }
 };
 
-export const updateLight = async (id: string, updates: Partial<FirestoreLight>): Promise<void> => {
+export const updateLight = async (id: string, updates: Partial<FirestoreLight>, projectId: string): Promise<void> => {
   try {
-    const lightRef = doc(db, LIGHTS_COLLECTION, id);
+    const lightRef = doc(db, getProjectLightsCollection(projectId), id);
     const updatesWithTimestamp = {
       ...updates,
       updatedAt: Timestamp.now()
@@ -454,9 +476,9 @@ export const updateLight = async (id: string, updates: Partial<FirestoreLight>):
   }
 };
 
-export const deleteLight = async (id: string): Promise<void> => {
+export const deleteLight = async (id: string, projectId: string): Promise<void> => {
   try {
-    const lightRef = doc(db, LIGHTS_COLLECTION, id);
+    const lightRef = doc(db, getProjectLightsCollection(projectId), id);
     await deleteDoc(lightRef);
   } catch (error) {
     console.error('Error deleting light:', error);
@@ -464,11 +486,11 @@ export const deleteLight = async (id: string): Promise<void> => {
   }
 };
 
-export const subscribeToLights = (userId: string, sceneId: string, callback: (lights: FirestoreLight[]) => void): Unsubscribe => {
+export const subscribeToLights = (userId: string, projectId: string, callback: (lights: FirestoreLight[]) => void): Unsubscribe => {
   const q = query(
-    collection(db, LIGHTS_COLLECTION),
+    collection(db, getProjectLightsCollection(projectId)),
     where('userId', '==', userId),
-    where('sceneId', '==', sceneId)
+    orderBy('createdAt', 'desc')
   );
   
   return onSnapshot(q, (querySnapshot) => {
@@ -481,4 +503,100 @@ export const subscribeToLights = (userId: string, sceneId: string, callback: (li
     });
     callback(lights);
   });
+};
+
+// Batch operations for better performance
+export const saveProjectData = async (
+  projectId: string,
+  userId: string,
+  objects: FirestoreObject[],
+  groups: FirestoreGroup[],
+  lights: FirestoreLight[]
+): Promise<void> => {
+  try {
+    const batch = writeBatch(db);
+    const now = Timestamp.now();
+
+    // Save all objects
+    objects.forEach(obj => {
+      const docRef = doc(collection(db, getProjectObjectsCollection(projectId)));
+      batch.set(docRef, {
+        ...obj,
+        userId,
+        createdAt: now,
+        updatedAt: now
+      });
+    });
+
+    // Save all groups
+    groups.forEach(group => {
+      const docRef = doc(collection(db, getProjectGroupsCollection(projectId)));
+      batch.set(docRef, {
+        ...group,
+        userId,
+        createdAt: now,
+        updatedAt: now
+      });
+    });
+
+    // Save all lights
+    lights.forEach(light => {
+      const docRef = doc(collection(db, getProjectLightsCollection(projectId)));
+      batch.set(docRef, {
+        ...light,
+        userId,
+        createdAt: now,
+        updatedAt: now
+      });
+    });
+
+    await batch.commit();
+  } catch (error) {
+    console.error('Error saving project data:', error);
+    throw error;
+  }
+};
+
+// Load complete project data
+export const loadProjectData = async (projectId: string, userId: string): Promise<{
+  objects: FirestoreObject[];
+  groups: FirestoreGroup[];
+  lights: FirestoreLight[];
+}> => {
+  try {
+    const [objectsSnapshot, groupsSnapshot, lightsSnapshot] = await Promise.all([
+      getDocs(query(
+        collection(db, getProjectObjectsCollection(projectId)),
+        where('userId', '==', userId)
+      )),
+      getDocs(query(
+        collection(db, getProjectGroupsCollection(projectId)),
+        where('userId', '==', userId)
+      )),
+      getDocs(query(
+        collection(db, getProjectLightsCollection(projectId)),
+        where('userId', '==', userId)
+      ))
+    ]);
+
+    const objects: FirestoreObject[] = [];
+    objectsSnapshot.forEach(doc => {
+      objects.push({ id: doc.id, ...doc.data() } as FirestoreObject);
+    });
+
+    const groups: FirestoreGroup[] = [];
+    groupsSnapshot.forEach(doc => {
+      groups.push({ id: doc.id, ...doc.data() } as FirestoreGroup);
+    });
+
+    const lights: FirestoreLight[] = [];
+    lightsSnapshot.forEach(doc => {
+      lights.push({ id: doc.id, ...doc.data() } as FirestoreLight);
+    });
+
+    return { objects, groups, lights };
+  } catch (error) {
+    console.error('Error loading project data:', error);
+    throw error;
+  }
 };
