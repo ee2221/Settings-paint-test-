@@ -184,12 +184,22 @@ const ClassroomDashboard: React.FC = () => {
     window.location.href = '/?view=app';
   };
 
-  const handleOpenProject = (projectId: string) => {
+  const handleOpenProject = (projectId: string, event?: React.MouseEvent) => {
+    // Prevent event bubbling if called from a button click
+    if (event) {
+      event.stopPropagation();
+    }
+    
     // Navigate to the 3D modeling application with the specific project in the same tab
     window.location.href = `/?view=app&project=${projectId}`;
   };
 
-  const handleDeleteProject = async (projectId: string) => {
+  const handleDeleteProject = async (projectId: string, event?: React.MouseEvent) => {
+    // Prevent event bubbling
+    if (event) {
+      event.stopPropagation();
+    }
+    
     if (!confirm('Are you sure you want to delete this project?')) return;
     
     try {
@@ -198,6 +208,16 @@ const ClassroomDashboard: React.FC = () => {
     } catch (error) {
       console.error('Error deleting project:', error);
     }
+  };
+
+  const handleDuplicateProject = (projectId: string, event?: React.MouseEvent) => {
+    // Prevent event bubbling
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    // TODO: Implement project duplication
+    console.log('Duplicate project:', projectId);
   };
 
   const handleSignOut = async () => {
@@ -410,7 +430,7 @@ const ClassroomDashboard: React.FC = () => {
             {filteredProjects.map((project) => (
               <div
                 key={project.id}
-                className="group bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-all duration-200 hover:scale-105"
+                className="group bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-all duration-200 hover:scale-105 cursor-default"
               >
                 <div className="relative">
                   <div className="w-full h-48 bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center overflow-hidden">
@@ -433,7 +453,10 @@ const ClassroomDashboard: React.FC = () => {
                   <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <div className="relative">
                       <button
-                        onClick={() => setShowProjectMenu(showProjectMenu === project.id ? null : project.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowProjectMenu(showProjectMenu === project.id ? null : project.id);
+                        }}
                         className="p-2 bg-black/50 backdrop-blur-sm rounded-lg text-white hover:bg-black/70 transition-colors"
                       >
                         <MoreVertical className="w-4 h-4" />
@@ -443,30 +466,21 @@ const ClassroomDashboard: React.FC = () => {
                           <div className="fixed inset-0 z-40" onClick={() => setShowProjectMenu(null)} />
                           <div className="absolute right-0 top-full mt-1 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-xl z-50">
                             <button
-                              onClick={() => {
-                                handleOpenProject(project.id!);
-                                setShowProjectMenu(null);
-                              }}
+                              onClick={(e) => handleOpenProject(project.id!, e)}
                               className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
                             >
                               <Eye className="w-4 h-4" />
                               Open Project
                             </button>
                             <button
-                              onClick={() => {
-                                // Handle duplicate
-                                setShowProjectMenu(null);
-                              }}
+                              onClick={(e) => handleDuplicateProject(project.id!, e)}
                               className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
                             >
                               <Copy className="w-4 h-4" />
                               Duplicate
                             </button>
                             <button
-                              onClick={() => {
-                                handleDeleteProject(project.id!);
-                                setShowProjectMenu(null);
-                              }}
+                              onClick={(e) => handleDeleteProject(project.id!, e)}
                               className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-red-400 transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -477,14 +491,6 @@ const ClassroomDashboard: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleOpenProject(project.id!)}
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  >
-                    <div className="p-3 bg-blue-500 rounded-full text-white hover:bg-blue-600 transition-colors">
-                      <Eye className="w-6 h-6" />
-                    </div>
-                  </button>
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-white mb-2 truncate">{project.name}</h3>
@@ -508,7 +514,7 @@ const ClassroomDashboard: React.FC = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => handleOpenProject(project.id!)}
+                    onClick={(e) => handleOpenProject(project.id!, e)}
                     className="w-full py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg font-medium transition-colors"
                   >
                     Open Project
@@ -522,7 +528,7 @@ const ClassroomDashboard: React.FC = () => {
             {filteredProjects.map((project) => (
               <div
                 key={project.id}
-                className="flex items-center gap-4 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl hover:border-white/20 transition-colors"
+                className="flex items-center gap-4 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl hover:border-white/20 transition-colors cursor-default"
               >
                 <div className="w-16 h-16 bg-gradient-to-br from-slate-700 to-slate-800 rounded-lg flex items-center justify-center overflow-hidden">
                   {project.thumbnail?.startsWith('data:image/svg+xml') ? (
@@ -557,7 +563,7 @@ const ClassroomDashboard: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleOpenProject(project.id!)}
+                    onClick={(e) => handleOpenProject(project.id!, e)}
                     className="p-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
                     title="Open Project"
                   >
@@ -565,7 +571,10 @@ const ClassroomDashboard: React.FC = () => {
                   </button>
                   <div className="relative">
                     <button
-                      onClick={() => setShowProjectMenu(showProjectMenu === project.id ? null : project.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowProjectMenu(showProjectMenu === project.id ? null : project.id);
+                      }}
                       className="p-2 hover:bg-white/10 text-white/70 rounded-lg transition-colors"
                     >
                       <MoreVertical className="w-4 h-4" />
@@ -575,20 +584,14 @@ const ClassroomDashboard: React.FC = () => {
                         <div className="fixed inset-0 z-40" onClick={() => setShowProjectMenu(null)} />
                         <div className="absolute right-0 top-full mt-1 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-xl z-50">
                           <button
-                            onClick={() => {
-                              // Handle duplicate
-                              setShowProjectMenu(null);
-                            }}
+                            onClick={(e) => handleDuplicateProject(project.id!, e)}
                             className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
                           >
                             <Copy className="w-4 h-4" />
                             Duplicate
                           </button>
                           <button
-                            onClick={() => {
-                              handleDeleteProject(project.id!);
-                              setShowProjectMenu(null);
-                            }}
+                            onClick={(e) => handleDeleteProject(project.id!, e)}
                             className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-red-400 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
