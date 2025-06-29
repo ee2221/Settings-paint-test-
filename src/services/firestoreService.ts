@@ -5,6 +5,7 @@ import {
   deleteDoc, 
   doc, 
   getDocs, 
+  getDoc,
   query, 
   where, 
   orderBy, 
@@ -169,23 +170,53 @@ export const deleteScene = async (id: string): Promise<void> => {
 
 export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
   try {
-    const q = query(
-      collection(db, SCENES_COLLECTION),
-      where('userId', '==', userId),
-      orderBy('updatedAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    const scenes: FirestoreScene[] = [];
-    
-    querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
-      scenes.push({
-        id: doc.id,
-        ...doc.data()
-      } as FirestoreScene);
-    });
-    
-    return scenes;
+    // Try the optimized query first (requires composite index)
+    try {
+      const q = query(
+        collection(db, SCENES_COLLECTION),
+        where('userId', '==', userId),
+        orderBy('updatedAt', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const scenes: FirestoreScene[] = [];
+      
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        scenes.push({
+          id: doc.id,
+          ...doc.data()
+        } as FirestoreScene);
+      });
+      
+      return scenes;
+    } catch (indexError) {
+      // If composite index doesn't exist, fall back to simpler query and sort in memory
+      console.warn('Composite index not available, falling back to client-side sorting:', indexError);
+      
+      const q = query(
+        collection(db, SCENES_COLLECTION),
+        where('userId', '==', userId)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const scenes: FirestoreScene[] = [];
+      
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        scenes.push({
+          id: doc.id,
+          ...doc.data()
+        } as FirestoreScene);
+      });
+      
+      // Sort by updatedAt in memory
+      scenes.sort((a, b) => {
+        const aTime = a.updatedAt?.toDate().getTime() || 0;
+        const bTime = b.updatedAt?.toDate().getTime() || 0;
+        return bTime - aTime;
+      });
+      
+      return scenes;
+    }
   } catch (error) {
     console.error('Error getting scenes:', error);
     throw error;
@@ -195,13 +226,12 @@ export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
 export const getScene = async (id: string): Promise<FirestoreScene | null> => {
   try {
     const sceneRef = doc(db, SCENES_COLLECTION, id);
-    const docSnap = await getDocs(query(collection(db, SCENES_COLLECTION), where('__name__', '==', id)));
+    const docSnap = await getDoc(sceneRef);
     
-    if (!docSnap.empty) {
-      const doc = docSnap.docs[0];
+    if (docSnap.exists()) {
       return {
-        id: doc.id,
-        ...doc.data()
+        id: docSnap.id,
+        ...docSnap.data()
       } as FirestoreScene;
     }
     
