@@ -59,6 +59,7 @@ interface SceneState {
     visible: boolean;
     locked: boolean;
     groupId?: string;
+    firestoreId?: string; // Track Firestore document ID
   }>;
   groups: Group[];
   lights: Light[];
@@ -104,6 +105,10 @@ interface SceneState {
   // Save state
   lastSaved: Date | null;
   hasUnsavedChanges: boolean;
+  // Track deleted items for database cleanup
+  deletedObjectIds: string[];
+  deletedGroupIds: string[];
+  deletedLightIds: string[];
   addObject: (object: THREE.Object3D, name: string) => void;
   removeObject: (id: string) => void;
   setSelectedObject: (object: THREE.Object3D | null) => void;
@@ -161,6 +166,13 @@ interface SceneState {
   // Save functions
   markSaved: () => void;
   markUnsavedChanges: () => void;
+  // Database cleanup functions
+  getDeletedIds: () => { objects: string[]; groups: string[]; lights: string[] };
+  clearDeletedIds: () => void;
+  // Object loading functions
+  loadObjectFromFirestore: (firestoreObj: any) => void;
+  loadGroupFromFirestore: (firestoreGroup: any) => void;
+  loadLightFromFirestore: (firestoreLight: any) => void;
 }
 
 const cloneObject = (obj: THREE.Object3D): THREE.Object3D => {
@@ -245,6 +257,10 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   // Save state
   lastSaved: null,
   hasUnsavedChanges: false,
+  // Track deleted items
+  deletedObjectIds: [],
+  deletedGroupIds: [],
+  deletedLightIds: [],
 
   updateSceneSettings: (settings) =>
     set((state) => {
@@ -288,7 +304,13 @@ export const useSceneStore = create<SceneState>((set, get) => ({
 
   addObject: (object, name) =>
     set((state) => {
-      const newObjects = [...state.objects, { id: crypto.randomUUID(), object, name, visible: true, locked: false }];
+      const newObjects = [...state.objects, { 
+        id: crypto.randomUUID(), 
+        object, 
+        name, 
+        visible: true, 
+        locked: false 
+      }];
       
       // Save to history after adding
       setTimeout(() => get().saveToHistory(), 0);
@@ -308,6 +330,12 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         if (group?.locked) return state;
       }
 
+      // Track Firestore ID for deletion
+      const newDeletedObjectIds = [...state.deletedObjectIds];
+      if (objectToRemove?.firestoreId) {
+        newDeletedObjectIds.push(objectToRemove.firestoreId);
+      }
+
       // Remove object from any group
       const updatedGroups = state.groups.map(group => ({
         ...group,
@@ -317,6 +345,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       const newState = {
         objects: state.objects.filter((obj) => obj.id !== id),
         groups: updatedGroups,
+        deletedObjectIds: newDeletedObjectIds,
         selectedObject: state.objects.find((obj) => obj.id === id)?.object === state.selectedObject
           ? null
           : state.selectedObject,
@@ -823,6 +852,11 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       const groupToRemove = state.groups.find(g => g.id === groupId);
       if (groupToRemove?.locked) return state;
 
+      // Track Firestore ID for deletion
+      const newDeletedGroupIds = [...state.deletedGroupIds];
+      // Note: Groups don't have firestoreId in current implementation
+      // This would need to be added if groups are stored separately
+
       // Remove group reference from objects
       const updatedObjects = state.objects.map(obj => 
         obj.groupId === groupId 
@@ -834,7 +868,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
 
       return {
         groups: state.groups.filter(group => group.id !== groupId),
-        objects: updatedObjects
+        objects: updatedObjects,
+        deletedGroupIds: newDeletedGroupIds
       };
     }),
 
@@ -1227,12 +1262,19 @@ export const useSceneStore = create<SceneState>((set, get) => ({
 
   removeLight: (lightId) =>
     set((state) => {
+      // Track Firestore ID for deletion
+      const lightToRemove = state.lights.find(l => l.id === lightId);
+      const newDeletedLightIds = [...state.deletedLightIds];
+      // Note: Lights don't have firestoreId in current implementation
+      // This would need to be added if lights are stored separately
+
       const updatedLights = state.lights.filter(light => light.id !== lightId);
       
       get().saveToHistory();
 
       return {
         lights: updatedLights,
+        deletedLightIds: newDeletedLightIds,
         selectedLight: state.selectedLight?.id === lightId ? null : state.selectedLight
       };
     }),
@@ -1337,5 +1379,107 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   markUnsavedChanges: () =>
     set({
       hasUnsavedChanges: true
+    }),
+
+  // Database cleanup functions
+  getDeletedIds: () => {
+    const state = get();
+    return {
+      objects: state.deletedObjectIds,
+      groups: state.deletedGroupIds,
+      lights: state.deletedLightIds
+    };
+  },
+
+  clearDeletedIds: () =>
+    set({
+      deletedObjectIds: [],
+      deletedGroupIds: [],
+      deletedLightIds: []
+    }),
+
+  // Object loading functions for Firestore integration
+  loadObjectFromFirestore: (firestoreObj) =>
+    set((state) => {
+      // Check if object already exists
+      const existingIndex = state.objects.findIndex(obj => obj.firestoreId === firestoreObj.id);
+      
+      const sceneObject = {
+        id: firestoreObj.localId || crypto.randomUUID(),
+        firestoreId: firestoreObj.id,
+        object: firestoreObj.threeObject,
+        name: firestoreObj.name,
+        visible: firestoreObj.visible !== false,
+        locked: firestoreObj.locked || false,
+        groupId: firestoreObj.groupId
+      };
+
+      if (existingIndex >= 0) {
+        // Update existing object
+        const updatedObjects = [...state.objects];
+        updatedObjects[existingIndex] = sceneObject;
+        return { objects: updatedObjects };
+      } else {
+        // Add new object
+        return { objects: [...state.objects, sceneObject] };
+      }
+    }),
+
+  loadGroupFromFirestore: (firestoreGroup) =>
+    set((state) => {
+      // Check if group already exists
+      const existingIndex = state.groups.findIndex(group => group.id === firestoreGroup.id);
+      
+      const sceneGroup = {
+        id: firestoreGroup.id,
+        name: firestoreGroup.name,
+        expanded: firestoreGroup.expanded !== false,
+        visible: firestoreGroup.visible !== false,
+        locked: firestoreGroup.locked || false,
+        objectIds: firestoreGroup.objectIds || []
+      };
+
+      if (existingIndex >= 0) {
+        // Update existing group
+        const updatedGroups = [...state.groups];
+        updatedGroups[existingIndex] = sceneGroup;
+        return { groups: updatedGroups };
+      } else {
+        // Add new group
+        return { groups: [...state.groups, sceneGroup] };
+      }
+    }),
+
+  loadLightFromFirestore: (firestoreLight) =>
+    set((state) => {
+      // Check if light already exists
+      const existingIndex = state.lights.findIndex(light => light.id === firestoreLight.id);
+      
+      const sceneLight = {
+        id: firestoreLight.id,
+        name: firestoreLight.name,
+        type: firestoreLight.type,
+        position: firestoreLight.position,
+        target: firestoreLight.target,
+        intensity: firestoreLight.intensity,
+        color: firestoreLight.color,
+        visible: firestoreLight.visible !== false,
+        castShadow: firestoreLight.castShadow !== false,
+        distance: firestoreLight.distance || 0,
+        decay: firestoreLight.decay || 2,
+        angle: firestoreLight.angle || Math.PI / 3,
+        penumbra: firestoreLight.penumbra || 0,
+        object: firestoreLight.threeObject
+      };
+
+      if (existingIndex >= 0) {
+        // Update existing light
+        const updatedLights = [...state.lights];
+        updatedLights[existingIndex] = sceneLight;
+        return { lights: updatedLights };
+      } else {
+        // Add new light
+        return { lights: [...state.lights, sceneLight] };
+      }
     }),
 }));
