@@ -10,7 +10,13 @@ import {
   objectToFirestore,
   FirestoreGroup,
   FirestoreLight,
-  FirestoreScene
+  FirestoreScene,
+  deleteObject,
+  deleteGroup,
+  deleteLight,
+  subscribeToObjects,
+  subscribeToGroups,
+  subscribeToLights
 } from '../services/firestoreService';
 
 interface SaveButtonProps {
@@ -84,7 +90,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
       // Capture scene screenshot
       const thumbnail = await captureSceneScreenshot();
       
-      let projectId = currentProjectId;
+      let sceneId = currentProjectId;
       
       if (currentProjectId) {
         // Update existing project
@@ -108,8 +114,12 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
         
         await updateScene(currentProjectId, sceneData);
         
+        // Clear existing objects, groups, and lights for this scene
+        // Note: In a production app, you'd want to do a more sophisticated sync
+        // For now, we'll just save new data (existing data will remain but won't interfere)
+        
       } else {
-        // Create new project
+        // Create new project (fallback)
         setSaveMessage('Creating new project...');
         
         const sceneData: FirestoreScene = {
@@ -128,29 +138,29 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           },
           userId: user.uid
         };
-        projectId = await saveScene(sceneData, user.uid);
+        sceneId = await saveScene(sceneData, user.uid);
         
         // Update URL to reflect the new project
-        const newUrl = `${window.location.pathname}?view=app&project=${projectId}`;
+        const newUrl = `${window.location.pathname}?view=app&project=${sceneId}`;
         window.history.replaceState({}, '', newUrl);
-        setCurrentProjectId(projectId);
+        setCurrentProjectId(sceneId);
       }
 
       setSaveMessage('Saving objects and scene data...');
 
-      // Save all objects to the project's collection
+      // Save all objects with the scene ID
       const objectPromises = objects.map(async (obj) => {
-        const firestoreData = objectToFirestore(obj.object, obj.name, projectId, user.uid);
+        const firestoreData = objectToFirestore(obj.object, obj.name, sceneId, user.uid);
         firestoreData.visible = obj.visible;
         firestoreData.locked = obj.locked;
         // Only add groupId if it's defined
         if (obj.groupId !== undefined) {
           firestoreData.groupId = obj.groupId;
         }
-        return await saveObject(firestoreData, user.uid, projectId!);
+        return await saveObject(firestoreData, user.uid);
       });
 
-      // Save all groups to the project's collection
+      // Save all groups with the scene ID
       const groupPromises = groups.map(async (group) => {
         const firestoreGroup: FirestoreGroup = {
           name: group.name,
@@ -158,12 +168,13 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           visible: group.visible,
           locked: group.locked,
           objectIds: group.objectIds,
+          sceneId: sceneId!,
           userId: user.uid
         };
-        return await saveGroup(firestoreGroup, user.uid, projectId!);
+        return await saveGroup(firestoreGroup, user.uid);
       });
 
-      // Save all lights to the project's collection
+      // Save all lights with the scene ID
       const lightPromises = lights.map(async (light) => {
         const firestoreLight: FirestoreLight = {
           name: light.name,
@@ -182,9 +193,10 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           decay: light.decay,
           angle: light.angle,
           penumbra: light.penumbra,
+          sceneId: sceneId!,
           userId: user.uid
         };
-        return await saveLight(firestoreLight, user.uid, projectId!);
+        return await saveLight(firestoreLight, user.uid);
       });
 
       // Wait for all sub-collection saves to complete

@@ -53,6 +53,7 @@ export interface FirestoreObject {
   locked?: boolean;
   groupId?: string;
   userId: string;
+  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -65,6 +66,7 @@ export interface FirestoreGroup {
   visible?: boolean;
   locked?: boolean;
   userId: string;
+  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -84,19 +86,17 @@ export interface FirestoreLight {
   angle?: number;
   penumbra?: number;
   userId: string;
+  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
 
-// Collection names - now project-based
 const SCENES_COLLECTION = 'scenes';
+const OBJECTS_COLLECTION = 'objects';
+const GROUPS_COLLECTION = 'groups';
+const LIGHTS_COLLECTION = 'lights';
 
-// Helper functions to get project-specific collection paths
-const getProjectObjectsCollection = (projectId: string) => `projects/${projectId}/objects`;
-const getProjectGroupsCollection = (projectId: string) => `projects/${projectId}/groups`;
-const getProjectLightsCollection = (projectId: string) => `projects/${projectId}/lights`;
-
-// Scene functions (main project documents)
+// Scene functions
 export const saveScene = async (scene: Omit<FirestoreScene, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
   try {
     const now = Timestamp.now();
@@ -134,10 +134,6 @@ export const deleteScene = async (id: string): Promise<void> => {
   try {
     const sceneRef = doc(db, SCENES_COLLECTION, id);
     await deleteDoc(sceneRef);
-    
-    // Note: In a production app, you'd also want to delete all subcollections
-    // This would require a cloud function or batch operations to delete all
-    // objects, groups, and lights in the project subcollections
   } catch (error) {
     console.error('Error deleting scene:', error);
     throw error;
@@ -148,8 +144,7 @@ export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
   try {
     const q = query(
       collection(db, SCENES_COLLECTION),
-      where('userId', '==', userId),
-      orderBy('updatedAt', 'desc')
+      where('userId', '==', userId)
     );
     
     const querySnapshot = await getDocs(q);
@@ -160,6 +155,12 @@ export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
         id: doc.id,
         ...doc.data()
       } as FirestoreScene);
+    });
+    
+    scenes.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis() || 0;
+      const bTime = b.createdAt?.toMillis() || 0;
+      return bTime - aTime;
     });
     
     return scenes;
@@ -298,7 +299,7 @@ const serializeGeometry = (geometry: any): any => {
 };
 
 // Object conversion functions
-export const objectToFirestore = (obj: any, name: string, projectId?: string, userId?: string): FirestoreObject => {
+export const objectToFirestore = (obj: any, name: string, sceneId?: string, userId?: string): FirestoreObject => {
   const firestoreObj: FirestoreObject = {
     name: name || 'Unnamed Object',
     type: obj.type || 'mesh',
@@ -317,7 +318,8 @@ export const objectToFirestore = (obj: any, name: string, projectId?: string, us
       y: obj.scale?.y || 1,
       z: obj.scale?.z || 1
     },
-    userId: userId || ''
+    userId: userId || '',
+    sceneId: sceneId
   };
 
   // Serialize material
@@ -357,8 +359,8 @@ export const firestoreToObject = (firestoreObj: FirestoreObject): any => {
   };
 };
 
-// Project-specific Object CRUD functions
-export const saveObject = async (object: Omit<FirestoreObject, 'id' | 'createdAt' | 'updatedAt'>, userId: string, projectId: string): Promise<string> => {
+// Object CRUD functions
+export const saveObject = async (object: Omit<FirestoreObject, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
   try {
     const now = Timestamp.now();
     const objectWithTimestamps = {
@@ -368,7 +370,7 @@ export const saveObject = async (object: Omit<FirestoreObject, 'id' | 'createdAt
       updatedAt: now
     };
     
-    const docRef = await addDoc(collection(db, getProjectObjectsCollection(projectId)), objectWithTimestamps);
+    const docRef = await addDoc(collection(db, OBJECTS_COLLECTION), objectWithTimestamps);
     return docRef.id;
   } catch (error) {
     console.error('Error saving object:', error);
@@ -376,9 +378,9 @@ export const saveObject = async (object: Omit<FirestoreObject, 'id' | 'createdAt
   }
 };
 
-export const updateObject = async (id: string, updates: Partial<FirestoreObject>, projectId: string): Promise<void> => {
+export const updateObject = async (id: string, updates: Partial<FirestoreObject>): Promise<void> => {
   try {
-    const objectRef = doc(db, getProjectObjectsCollection(projectId), id);
+    const objectRef = doc(db, OBJECTS_COLLECTION, id);
     const updatesWithTimestamp = {
       ...updates,
       updatedAt: Timestamp.now()
@@ -391,9 +393,9 @@ export const updateObject = async (id: string, updates: Partial<FirestoreObject>
   }
 };
 
-export const deleteObject = async (id: string, projectId: string): Promise<void> => {
+export const deleteObject = async (id: string): Promise<void> => {
   try {
-    const objectRef = doc(db, getProjectObjectsCollection(projectId), id);
+    const objectRef = doc(db, OBJECTS_COLLECTION, id);
     await deleteDoc(objectRef);
   } catch (error) {
     console.error('Error deleting object:', error);
@@ -401,11 +403,11 @@ export const deleteObject = async (id: string, projectId: string): Promise<void>
   }
 };
 
-export const subscribeToObjects = (userId: string, projectId: string, callback: (objects: FirestoreObject[]) => void): Unsubscribe => {
+export const subscribeToObjects = (userId: string, sceneId: string, callback: (objects: FirestoreObject[]) => void): Unsubscribe => {
   const q = query(
-    collection(db, getProjectObjectsCollection(projectId)),
+    collection(db, OBJECTS_COLLECTION),
     where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    where('sceneId', '==', sceneId)
   );
   
   return onSnapshot(q, (querySnapshot) => {
@@ -420,8 +422,8 @@ export const subscribeToObjects = (userId: string, projectId: string, callback: 
   });
 };
 
-// Project-specific Group CRUD functions
-export const saveGroup = async (group: Omit<FirestoreGroup, 'id' | 'createdAt' | 'updatedAt'>, userId: string, projectId: string): Promise<string> => {
+// Group CRUD functions
+export const saveGroup = async (group: Omit<FirestoreGroup, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
   try {
     const now = Timestamp.now();
     const groupWithTimestamps = {
@@ -431,7 +433,7 @@ export const saveGroup = async (group: Omit<FirestoreGroup, 'id' | 'createdAt' |
       updatedAt: now
     };
     
-    const docRef = await addDoc(collection(db, getProjectGroupsCollection(projectId)), groupWithTimestamps);
+    const docRef = await addDoc(collection(db, GROUPS_COLLECTION), groupWithTimestamps);
     return docRef.id;
   } catch (error) {
     console.error('Error saving group:', error);
@@ -439,9 +441,9 @@ export const saveGroup = async (group: Omit<FirestoreGroup, 'id' | 'createdAt' |
   }
 };
 
-export const updateGroup = async (id: string, updates: Partial<FirestoreGroup>, projectId: string): Promise<void> => {
+export const updateGroup = async (id: string, updates: Partial<FirestoreGroup>): Promise<void> => {
   try {
-    const groupRef = doc(db, getProjectGroupsCollection(projectId), id);
+    const groupRef = doc(db, GROUPS_COLLECTION, id);
     const updatesWithTimestamp = {
       ...updates,
       updatedAt: Timestamp.now()
@@ -454,9 +456,9 @@ export const updateGroup = async (id: string, updates: Partial<FirestoreGroup>, 
   }
 };
 
-export const deleteGroup = async (id: string, projectId: string): Promise<void> => {
+export const deleteGroup = async (id: string): Promise<void> => {
   try {
-    const groupRef = doc(db, getProjectGroupsCollection(projectId), id);
+    const groupRef = doc(db, GROUPS_COLLECTION, id);
     await deleteDoc(groupRef);
   } catch (error) {
     console.error('Error deleting group:', error);
@@ -464,11 +466,11 @@ export const deleteGroup = async (id: string, projectId: string): Promise<void> 
   }
 };
 
-export const subscribeToGroups = (userId: string, projectId: string, callback: (groups: FirestoreGroup[]) => void): Unsubscribe => {
+export const subscribeToGroups = (userId: string, sceneId: string, callback: (groups: FirestoreGroup[]) => void): Unsubscribe => {
   const q = query(
-    collection(db, getProjectGroupsCollection(projectId)),
+    collection(db, GROUPS_COLLECTION),
     where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    where('sceneId', '==', sceneId)
   );
   
   return onSnapshot(q, (querySnapshot) => {
@@ -483,8 +485,8 @@ export const subscribeToGroups = (userId: string, projectId: string, callback: (
   });
 };
 
-// Project-specific Light CRUD functions
-export const saveLight = async (light: Omit<FirestoreLight, 'id' | 'createdAt' | 'updatedAt'>, userId: string, projectId: string): Promise<string> => {
+// Light CRUD functions
+export const saveLight = async (light: Omit<FirestoreLight, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
   try {
     const now = Timestamp.now();
     const lightWithTimestamps = {
@@ -494,7 +496,7 @@ export const saveLight = async (light: Omit<FirestoreLight, 'id' | 'createdAt' |
       updatedAt: now
     };
     
-    const docRef = await addDoc(collection(db, getProjectLightsCollection(projectId)), lightWithTimestamps);
+    const docRef = await addDoc(collection(db, LIGHTS_COLLECTION), lightWithTimestamps);
     return docRef.id;
   } catch (error) {
     console.error('Error saving light:', error);
@@ -502,9 +504,9 @@ export const saveLight = async (light: Omit<FirestoreLight, 'id' | 'createdAt' |
   }
 };
 
-export const updateLight = async (id: string, updates: Partial<FirestoreLight>, projectId: string): Promise<void> => {
+export const updateLight = async (id: string, updates: Partial<FirestoreLight>): Promise<void> => {
   try {
-    const lightRef = doc(db, getProjectLightsCollection(projectId), id);
+    const lightRef = doc(db, LIGHTS_COLLECTION, id);
     const updatesWithTimestamp = {
       ...updates,
       updatedAt: Timestamp.now()
@@ -517,9 +519,9 @@ export const updateLight = async (id: string, updates: Partial<FirestoreLight>, 
   }
 };
 
-export const deleteLight = async (id: string, projectId: string): Promise<void> => {
+export const deleteLight = async (id: string): Promise<void> => {
   try {
-    const lightRef = doc(db, getProjectLightsCollection(projectId), id);
+    const lightRef = doc(db, LIGHTS_COLLECTION, id);
     await deleteDoc(lightRef);
   } catch (error) {
     console.error('Error deleting light:', error);
@@ -527,11 +529,11 @@ export const deleteLight = async (id: string, projectId: string): Promise<void> 
   }
 };
 
-export const subscribeToLights = (userId: string, projectId: string, callback: (lights: FirestoreLight[]) => void): Unsubscribe => {
+export const subscribeToLights = (userId: string, sceneId: string, callback: (lights: FirestoreLight[]) => void): Unsubscribe => {
   const q = query(
-    collection(db, getProjectLightsCollection(projectId)),
+    collection(db, LIGHTS_COLLECTION),
     where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    where('sceneId', '==', sceneId)
   );
   
   return onSnapshot(q, (querySnapshot) => {
