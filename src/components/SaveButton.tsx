@@ -94,7 +94,8 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           expanded: group.expanded,
           visible: group.visible,
           locked: group.locked,
-          objectIds: group.objectIds
+          objectIds: group.objectIds,
+          userId: user.uid
         };
         return await saveGroup(firestoreGroup, user.uid);
       });
@@ -104,8 +105,12 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
         const firestoreLight: FirestoreLight = {
           name: light.name,
           type: light.type,
-          position: light.position,
-          target: light.target,
+          position: Array.isArray(light.position) 
+            ? { x: light.position[0], y: light.position[1], z: light.position[2] }
+            : light.position,
+          target: light.target && Array.isArray(light.target)
+            ? { x: light.target[0], y: light.target[1], z: light.target[2] }
+            : light.target,
           intensity: light.intensity,
           color: light.color,
           visible: light.visible,
@@ -113,7 +118,8 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           distance: light.distance,
           decay: light.decay,
           angle: light.angle,
-          penumbra: light.penumbra
+          penumbra: light.penumbra,
+          userId: user.uid
         };
         return await saveLight(firestoreLight, user.uid);
       });
@@ -132,7 +138,8 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           thumbnail,
           objectCount: objects.length,
           lightCount: lights.length
-        }
+        },
+        userId: user.uid
       };
       const scenePromise = saveScene(sceneData, user.uid);
 

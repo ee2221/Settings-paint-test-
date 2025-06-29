@@ -28,13 +28,29 @@ export interface FirestoreScene {
 
 export interface FirestoreObject {
   id?: string;
+  name: string;
   type: string;
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number };
   scale: { x: number; y: number; z: number };
   color?: string;
-  material?: any;
-  geometry?: any;
+  material?: {
+    type: string;
+    color?: string;
+    opacity?: number;
+    transparent?: boolean;
+    metalness?: number;
+    roughness?: number;
+    emissive?: string;
+    wireframe?: boolean;
+  };
+  geometry?: {
+    type: string;
+    parameters?: any;
+  };
+  visible?: boolean;
+  locked?: boolean;
+  groupId?: string;
   userId: string;
   sceneId?: string;
   createdAt?: Timestamp;
@@ -45,9 +61,9 @@ export interface FirestoreGroup {
   id?: string;
   name: string;
   objectIds: string[];
-  position: { x: number; y: number; z: number };
-  rotation: { x: number; y: number; z: number };
-  scale: { x: number; y: number; z: number };
+  expanded?: boolean;
+  visible?: boolean;
+  locked?: boolean;
   userId: string;
   sceneId?: string;
   createdAt?: Timestamp;
@@ -56,13 +72,16 @@ export interface FirestoreGroup {
 
 export interface FirestoreLight {
   id?: string;
+  name: string;
   type: 'ambient' | 'directional' | 'point' | 'spot';
   position: { x: number; y: number; z: number };
+  target?: { x: number; y: number; z: number };
   color: string;
   intensity: number;
+  visible?: boolean;
   castShadow?: boolean;
-  target?: { x: number; y: number; z: number };
   distance?: number;
+  decay?: number;
   angle?: number;
   penumbra?: number;
   userId: string;
@@ -77,11 +96,12 @@ const GROUPS_COLLECTION = 'groups';
 const LIGHTS_COLLECTION = 'lights';
 
 // Scene functions
-export const saveScene = async (scene: Omit<FirestoreScene, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+export const saveScene = async (scene: Omit<FirestoreScene, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
   try {
     const now = Timestamp.now();
     const sceneWithTimestamps = {
       ...scene,
+      userId,
       createdAt: now,
       updatedAt: now
     };
@@ -169,9 +189,54 @@ export const getScene = async (id: string): Promise<FirestoreScene | null> => {
   }
 };
 
+// Helper function to serialize Three.js material
+const serializeMaterial = (material: any): any => {
+  if (!material) return null;
+  
+  const serialized: any = {
+    type: material.type || 'MeshStandardMaterial'
+  };
+  
+  // Extract color
+  if (material.color && typeof material.color.getHexString === 'function') {
+    serialized.color = `#${material.color.getHexString()}`;
+  }
+  
+  // Extract other common properties
+  if (material.opacity !== undefined) serialized.opacity = material.opacity;
+  if (material.transparent !== undefined) serialized.transparent = material.transparent;
+  if (material.metalness !== undefined) serialized.metalness = material.metalness;
+  if (material.roughness !== undefined) serialized.roughness = material.roughness;
+  if (material.wireframe !== undefined) serialized.wireframe = material.wireframe;
+  
+  // Extract emissive color
+  if (material.emissive && typeof material.emissive.getHexString === 'function') {
+    serialized.emissive = `#${material.emissive.getHexString()}`;
+  }
+  
+  return serialized;
+};
+
+// Helper function to serialize Three.js geometry
+const serializeGeometry = (geometry: any): any => {
+  if (!geometry) return null;
+  
+  const serialized: any = {
+    type: geometry.type || 'BufferGeometry'
+  };
+  
+  // Extract parameters for common geometries
+  if (geometry.parameters) {
+    serialized.parameters = { ...geometry.parameters };
+  }
+  
+  return serialized;
+};
+
 // Object conversion functions
-export const objectToFirestore = (obj: any): Partial<FirestoreObject> => {
-  const firestoreObj: Partial<FirestoreObject> = {
+export const objectToFirestore = (obj: any, name: string, sceneId?: string, userId?: string): FirestoreObject => {
+  const firestoreObj: FirestoreObject = {
+    name: name || 'Unnamed Object',
     type: obj.type || 'mesh',
     position: {
       x: obj.position?.x || 0,
@@ -188,9 +253,19 @@ export const objectToFirestore = (obj: any): Partial<FirestoreObject> => {
       y: obj.scale?.y || 1,
       z: obj.scale?.z || 1
     },
-    material: obj.material,
-    geometry: obj.geometry
+    userId: userId || '',
+    sceneId: sceneId
   };
+
+  // Serialize material
+  if (obj.material) {
+    firestoreObj.material = serializeMaterial(obj.material);
+  }
+  
+  // Serialize geometry
+  if (obj.geometry) {
+    firestoreObj.geometry = serializeGeometry(obj.geometry);
+  }
 
   // Extract color from material if it exists and is valid
   if (obj.isMesh && obj.material && obj.material.color && typeof obj.material.color.getHexString === 'function') {
@@ -198,7 +273,6 @@ export const objectToFirestore = (obj: any): Partial<FirestoreObject> => {
   } else if (obj.color && typeof obj.color === 'string') {
     firestoreObj.color = obj.color;
   }
-  // If no valid color is found, we simply don't include the color field
 
   return firestoreObj;
 };
@@ -206,22 +280,27 @@ export const objectToFirestore = (obj: any): Partial<FirestoreObject> => {
 export const firestoreToObject = (firestoreObj: FirestoreObject): any => {
   return {
     id: firestoreObj.id,
+    name: firestoreObj.name,
     type: firestoreObj.type,
     position: firestoreObj.position,
     rotation: firestoreObj.rotation,
     scale: firestoreObj.scale,
     color: firestoreObj.color,
     material: firestoreObj.material,
-    geometry: firestoreObj.geometry
+    geometry: firestoreObj.geometry,
+    visible: firestoreObj.visible,
+    locked: firestoreObj.locked,
+    groupId: firestoreObj.groupId
   };
 };
 
 // Object CRUD functions
-export const saveObject = async (object: Omit<FirestoreObject, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+export const saveObject = async (object: Omit<FirestoreObject, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
   try {
     const now = Timestamp.now();
     const objectWithTimestamps = {
       ...object,
+      userId,
       createdAt: now,
       updatedAt: now
     };
@@ -279,11 +358,12 @@ export const subscribeToObjects = (userId: string, sceneId: string, callback: (o
 };
 
 // Group CRUD functions
-export const saveGroup = async (group: Omit<FirestoreGroup, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+export const saveGroup = async (group: Omit<FirestoreGroup, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
   try {
     const now = Timestamp.now();
     const groupWithTimestamps = {
       ...group,
+      userId,
       createdAt: now,
       updatedAt: now
     };
@@ -341,11 +421,12 @@ export const subscribeToGroups = (userId: string, sceneId: string, callback: (gr
 };
 
 // Light CRUD functions
-export const saveLight = async (light: Omit<FirestoreLight, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+export const saveLight = async (light: Omit<FirestoreLight, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
   try {
     const now = Timestamp.now();
     const lightWithTimestamps = {
       ...light,
+      userId,
       createdAt: now,
       updatedAt: now
     };
