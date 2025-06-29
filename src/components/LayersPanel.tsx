@@ -53,13 +53,32 @@ const LayersPanel: React.FC = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Initialize position to right side
+  // Initialize position to right side, accounting for settings panel
   useEffect(() => {
     if (panelRef.current && position.x === 0 && position.y === 0) {
       const rect = panelRef.current.getBoundingClientRect();
-      const rightX = window.innerWidth - rect.width - 16; // 16px from right
+      const rightX = window.innerWidth - rect.width - 16; // 16px from right edge
       setPosition({ x: rightX, y: 16 }); // 16px from top
     }
+  }, []);
+
+  // Handle window resize to keep panel in bounds
+  useEffect(() => {
+    const handleResize = () => {
+      if (!panelRef.current) return;
+      
+      const rect = panelRef.current.getBoundingClientRect();
+      const maxX = window.innerWidth - rect.width - 16; // 16px margin from right
+      const maxY = window.innerHeight - rect.height;
+      
+      setPosition(prev => ({
+        x: Math.max(16, Math.min(prev.x, maxX)),
+        y: Math.max(16, Math.min(prev.y, maxY))
+      }));
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Handle mouse down on drag handle
@@ -83,13 +102,13 @@ const LayersPanel: React.FC = () => {
       const newX = e.clientX - dragOffset.x;
       const newY = e.clientY - dragOffset.y;
       
-      // Constrain to viewport bounds
-      const maxX = window.innerWidth - (panelRef.current?.offsetWidth || 0);
-      const maxY = window.innerHeight - (panelRef.current?.offsetHeight || 0);
+      // Constrain to viewport bounds with margins
+      const maxX = window.innerWidth - (panelRef.current?.offsetWidth || 0) - 16;
+      const maxY = window.innerHeight - (panelRef.current?.offsetHeight || 0) - 16;
       
       setPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY))
+        x: Math.max(16, Math.min(newX, maxX)),
+        y: Math.max(16, Math.min(newY, maxY))
       });
     };
 
