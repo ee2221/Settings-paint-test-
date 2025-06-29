@@ -33,6 +33,49 @@ const ProjectLoader: React.FC<ProjectLoaderProps> = ({ projectId, userId }) => {
   const [loading, setLoading] = useState(false);
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
 
+  // Helper function to recreate THREE.Shape from serialized data
+  const recreateShape = (serializedShape: any): THREE.Shape | null => {
+    try {
+      if (!serializedShape || !serializedShape.points) return null;
+      
+      const shape = new THREE.Shape();
+      
+      // Recreate the main shape path
+      if (serializedShape.points.length > 0) {
+        const firstPoint = serializedShape.points[0];
+        shape.moveTo(firstPoint[0], firstPoint[1]);
+        
+        for (let i = 1; i < serializedShape.points.length; i++) {
+          const point = serializedShape.points[i];
+          shape.lineTo(point[0], point[1]);
+        }
+      }
+      
+      // Recreate holes if they exist
+      if (serializedShape.holes && Array.isArray(serializedShape.holes)) {
+        serializedShape.holes.forEach((holePoints: number[][]) => {
+          if (holePoints.length > 0) {
+            const hole = new THREE.Path();
+            const firstPoint = holePoints[0];
+            hole.moveTo(firstPoint[0], firstPoint[1]);
+            
+            for (let i = 1; i < holePoints.length; i++) {
+              const point = holePoints[i];
+              hole.lineTo(point[0], point[1]);
+            }
+            
+            shape.holes.push(hole);
+          }
+        });
+      }
+      
+      return shape;
+    } catch (error) {
+      console.error('Error recreating shape:', error);
+      return null;
+    }
+  };
+
   // Helper function to recreate THREE.js objects from Firestore data
   const recreateThreeObject = (firestoreObj: FirestoreObject): THREE.Object3D | null => {
     try {
@@ -68,6 +111,33 @@ const ProjectLoader: React.FC<ProjectLoaderProps> = ({ projectId, userId }) => {
           params.height || 1,
           params.radialSegments || 32
         );
+      } else if (firestoreObj.geometry?.type === 'ShapeGeometry') {
+        const params = firestoreObj.geometry.parameters || {};
+        
+        // Recreate shapes from serialized data
+        if (params.shapes && Array.isArray(params.shapes)) {
+          const shapes: THREE.Shape[] = [];
+          
+          params.shapes.forEach((serializedShape: any) => {
+            const shape = recreateShape(serializedShape);
+            if (shape) {
+              shapes.push(shape);
+            }
+          });
+          
+          if (shapes.length > 0) {
+            geometry = new THREE.ShapeGeometry(
+              shapes.length === 1 ? shapes[0] : shapes,
+              params.curveSegments || 12
+            );
+          } else {
+            // Fallback to box geometry if shape recreation fails
+            geometry = new THREE.BoxGeometry(1, 1, 1);
+          }
+        } else {
+          // Fallback to box geometry if no shapes data
+          geometry = new THREE.BoxGeometry(1, 1, 1);
+        }
       } else {
         // Default to box geometry
         geometry = new THREE.BoxGeometry(1, 1, 1);

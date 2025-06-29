@@ -217,6 +217,36 @@ const serializeMaterial = (material: any): any => {
   return serialized;
 };
 
+// Helper function to serialize THREE.Shape objects
+const serializeShape = (shape: any): any => {
+  if (!shape || !shape.getPoints) return null;
+  
+  try {
+    // Get the points from the shape
+    const points = shape.getPoints();
+    const serializedPoints = points.map((point: any) => [point.x, point.y]);
+    
+    // Serialize holes if they exist
+    const serializedHoles: any[] = [];
+    if (shape.holes && Array.isArray(shape.holes)) {
+      shape.holes.forEach((hole: any) => {
+        if (hole.getPoints) {
+          const holePoints = hole.getPoints();
+          serializedHoles.push(holePoints.map((point: any) => [point.x, point.y]));
+        }
+      });
+    }
+    
+    return {
+      points: serializedPoints,
+      holes: serializedHoles
+    };
+  } catch (error) {
+    console.error('Error serializing shape:', error);
+    return null;
+  }
+};
+
 // Helper function to serialize Three.js geometry
 const serializeGeometry = (geometry: any): any => {
   if (!geometry) return null;
@@ -227,7 +257,25 @@ const serializeGeometry = (geometry: any): any => {
   
   // Extract parameters for common geometries
   if (geometry.parameters) {
-    serialized.parameters = { ...geometry.parameters };
+    const params = { ...geometry.parameters };
+    
+    // Special handling for ShapeGeometry
+    if (geometry.type === 'ShapeGeometry' && params.shapes) {
+      if (Array.isArray(params.shapes)) {
+        // Multiple shapes
+        params.shapes = params.shapes.map((shape: any) => serializeShape(shape)).filter(Boolean);
+      } else {
+        // Single shape
+        const serializedShape = serializeShape(params.shapes);
+        if (serializedShape) {
+          params.shapes = [serializedShape];
+        } else {
+          delete params.shapes;
+        }
+      }
+    }
+    
+    serialized.parameters = params;
   }
   
   return serialized;
