@@ -277,7 +277,7 @@ const EdgeLines = ({ geometry, object }) => {
     selectedElements,
     isObjectLocked
   } = useSceneStore();
-  const { camera, raycaster, pointer } = useThree();
+  const { camera, raycaster, pointer, gl } = useThree();
   const positions = geometry.attributes.position;
   const edges = [];
   const worldMatrix = object.matrixWorld;
@@ -353,22 +353,38 @@ const EdgeLines = ({ geometry, object }) => {
     }
   }
 
+  // Enhanced edge dragging with proper mouse tracking
   useEffect(() => {
     if (!isDraggingEdge || !draggedEdge || objectLocked) return;
 
-    const handlePointerMove = (event) => {
+    const handlePointerMove = (event: PointerEvent) => {
+      // Prevent default to stop camera movement
+      event.preventDefault();
+
+      // Get normalized device coordinates
+      const rect = gl.domElement.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
       // Set up a plane perpendicular to camera for dragging
       const cameraDirection = new THREE.Vector3();
       camera.getWorldDirection(cameraDirection);
       plane.current.setFromNormalAndCoplanarPoint(cameraDirection, draggedEdge.midpoint);
 
-      raycaster.setFromCamera(pointer, camera);
+      raycaster.setFromCamera({ x, y }, camera);
       if (raycaster.ray.intersectPlane(plane.current, intersection.current)) {
         useSceneStore.getState().updateEdgeDrag(intersection.current);
       }
     };
 
-    const handleRightClick = (event) => {
+    const handlePointerUp = (event: PointerEvent) => {
+      if (event.button === 0) { // Left mouse button
+        setIsDraggingEdge(false);
+        endEdgeDrag();
+      }
+    };
+
+    const handleRightClick = (event: MouseEvent) => {
       if (event.button === 2) { // Right click
         event.preventDefault();
         setIsDraggingEdge(false);
@@ -376,16 +392,32 @@ const EdgeLines = ({ geometry, object }) => {
       }
     };
 
-    window.addEventListener('pointermove', handlePointerMove);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsDraggingEdge(false);
+        endEdgeDrag();
+      }
+    };
+
+    // Add event listeners with passive: false to allow preventDefault
+    window.addEventListener('pointermove', handlePointerMove, { passive: false });
+    window.addEventListener('pointerup', handlePointerUp);
     window.addEventListener('contextmenu', handleRightClick);
-    window.addEventListener('mousedown', handleRightClick);
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Set cursor to indicate dragging
+    gl.domElement.style.cursor = 'grabbing';
     
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('contextmenu', handleRightClick);
-      window.removeEventListener('mousedown', handleRightClick);
+      window.removeEventListener('keydown', handleKeyDown);
+      
+      // Reset cursor
+      gl.domElement.style.cursor = '';
     };
-  }, [isDraggingEdge, draggedEdge, camera, raycaster, pointer, setIsDraggingEdge, endEdgeDrag, objectLocked]);
+  }, [isDraggingEdge, draggedEdge, camera, raycaster, gl, setIsDraggingEdge, endEdgeDrag, objectLocked]);
 
   const handleEdgeClick = (vertices: [number, number], positions: [THREE.Vector3, THREE.Vector3], midpoint: THREE.Vector3) => {
     if (objectLocked) return;
