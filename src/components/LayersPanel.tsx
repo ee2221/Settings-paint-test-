@@ -192,7 +192,7 @@ const LayersPanel: React.FC = () => {
   // Get ungrouped objects
   const ungroupedObjects = objects.filter(obj => !obj.groupId);
 
-  // Collapsed state - just a small tab
+  // Collapsed state - just a small tab with only expand arrow clickable
   if (isCollapsed) {
     return (
       <div 
@@ -205,18 +205,20 @@ const LayersPanel: React.FC = () => {
         }}
         onMouseDown={handleMouseDown}
       >
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsCollapsed(false);
-          }}
-          className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/90 flex items-center gap-2"
-          title="Expand Layers Panel"
-        >
+        <div className="p-3 flex items-center gap-2 text-white/90">
           <Layers className="w-5 h-5 text-blue-400" />
           <span className="text-sm font-medium">Layers ({objects.length})</span>
-          <ChevronUp className="w-4 h-4" />
-        </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsCollapsed(false);
+            }}
+            className="p-1 hover:bg-white/10 rounded transition-colors"
+            title="Expand Layers Panel"
+          >
+            <ChevronUp className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     );
   }

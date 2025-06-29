@@ -200,7 +200,7 @@ const LightingPanel: React.FC = () => {
     }
   };
 
-  // Collapsed state - just a small tab
+  // Collapsed state - just a small tab with only expand arrow clickable
   if (isCollapsed) {
     return (
       <div 
@@ -213,18 +213,20 @@ const LightingPanel: React.FC = () => {
         }}
         onMouseDown={handleMouseDown}
       >
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsCollapsed(false);
-          }}
-          className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/90 flex items-center gap-2"
-          title="Open Lighting Panel"
-        >
+        <div className="p-3 flex items-center gap-2 text-white/90">
           <Lightbulb className="w-5 h-5 text-yellow-400" />
           <span className="text-sm font-medium">Lighting ({lights.length})</span>
-          <ChevronUp className="w-4 h-4" />
-        </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsCollapsed(false);
+            }}
+            className="p-1 hover:bg-white/10 rounded transition-colors"
+            title="Expand Lighting Panel"
+          >
+            <ChevronUp className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     );
   }
