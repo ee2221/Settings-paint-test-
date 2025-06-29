@@ -5,7 +5,6 @@ import {
   deleteDoc, 
   doc, 
   getDocs, 
-  getDoc,
   query, 
   where, 
   orderBy, 
@@ -13,8 +12,7 @@ import {
   DocumentData,
   QueryDocumentSnapshot,
   onSnapshot,
-  Unsubscribe,
-  writeBatch
+  Unsubscribe
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -54,7 +52,7 @@ export interface FirestoreObject {
   locked?: boolean;
   groupId?: string;
   userId: string;
-  sceneId: string; // Make sceneId required for objects
+  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -67,7 +65,7 @@ export interface FirestoreGroup {
   visible?: boolean;
   locked?: boolean;
   userId: string;
-  sceneId: string; // Make sceneId required for groups
+  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -87,7 +85,7 @@ export interface FirestoreLight {
   angle?: number;
   penumbra?: number;
   userId: string;
-  sceneId: string; // Make sceneId required for lights
+  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -133,46 +131,10 @@ export const updateScene = async (id: string, updates: Partial<FirestoreScene>):
 
 export const deleteScene = async (id: string): Promise<void> => {
   try {
-    const batch = writeBatch(db);
-    
-    // Delete the scene document
     const sceneRef = doc(db, SCENES_COLLECTION, id);
-    batch.delete(sceneRef);
-    
-    // Delete all objects in this scene
-    const objectsQuery = query(
-      collection(db, OBJECTS_COLLECTION),
-      where('sceneId', '==', id)
-    );
-    const objectsSnapshot = await getDocs(objectsQuery);
-    objectsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    // Delete all groups in this scene
-    const groupsQuery = query(
-      collection(db, GROUPS_COLLECTION),
-      where('sceneId', '==', id)
-    );
-    const groupsSnapshot = await getDocs(groupsQuery);
-    groupsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    // Delete all lights in this scene
-    const lightsQuery = query(
-      collection(db, LIGHTS_COLLECTION),
-      where('sceneId', '==', id)
-    );
-    const lightsSnapshot = await getDocs(lightsQuery);
-    lightsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    // Commit all deletions
-    await batch.commit();
+    await deleteDoc(sceneRef);
   } catch (error) {
-    console.error('Error deleting scene and related data:', error);
+    console.error('Error deleting scene:', error);
     throw error;
   }
 };
@@ -181,8 +143,7 @@ export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
   try {
     const q = query(
       collection(db, SCENES_COLLECTION),
-      where('userId', '==', userId),
-      orderBy('updatedAt', 'desc')
+      where('userId', '==', userId)
     );
     
     const querySnapshot = await getDocs(q);
@@ -195,6 +156,12 @@ export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
       } as FirestoreScene);
     });
     
+    scenes.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis() || 0;
+      const bTime = b.createdAt?.toMillis() || 0;
+      return bTime - aTime;
+    });
+    
     return scenes;
   } catch (error) {
     console.error('Error getting scenes:', error);
@@ -205,12 +172,13 @@ export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
 export const getScene = async (id: string): Promise<FirestoreScene | null> => {
   try {
     const sceneRef = doc(db, SCENES_COLLECTION, id);
-    const docSnap = await getDoc(sceneRef);
+    const docSnap = await getDocs(query(collection(db, SCENES_COLLECTION), where('__name__', '==', id)));
     
-    if (docSnap.exists()) {
+    if (!docSnap.empty) {
+      const doc = docSnap.docs[0];
       return {
-        id: docSnap.id,
-        ...docSnap.data()
+        id: doc.id,
+        ...doc.data()
       } as FirestoreScene;
     }
     
@@ -249,51 +217,6 @@ const serializeMaterial = (material: any): any => {
   return serialized;
 };
 
-// Helper function to serialize THREE.Shape objects
-const serializeShape = (shape: any): any => {
-  if (!shape || !shape.getPoints) return null;
-  
-  try {
-    // Get the points from the shape
-    const points = shape.getPoints();
-    const serializedPoints = points.map((point: any) => [point.x, point.y]);
-    
-    // Serialize holes if they exist
-    const serializedHoles: any[] = [];
-    if (shape.holes && Array.isArray(shape.holes)) {
-      shape.holes.forEach((hole: any) => {
-        if (hole.getPoints) {
-          const holePoints = hole.getPoints();
-          serializedHoles.push(holePoints.map((point: any) => [point.x, point.y]));
-        }
-      });
-    }
-    
-    return {
-      points: serializedPoints,
-      holes: serializedHoles
-    };
-  } catch (error) {
-    console.error('Error serializing shape:', error);
-    return null;
-  }
-};
-
-// Helper function to deep clone an object, avoiding circular references
-const deepClone = (obj: any): any => {
-  if (obj === null || typeof obj !== 'object') return obj;
-  if (obj instanceof Date) return new Date(obj.getTime());
-  if (Array.isArray(obj)) return obj.map(item => deepClone(item));
-  
-  const cloned: any = {};
-  for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      cloned[key] = deepClone(obj[key]);
-    }
-  }
-  return cloned;
-};
-
 // Helper function to serialize Three.js geometry
 const serializeGeometry = (geometry: any): any => {
   if (!geometry) return null;
@@ -304,34 +227,14 @@ const serializeGeometry = (geometry: any): any => {
   
   // Extract parameters for common geometries
   if (geometry.parameters) {
-    // Create a deep copy of parameters to avoid modifying the original
-    const params = deepClone(geometry.parameters);
-    
-    // Special handling for ShapeGeometry
-    if (geometry.type === 'ShapeGeometry' && params.shapes) {
-      if (Array.isArray(params.shapes)) {
-        // Multiple shapes - serialize each one
-        params.shapes = params.shapes.map((shape: any) => serializeShape(shape)).filter(Boolean);
-      } else {
-        // Single shape - serialize it and wrap in array
-        const serializedShape = serializeShape(params.shapes);
-        if (serializedShape) {
-          params.shapes = [serializedShape];
-        } else {
-          // If serialization failed, remove the shapes property
-          delete params.shapes;
-        }
-      }
-    }
-    
-    serialized.parameters = params;
+    serialized.parameters = { ...geometry.parameters };
   }
   
   return serialized;
 };
 
 // Object conversion functions
-export const objectToFirestore = (obj: any, name: string, sceneId: string, userId: string): FirestoreObject => {
+export const objectToFirestore = (obj: any, name: string, sceneId?: string, userId?: string): FirestoreObject => {
   const firestoreObj: FirestoreObject = {
     name: name || 'Unnamed Object',
     type: obj.type || 'mesh',
@@ -350,8 +253,8 @@ export const objectToFirestore = (obj: any, name: string, sceneId: string, userI
       y: obj.scale?.y || 1,
       z: obj.scale?.z || 1
     },
-    userId,
-    sceneId // Always require sceneId for objects
+    userId: userId || '',
+    sceneId: sceneId
   };
 
   // Serialize material
@@ -387,18 +290,13 @@ export const firestoreToObject = (firestoreObj: FirestoreObject): any => {
     geometry: firestoreObj.geometry,
     visible: firestoreObj.visible,
     locked: firestoreObj.locked,
-    groupId: firestoreObj.groupId,
-    sceneId: firestoreObj.sceneId
+    groupId: firestoreObj.groupId
   };
 };
 
-// Object CRUD functions - All require sceneId for isolation
+// Object CRUD functions
 export const saveObject = async (object: Omit<FirestoreObject, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
   try {
-    if (!object.sceneId) {
-      throw new Error('sceneId is required for saving objects');
-    }
-    
     const now = Timestamp.now();
     const objectWithTimestamps = {
       ...object,
@@ -440,35 +338,11 @@ export const deleteObject = async (id: string): Promise<void> => {
   }
 };
 
-// Clear all objects for a specific scene (used when loading a project)
-export const clearSceneObjects = async (sceneId: string, userId: string): Promise<void> => {
-  try {
-    const batch = writeBatch(db);
-    
-    const objectsQuery = query(
-      collection(db, OBJECTS_COLLECTION),
-      where('sceneId', '==', sceneId),
-      where('userId', '==', userId)
-    );
-    
-    const snapshot = await getDocs(objectsQuery);
-    snapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    await batch.commit();
-  } catch (error) {
-    console.error('Error clearing scene objects:', error);
-    throw error;
-  }
-};
-
 export const subscribeToObjects = (userId: string, sceneId: string, callback: (objects: FirestoreObject[]) => void): Unsubscribe => {
   const q = query(
     collection(db, OBJECTS_COLLECTION),
     where('userId', '==', userId),
-    where('sceneId', '==', sceneId),
-    orderBy('createdAt', 'asc')
+    where('sceneId', '==', sceneId)
   );
   
   return onSnapshot(q, (querySnapshot) => {
@@ -483,13 +357,9 @@ export const subscribeToObjects = (userId: string, sceneId: string, callback: (o
   });
 };
 
-// Group CRUD functions - All require sceneId for isolation
+// Group CRUD functions
 export const saveGroup = async (group: Omit<FirestoreGroup, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
   try {
-    if (!group.sceneId) {
-      throw new Error('sceneId is required for saving groups');
-    }
-    
     const now = Timestamp.now();
     const groupWithTimestamps = {
       ...group,
@@ -531,35 +401,11 @@ export const deleteGroup = async (id: string): Promise<void> => {
   }
 };
 
-// Clear all groups for a specific scene
-export const clearSceneGroups = async (sceneId: string, userId: string): Promise<void> => {
-  try {
-    const batch = writeBatch(db);
-    
-    const groupsQuery = query(
-      collection(db, GROUPS_COLLECTION),
-      where('sceneId', '==', sceneId),
-      where('userId', '==', userId)
-    );
-    
-    const snapshot = await getDocs(groupsQuery);
-    snapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    await batch.commit();
-  } catch (error) {
-    console.error('Error clearing scene groups:', error);
-    throw error;
-  }
-};
-
 export const subscribeToGroups = (userId: string, sceneId: string, callback: (groups: FirestoreGroup[]) => void): Unsubscribe => {
   const q = query(
     collection(db, GROUPS_COLLECTION),
     where('userId', '==', userId),
-    where('sceneId', '==', sceneId),
-    orderBy('createdAt', 'asc')
+    where('sceneId', '==', sceneId)
   );
   
   return onSnapshot(q, (querySnapshot) => {
@@ -574,13 +420,9 @@ export const subscribeToGroups = (userId: string, sceneId: string, callback: (gr
   });
 };
 
-// Light CRUD functions - All require sceneId for isolation
+// Light CRUD functions
 export const saveLight = async (light: Omit<FirestoreLight, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<string> => {
   try {
-    if (!light.sceneId) {
-      throw new Error('sceneId is required for saving lights');
-    }
-    
     const now = Timestamp.now();
     const lightWithTimestamps = {
       ...light,
@@ -622,35 +464,11 @@ export const deleteLight = async (id: string): Promise<void> => {
   }
 };
 
-// Clear all lights for a specific scene
-export const clearSceneLights = async (sceneId: string, userId: string): Promise<void> => {
-  try {
-    const batch = writeBatch(db);
-    
-    const lightsQuery = query(
-      collection(db, LIGHTS_COLLECTION),
-      where('sceneId', '==', sceneId),
-      where('userId', '==', userId)
-    );
-    
-    const snapshot = await getDocs(lightsQuery);
-    snapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    await batch.commit();
-  } catch (error) {
-    console.error('Error clearing scene lights:', error);
-    throw error;
-  }
-};
-
 export const subscribeToLights = (userId: string, sceneId: string, callback: (lights: FirestoreLight[]) => void): Unsubscribe => {
   const q = query(
     collection(db, LIGHTS_COLLECTION),
     where('userId', '==', userId),
-    where('sceneId', '==', sceneId),
-    orderBy('createdAt', 'asc')
+    where('sceneId', '==', sceneId)
   );
   
   return onSnapshot(q, (querySnapshot) => {
@@ -663,18 +481,4 @@ export const subscribeToLights = (userId: string, sceneId: string, callback: (li
     });
     callback(lights);
   });
-};
-
-// Utility function to completely clear a project's data
-export const clearProjectData = async (sceneId: string, userId: string): Promise<void> => {
-  try {
-    await Promise.all([
-      clearSceneObjects(sceneId, userId),
-      clearSceneGroups(sceneId, userId),
-      clearSceneLights(sceneId, userId)
-    ]);
-  } catch (error) {
-    console.error('Error clearing project data:', error);
-    throw error;
-  }
 };
