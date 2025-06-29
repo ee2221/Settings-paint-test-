@@ -5,6 +5,7 @@ import {
   deleteDoc, 
   doc, 
   getDocs, 
+  getDoc,
   query, 
   where, 
   orderBy, 
@@ -172,13 +173,12 @@ export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
 export const getScene = async (id: string): Promise<FirestoreScene | null> => {
   try {
     const sceneRef = doc(db, SCENES_COLLECTION, id);
-    const docSnap = await getDocs(query(collection(db, SCENES_COLLECTION), where('__name__', '==', id)));
+    const docSnap = await getDoc(sceneRef);
     
-    if (!docSnap.empty) {
-      const doc = docSnap.docs[0];
+    if (docSnap.exists()) {
       return {
-        id: doc.id,
-        ...doc.data()
+        id: docSnap.id,
+        ...docSnap.data()
       } as FirestoreScene;
     }
     

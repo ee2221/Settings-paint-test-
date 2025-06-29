@@ -14,6 +14,7 @@ import SaveButton from './components/SaveButton';
 import AuthModal from './components/AuthModal';
 import UserProfile from './components/UserProfile';
 import ClassroomDashboard from './components/ClassroomDashboard';
+import ProjectLoader from './components/ProjectLoader';
 import { useSceneStore } from './store/sceneStore';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'app'>('dashboard');
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -45,9 +47,29 @@ function App() {
     
     if (view === 'app' || projectId || window.location.pathname === '/app') {
       setCurrentView('app');
+      setCurrentProjectId(projectId);
     } else {
       setCurrentView('dashboard');
+      setCurrentProjectId(null);
     }
+
+    // Listen for URL changes (back/forward navigation)
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const view = urlParams.get('view');
+      const projectId = urlParams.get('project');
+      
+      if (view === 'app' || projectId) {
+        setCurrentView('app');
+        setCurrentProjectId(projectId);
+      } else {
+        setCurrentView('dashboard');
+        setCurrentProjectId(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const handleAuthSuccess = () => {
@@ -58,6 +80,14 @@ function App() {
     setUser(null);
     setShowAuthModal(true);
     setCurrentView('dashboard');
+    setCurrentProjectId(null);
+  };
+
+  const handleBackToDashboard = () => {
+    setCurrentView('dashboard');
+    setCurrentProjectId(null);
+    // Update URL without page reload
+    window.history.pushState({}, '', '/');
   };
 
   // Show loading screen while checking auth state
@@ -82,11 +112,14 @@ function App() {
     <div className="w-full h-screen relative">
       <Scene />
       
+      {/* Project Loader - handles loading saved project data */}
+      <ProjectLoader projectId={currentProjectId} userId={user?.uid || null} />
+      
       {/* Top Left Controls - Arranged horizontally */}
       <div className="fixed top-4 left-4 flex items-center gap-4 z-50">
         {/* Back to Dashboard Button */}
         <button
-          onClick={() => setCurrentView('dashboard')}
+          onClick={handleBackToDashboard}
           className="flex items-center gap-2 px-4 py-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 border border-white/5 transition-all duration-200 hover:scale-105 text-white/90"
           title="Back to Dashboard"
         >
