@@ -205,16 +205,18 @@ const VertexCountSelector = () => {
   }
 
   return (
-    <div className="absolute left-1/2 top-4 -translate-x-1/2 bg-black/75 text-white p-4 rounded-lg">
-      <div className="flex items-center gap-2">
-        <label className="text-sm font-medium">Vertex Count:</label>
+    <div className="absolute left-1/2 top-20 -translate-x-1/2 bg-[#1a1a1a] rounded-xl shadow-2xl shadow-black/20 p-4 border border-white/5 z-10">
+      <div className="flex items-center gap-3">
+        <label className="text-sm font-medium text-white/90">Vertex Count:</label>
         <select
-          className="bg-gray-800 px-3 py-1.5 rounded text-sm"
+          className="bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90 focus:outline-none focus:border-blue-500/50 min-w-32"
           onChange={(e) => onChange(parseInt(e.target.value))}
           value={currentVertexCount}
         >
           {options.map(({ value, label }) => (
-            <option key={value} value={value}>{label}</option>
+            <option key={value} value={value} className="bg-[#2a2a2a] text-white/90">
+              {label}
+            </option>
           ))}
         </select>
       </div>
