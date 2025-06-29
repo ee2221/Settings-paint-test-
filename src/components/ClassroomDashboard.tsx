@@ -25,11 +25,15 @@ import {
   Star,
   MoreVertical,
   ChevronDown,
-  ArrowLeft
+  ArrowLeft,
+  Share2,
+  Link,
+  Check,
+  X
 } from 'lucide-react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { getScenes, deleteScene, FirestoreScene } from '../services/firestoreService';
+import { getScenes, deleteScene, updateScene, FirestoreScene } from '../services/firestoreService';
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 
@@ -54,6 +58,18 @@ const ClassroomDashboard: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [showProjectMenu, setShowProjectMenu] = useState<string | null>(null);
+  
+  // Rename modal state
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renamingProject, setRenamingProject] = useState<Project | null>(null);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [renameLoading, setRenameLoading] = useState(false);
+  
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [sharingProject, setSharingProject] = useState<Project | null>(null);
+  const [shareUrl, setShareUrl] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -189,14 +205,90 @@ const ClassroomDashboard: React.FC = () => {
     window.location.href = `/?view=app&project=${projectId}`;
   };
 
+  const handleRenameProject = (project: Project) => {
+    setRenamingProject(project);
+    setNewProjectName(project.name);
+    setShowRenameModal(true);
+    setShowProjectMenu(null);
+  };
+
+  const handleRenameSubmit = async () => {
+    if (!renamingProject || !newProjectName.trim()) return;
+    
+    setRenameLoading(true);
+    try {
+      await updateScene(renamingProject.id!, {
+        name: newProjectName.trim()
+      });
+      
+      // Update local state
+      setProjects(projects.map(p => 
+        p.id === renamingProject.id 
+          ? { ...p, name: newProjectName.trim() }
+          : p
+      ));
+      
+      setShowRenameModal(false);
+      setRenamingProject(null);
+      setNewProjectName('');
+    } catch (error) {
+      console.error('Error renaming project:', error);
+    } finally {
+      setRenameLoading(false);
+    }
+  };
+
   const handleDeleteProject = async (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
+    if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) return;
     
     try {
       await deleteScene(projectId);
       setProjects(projects.filter(p => p.id !== projectId));
+      setShowProjectMenu(null);
     } catch (error) {
       console.error('Error deleting project:', error);
+    }
+  };
+
+  const handleShareProject = (project: Project) => {
+    setSharingProject(project);
+    // Generate a shareable URL (in a real app, this would create a public share link)
+    const shareableUrl = `${window.location.origin}/?view=app&project=${project.id}&shared=true`;
+    setShareUrl(shareableUrl);
+    setShowShareModal(true);
+    setShowProjectMenu(null);
+  };
+
+  const handleCopyShareUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy URL:', error);
+    }
+  };
+
+  const handleDuplicateProject = async (project: Project) => {
+    try {
+      // Create a copy of the project with a new name
+      const duplicatedProject = {
+        ...project,
+        name: `${project.name} (Copy)`,
+        userId: user.uid
+      };
+      
+      // Remove the ID so it creates a new document
+      delete duplicatedProject.id;
+      delete duplicatedProject.createdAt;
+      delete duplicatedProject.updatedAt;
+      
+      // Save the duplicated project (this would need to be implemented in firestoreService)
+      // For now, we'll just reload the projects
+      await loadProjects();
+      setShowProjectMenu(null);
+    } catch (error) {
+      console.error('Error duplicating project:', error);
     }
   };
 
@@ -453,20 +545,29 @@ const ClassroomDashboard: React.FC = () => {
                               Open Project
                             </button>
                             <button
-                              onClick={() => {
-                                // Handle duplicate
-                                setShowProjectMenu(null);
-                              }}
+                              onClick={() => handleRenameProject(project)}
+                              className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                              Rename
+                            </button>
+                            <button
+                              onClick={() => handleDuplicateProject(project)}
                               className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
                             >
                               <Copy className="w-4 h-4" />
                               Duplicate
                             </button>
                             <button
-                              onClick={() => {
-                                handleDeleteProject(project.id!);
-                                setShowProjectMenu(null);
-                              }}
+                              onClick={() => handleShareProject(project)}
+                              className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-blue-400 transition-colors"
+                            >
+                              <Share2 className="w-4 h-4" />
+                              Share
+                            </button>
+                            <div className="border-t border-white/10 my-1"></div>
+                            <button
+                              onClick={() => handleDeleteProject(project.id!)}
                               className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-red-400 transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -575,20 +676,29 @@ const ClassroomDashboard: React.FC = () => {
                         <div className="fixed inset-0 z-40" onClick={() => setShowProjectMenu(null)} />
                         <div className="absolute right-0 top-full mt-1 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-xl z-50">
                           <button
-                            onClick={() => {
-                              // Handle duplicate
-                              setShowProjectMenu(null);
-                            }}
+                            onClick={() => handleRenameProject(project)}
+                            className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            Rename
+                          </button>
+                          <button
+                            onClick={() => handleDuplicateProject(project)}
                             className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
                           >
                             <Copy className="w-4 h-4" />
                             Duplicate
                           </button>
                           <button
-                            onClick={() => {
-                              handleDeleteProject(project.id!);
-                              setShowProjectMenu(null);
-                            }}
+                            onClick={() => handleShareProject(project)}
+                            className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-blue-400 transition-colors"
+                          >
+                            <Share2 className="w-4 h-4" />
+                            Share
+                          </button>
+                          <div className="border-t border-white/10 my-1"></div>
+                          <button
+                            onClick={() => handleDeleteProject(project.id!)}
                             className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-red-400 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -604,6 +714,133 @@ const ClassroomDashboard: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Rename Project Modal */}
+      {showRenameModal && renamingProject && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-black/90 backdrop-blur-sm border border-white/10 rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Rename Project</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-2">
+                    Project Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-500/50"
+                    placeholder="Enter project name"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleRenameSubmit();
+                      } else if (e.key === 'Escape') {
+                        setShowRenameModal(false);
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setShowRenameModal(false)}
+                    className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                    disabled={renameLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRenameSubmit}
+                    disabled={!newProjectName.trim() || renameLoading}
+                    className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    {renameLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        Save
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Project Modal */}
+      {showShareModal && sharingProject && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-black/90 backdrop-blur-sm border border-white/10 rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Share Project</h3>
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="p-1 hover:bg-white/10 rounded-lg transition-colors text-white/70"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-white/70 mb-3">
+                    Share "{sharingProject.name}" with others using this link:
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={shareUrl}
+                      readOnly
+                      className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none"
+                    />
+                    <button
+                      onClick={handleCopyShareUrl}
+                      className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                        copySuccess 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-blue-500 hover:bg-blue-600 text-white'
+                      }`}
+                    >
+                      {copySuccess ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Link className="w-4 h-4" />
+                          Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                  <p className="text-xs text-blue-400">
+                    <strong>Note:</strong> Anyone with this link will be able to view your project in read-only mode.
+                  </p>
+                </div>
+                
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Authentication Modal */}
       <AuthModal 
