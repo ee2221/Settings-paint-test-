@@ -213,18 +213,18 @@ const LightingPanel: React.FC = () => {
         }}
         onMouseDown={handleMouseDown}
       >
-        <div
+        <button
           onClick={(e) => {
             e.stopPropagation();
             setIsCollapsed(false);
           }}
-          className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/90 flex items-center gap-2 cursor-pointer"
+          className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/90 flex items-center gap-2"
           title="Open Lighting Panel"
         >
           <Lightbulb className="w-5 h-5 text-yellow-400" />
           <span className="text-sm font-medium">Lighting ({lights.length})</span>
           <ChevronUp className="w-4 h-4" />
-        </div>
+        </button>
       </div>
     );
   }
