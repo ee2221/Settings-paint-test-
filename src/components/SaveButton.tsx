@@ -13,7 +13,10 @@ import {
   FirestoreScene,
   deleteObject,
   deleteGroup,
-  deleteLight
+  deleteLight,
+  subscribeToObjects,
+  subscribeToGroups,
+  subscribeToLights
 } from '../services/firestoreService';
 
 interface SaveButtonProps {
@@ -27,9 +30,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
     lights, 
     sceneSettings, 
     cameraPerspective, 
-    cameraZoom,
-    getDeletedIds,
-    clearDeletedIds
+    cameraZoom 
   } = useSceneStore();
   
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
@@ -113,6 +114,10 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
         
         await updateScene(currentProjectId, sceneData);
         
+        // Clear existing objects, groups, and lights for this scene
+        // Note: In a production app, you'd want to do a more sophisticated sync
+        // For now, we'll just save new data (existing data will remain but won't interfere)
+        
       } else {
         // Create new project (fallback)
         setSaveMessage('Creating new project...');
@@ -141,110 +146,70 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
         setCurrentProjectId(sceneId);
       }
 
-      setSaveMessage('Cleaning up deleted items...');
-
-      // Handle deleted items first
-      const deletedIds = getDeletedIds();
-      
-      // Delete removed objects from Firestore
-      const deletionPromises = [
-        ...deletedIds.objects.map(id => deleteObject(id)),
-        ...deletedIds.groups.map(id => deleteGroup(id)),
-        ...deletedIds.lights.map(id => deleteLight(id))
-      ];
-      
-      if (deletionPromises.length > 0) {
-        await Promise.all(deletionPromises);
-        clearDeletedIds(); // Clear the deletion tracking
-      }
-
       setSaveMessage('Saving objects and scene data...');
 
-      // Save all objects with the scene ID, preserving their original geometry
+      // Save all objects with the scene ID
       const objectPromises = objects.map(async (obj) => {
-        try {
-          const firestoreData = objectToFirestore(obj.object, obj.name, sceneId, user.uid);
-          firestoreData.visible = obj.visible;
-          firestoreData.locked = obj.locked;
-          // Only add groupId if it's defined
-          if (obj.groupId !== undefined) {
-            firestoreData.groupId = obj.groupId;
-          }
-          
-          // If object already has a Firestore ID, we might want to update instead of create new
-          // For now, we'll create new entries each time to ensure data integrity
-          return await saveObject(firestoreData, user.uid);
-        } catch (error) {
-          console.error('Error saving object:', obj.name, error);
-          // Continue with other objects even if one fails
-          return null;
+        const firestoreData = objectToFirestore(obj.object, obj.name, sceneId, user.uid);
+        firestoreData.visible = obj.visible;
+        firestoreData.locked = obj.locked;
+        // Only add groupId if it's defined
+        if (obj.groupId !== undefined) {
+          firestoreData.groupId = obj.groupId;
         }
+        return await saveObject(firestoreData, user.uid);
       });
 
       // Save all groups with the scene ID
       const groupPromises = groups.map(async (group) => {
-        try {
-          const firestoreGroup: FirestoreGroup = {
-            name: group.name,
-            expanded: group.expanded,
-            visible: group.visible,
-            locked: group.locked,
-            objectIds: group.objectIds,
-            sceneId: sceneId!,
-            userId: user.uid
-          };
-          return await saveGroup(firestoreGroup, user.uid);
-        } catch (error) {
-          console.error('Error saving group:', group.name, error);
-          return null;
-        }
+        const firestoreGroup: FirestoreGroup = {
+          name: group.name,
+          expanded: group.expanded,
+          visible: group.visible,
+          locked: group.locked,
+          objectIds: group.objectIds,
+          sceneId: sceneId!,
+          userId: user.uid
+        };
+        return await saveGroup(firestoreGroup, user.uid);
       });
 
       // Save all lights with the scene ID
       const lightPromises = lights.map(async (light) => {
-        try {
-          const firestoreLight: FirestoreLight = {
-            name: light.name,
-            type: light.type,
-            position: Array.isArray(light.position) 
-              ? { x: light.position[0], y: light.position[1], z: light.position[2] }
-              : light.position,
-            target: light.target && Array.isArray(light.target)
-              ? { x: light.target[0], y: light.target[1], z: light.target[2] }
-              : light.target,
-            intensity: light.intensity,
-            color: light.color,
-            visible: light.visible,
-            castShadow: light.castShadow,
-            distance: light.distance,
-            decay: light.decay,
-            angle: light.angle,
-            penumbra: light.penumbra,
-            sceneId: sceneId!,
-            userId: user.uid
-          };
-          return await saveLight(firestoreLight, user.uid);
-        } catch (error) {
-          console.error('Error saving light:', light.name, error);
-          return null;
-        }
+        const firestoreLight: FirestoreLight = {
+          name: light.name,
+          type: light.type,
+          position: Array.isArray(light.position) 
+            ? { x: light.position[0], y: light.position[1], z: light.position[2] }
+            : light.position,
+          target: light.target && Array.isArray(light.target)
+            ? { x: light.target[0], y: light.target[1], z: light.target[2] }
+            : light.target,
+          intensity: light.intensity,
+          color: light.color,
+          visible: light.visible,
+          castShadow: light.castShadow,
+          distance: light.distance,
+          decay: light.decay,
+          angle: light.angle,
+          penumbra: light.penumbra,
+          sceneId: sceneId!,
+          userId: user.uid
+        };
+        return await saveLight(firestoreLight, user.uid);
       });
 
       // Wait for all sub-collection saves to complete
-      const results = await Promise.allSettled([
+      await Promise.all([
         ...objectPromises,
         ...groupPromises,
         ...lightPromises
       ]);
 
-      // Count successful saves
-      const successfulSaves = results.filter(result => result.status === 'fulfilled' && result.value !== null).length;
-      const totalItems = objects.length + groups.length + lights.length;
-
       setSaveStatus('success');
       setSaveMessage(currentProjectId 
-        ? `Updated project: ${successfulSaves}/${totalItems} items saved successfully`
-        : `Saved project: ${successfulSaves}/${totalItems} items saved with scene preview`
+        ? `Updated project with ${objects.length} objects, ${groups.length} groups, ${lights.length} lights`
+        : `Saved ${objects.length} objects, ${groups.length} groups, ${lights.length} lights with scene preview`
       );
       
       // Reset status after 3 seconds
@@ -256,7 +221,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
     } catch (error) {
       console.error('Save error:', error);
       setSaveStatus('error');
-      setSaveMessage('Failed to save to cloud - some items may not have been saved');
+      setSaveMessage('Failed to save to cloud');
       
       // Reset status after 5 seconds
       setTimeout(() => {
