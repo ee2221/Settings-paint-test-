@@ -1055,6 +1055,56 @@ const PlacementHelper = () => {
   );
 };
 
+// Component to handle edit mode deselection
+const EditModeDeselectionHandler = () => {
+  const { editMode, setEditMode, selectedObject, setSelectedObject } = useSceneStore();
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle escape when not typing in inputs
+      if (event.target && (event.target as HTMLElement).tagName === 'INPUT') return;
+      if (event.target && (event.target as HTMLElement).tagName === 'TEXTAREA') return;
+
+      if (event.key === 'Escape') {
+        // Clear edit mode if active
+        if (editMode) {
+          setEditMode(null);
+        }
+      }
+    };
+
+    const handleCanvasClick = (event: MouseEvent) => {
+      // Check if click is on empty space (not on an object)
+      const canvas = event.target as HTMLCanvasElement;
+      if (canvas && canvas.tagName === 'CANVAS') {
+        // Only deselect edit mode if we're not in placement mode
+        const state = useSceneStore.getState();
+        if (!state.placementMode && !state.draggedVertex && !state.isDraggingEdge) {
+          // Small delay to allow object selection to happen first
+          setTimeout(() => {
+            const currentState = useSceneStore.getState();
+            // If no object is selected after the click, clear edit mode
+            if (!currentState.selectedObject && currentState.editMode) {
+              setEditMode(null);
+            }
+          }, 10);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    // Add click listener to the document to catch canvas clicks
+    document.addEventListener('click', handleCanvasClick);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('click', handleCanvasClick);
+    };
+  }, [editMode, setEditMode, setSelectedObject]);
+
+  return null; // This component only handles events
+};
+
 const Scene: React.FC = () => {
   const { 
     objects, 
@@ -1198,6 +1248,10 @@ const Scene: React.FC = () => {
         <LightHelpers lights={lights} selectedLight={selectedLight} />
         <CameraController />
       </Canvas>
+      
+      {/* Edit Mode Deselection Handler */}
+      <EditModeDeselectionHandler />
+      
       {editMode === 'vertex' && selectedPosition && (
         <VertexCoordinates 
           position={selectedPosition}
