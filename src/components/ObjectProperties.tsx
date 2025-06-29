@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSceneStore } from '../store/sceneStore';
-import { X, Lock, Eye, EyeOff } from 'lucide-react';
+import { X, Lock, Eye, EyeOff, GripHorizontal, Settings } from 'lucide-react';
 import * as THREE from 'three';
 
 const ObjectProperties: React.FC = () => {
@@ -10,6 +10,92 @@ const ObjectProperties: React.FC = () => {
   const [wireframeColor, setWireframeColor] = useState('#ffffff');
   const [wireframeOpacity, setWireframeOpacity] = useState(1);
   const [wireframeLinewidth, setWireframeLinewidth] = useState(1);
+  
+  // Panel positioning state
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Initialize position to avoid overlaps with other panels
+  useEffect(() => {
+    if (panelRef.current && position.x === 0 && position.y === 0 && selectedObject) {
+      const rect = panelRef.current.getBoundingClientRect();
+      // Position in the center-left area to avoid layers panel (right) and other UI
+      const centerX = Math.max(16, (window.innerWidth - rect.width) / 2 - 200);
+      const centerY = Math.max(16, (window.innerHeight - rect.height) / 2);
+      setPosition({ x: centerX, y: centerY });
+    }
+  }, [selectedObject]); // Re-position when object is selected
+
+  // Handle window resize to keep panel in bounds
+  useEffect(() => {
+    const handleResize = () => {
+      if (!panelRef.current) return;
+      
+      const rect = panelRef.current.getBoundingClientRect();
+      const maxX = window.innerWidth - rect.width - 16;
+      const maxY = window.innerHeight - rect.height - 16;
+      
+      setPosition(prev => ({
+        x: Math.max(16, Math.min(prev.x, maxX)),
+        y: Math.max(16, Math.min(prev.y, maxY))
+      }));
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Handle mouse down on drag handle
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!panelRef.current) return;
+    
+    const rect = panelRef.current.getBoundingClientRect();
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+    setIsDragging(true);
+    e.preventDefault();
+  };
+
+  // Handle mouse move and up
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+      
+      // Constrain to viewport bounds with margins
+      const maxX = window.innerWidth - (panelRef.current?.offsetWidth || 0) - 16;
+      const maxY = window.innerHeight - (panelRef.current?.offsetHeight || 0) - 16;
+      
+      setPosition({
+        x: Math.max(16, Math.min(newX, maxX)),
+        y: Math.max(16, Math.min(newY, maxY))
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'grabbing';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging, dragOffset]);
 
   const getMaterial = () => {
     if (selectedObject instanceof THREE.Mesh) {
@@ -288,280 +374,306 @@ const ObjectProperties: React.FC = () => {
   };
 
   return (
-    <div className="absolute right-72 top-4 bg-[#1a1a1a] rounded-xl shadow-2xl shadow-black/20 p-4 w-64 border border-white/5 max-h-[85vh] overflow-y-auto">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
+    <div 
+      ref={panelRef}
+      className="fixed bg-[#1a1a1a] rounded-xl shadow-2xl shadow-black/20 border border-white/5 max-h-[85vh] overflow-hidden z-50"
+      style={{
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        width: '280px'
+      }}
+    >
+      {/* Header with drag handle */}
+      <div
+        className={`flex items-center justify-between p-4 border-b border-white/10 ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        } select-none`}
+        onMouseDown={handleMouseDown}
+        title="Drag to move panel"
+      >
+        <div className="flex items-center gap-2 pointer-events-none">
+          <Settings className="w-5 h-5 text-blue-400" />
           <h2 className="text-lg font-semibold text-white/90">Properties</h2>
           {objectLocked && <Lock className="w-4 h-4 text-orange-400" />}
         </div>
-        <button
-          onClick={() => useSceneStore.getState().setSelectedObject(null)}
-          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/70"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <GripHorizontal className="w-4 h-4 text-white/50 pointer-events-none" />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              useSceneStore.getState().setSelectedObject(null);
+            }}
+            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/70"
+            title="Close Properties"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {objectLocked && (
-        <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-          <p className="text-sm text-orange-400 flex items-center gap-2">
-            <Lock className="w-4 h-4" />
-            Object is locked
-          </p>
-          <p className="text-xs text-white/50 mt-1">
-            Unlock to modify properties
-          </p>
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div>
-          <h3 className="font-medium mb-2 text-white/70 text-sm">Position</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {(['x', 'y', 'z'] as const).map((axis) => (
-              <div key={`pos-${axis}`}>
-                <label className="text-xs text-white/50 uppercase block mb-1">{axis}</label>
-                <input
-                  type="number"
-                  value={selectedObject.position[axis]}
-                  onChange={(e) => handlePositionChange(axis, parseFloat(e.target.value))}
-                  step="0.1"
-                  disabled={objectLocked}
-                  className={`w-full border rounded px-2 py-1 text-sm focus:outline-none ${
-                    objectLocked 
-                      ? 'bg-[#1a1a1a] border-white/5 text-white/30 cursor-not-allowed'
-                      : 'bg-[#2a2a2a] border-white/10 text-white/90 focus:border-blue-500/50'
-                  }`}
-                />
-              </div>
-            ))}
+      {/* Panel Content */}
+      <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 80px)' }}>
+        {objectLocked && (
+          <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+            <p className="text-sm text-orange-400 flex items-center gap-2">
+              <Lock className="w-4 h-4" />
+              Object is locked
+            </p>
+            <p className="text-xs text-white/50 mt-1">
+              Unlock to modify properties
+            </p>
           </div>
-        </div>
-
-        <div>
-          <h3 className="font-medium mb-2 text-white/70 text-sm">Rotation (degrees)</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {(['x', 'y', 'z'] as const).map((axis) => (
-              <div key={`rot-${axis}`}>
-                <label className="text-xs text-white/50 uppercase block mb-1">{axis}</label>
-                <input
-                  type="number"
-                  value={(selectedObject.rotation[axis] * 180) / Math.PI}
-                  onChange={(e) => handleRotationChange(axis, parseFloat(e.target.value))}
-                  step="5"
-                  disabled={objectLocked}
-                  className={`w-full border rounded px-2 py-1 text-sm focus:outline-none ${
-                    objectLocked 
-                      ? 'bg-[#1a1a1a] border-white/5 text-white/30 cursor-not-allowed'
-                      : 'bg-[#2a2a2a] border-white/10 text-white/90 focus:border-blue-500/50'
-                  }`}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="font-medium mb-2 text-white/70 text-sm">Scale</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {(['x', 'y', 'z'] as const).map((axis) => (
-              <div key={`scale-${axis}`}>
-                <label className="text-xs text-white/50 uppercase block mb-1">{axis}</label>
-                <input
-                  type="number"
-                  value={selectedObject.scale[axis]}
-                  onChange={(e) => handleScaleChange(axis, parseFloat(e.target.value))}
-                  step="0.1"
-                  min="0.1"
-                  disabled={objectLocked}
-                  className={`w-full border rounded px-2 py-1 text-sm focus:outline-none ${
-                    objectLocked 
-                      ? 'bg-[#1a1a1a] border-white/5 text-white/30 cursor-not-allowed'
-                      : 'bg-[#2a2a2a] border-white/10 text-white/90 focus:border-blue-500/50'
-                  }`}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {material && (
-          <>
-            <div>
-              <h3 className="font-medium mb-2 text-white/70 text-sm">Surface Color</h3>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={currentColor}
-                  onChange={(e) => handleColorChange(e.target.value)}
-                  disabled={objectLocked}
-                  className={`w-12 h-8 rounded cursor-pointer border ${
-                    objectLocked 
-                      ? 'bg-[#1a1a1a] border-white/5 cursor-not-allowed opacity-50'
-                      : 'bg-[#2a2a2a] border-white/10'
-                  }`}
-                />
-                <input
-                  type="text"
-                  value={currentColor}
-                  onChange={(e) => handleColorChange(e.target.value)}
-                  disabled={objectLocked}
-                  className={`flex-1 border rounded px-2 py-1 text-sm focus:outline-none ${
-                    objectLocked 
-                      ? 'bg-[#1a1a1a] border-white/5 text-white/30 cursor-not-allowed'
-                      : 'bg-[#2a2a2a] border-white/10 text-white/90 focus:border-blue-500/50'
-                  }`}
-                />
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-medium mb-2 text-white/70 text-sm">Surface Opacity</h3>
-              <div className="flex gap-2 items-center">
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={localOpacity}
-                  onChange={(e) => handleOpacityChange(parseFloat(e.target.value))}
-                  disabled={objectLocked}
-                  className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer ${
-                    objectLocked 
-                      ? 'bg-[#1a1a1a] cursor-not-allowed opacity-50'
-                      : 'bg-[#2a2a2a]'
-                  }`}
-                />
-                <span className={`text-sm w-12 text-right ${
-                  objectLocked ? 'text-white/30' : 'text-white/90'
-                }`}>
-                  {Math.round(localOpacity * 100)}%
-                </span>
-              </div>
-            </div>
-
-            {/* Edge/Wireframe Properties */}
-            <div className="border-t border-white/10 pt-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium text-white/70 text-sm">Edges & Wireframe</h3>
-                <button
-                  onClick={toggleWireframe}
-                  disabled={objectLocked}
-                  className={`p-1.5 rounded-lg transition-colors ${
-                    objectLocked
-                      ? 'text-white/30 cursor-not-allowed'
-                      : showWireframe
-                        ? 'bg-blue-500/20 text-blue-400'
-                        : 'hover:bg-white/10 text-white/70'
-                  }`}
-                  title={objectLocked ? 'Object is locked' : (showWireframe ? 'Hide Wireframe' : 'Show Wireframe')}
-                >
-                  {showWireframe ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                </button>
-              </div>
-
-              {showWireframe && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-white/70 mb-2">Edge Color</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={wireframeColor}
-                        onChange={(e) => handleWireframeColorChange(e.target.value)}
-                        disabled={objectLocked}
-                        className={`w-12 h-8 rounded cursor-pointer border ${
-                          objectLocked 
-                            ? 'bg-[#1a1a1a] border-white/5 cursor-not-allowed opacity-50'
-                            : 'bg-[#2a2a2a] border-white/10'
-                        }`}
-                      />
-                      <input
-                        type="text"
-                        value={wireframeColor}
-                        onChange={(e) => handleWireframeColorChange(e.target.value)}
-                        disabled={objectLocked}
-                        className={`flex-1 border rounded px-2 py-1 text-sm focus:outline-none ${
-                          objectLocked 
-                            ? 'bg-[#1a1a1a] border-white/5 text-white/30 cursor-not-allowed'
-                            : 'bg-[#2a2a2a] border-white/10 text-white/90 focus:border-blue-500/50'
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-white/70 mb-2">Edge Opacity</label>
-                    <div className="flex gap-2 items-center">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={wireframeOpacity}
-                        onChange={(e) => handleWireframeOpacityChange(parseFloat(e.target.value))}
-                        disabled={objectLocked}
-                        className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer ${
-                          objectLocked 
-                            ? 'bg-[#1a1a1a] cursor-not-allowed opacity-50'
-                            : 'bg-[#2a2a2a]'
-                        }`}
-                      />
-                      <span className={`text-sm w-12 text-right ${
-                        objectLocked ? 'text-white/30' : 'text-white/90'
-                      }`}>
-                        {Math.round(wireframeOpacity * 100)}%
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-white/70 mb-2">
-                      Line Thickness
-                      {wireframeLinewidth > 1 && (
-                        <span className="text-xs text-blue-400 ml-1">(3D tubes)</span>
-                      )}
-                    </label>
-                    <div className="flex gap-2 items-center">
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        step="0.5"
-                        value={wireframeLinewidth}
-                        onChange={(e) => handleWireframeLinewidthChange(parseFloat(e.target.value))}
-                        disabled={objectLocked}
-                        className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer ${
-                          objectLocked 
-                            ? 'bg-[#1a1a1a] cursor-not-allowed opacity-50'
-                            : 'bg-[#2a2a2a]'
-                        }`}
-                      />
-                      <span className={`text-sm w-12 text-right ${
-                        objectLocked ? 'text-white/30' : 'text-white/90'
-                      }`}>
-                        {wireframeLinewidth}
-                      </span>
-                    </div>
-                    <p className="text-xs text-white/50 mt-1">
-                      {wireframeLinewidth <= 1 
-                        ? 'Thin lines (standard wireframe)'
-                        : 'Thick lines (3D tube geometry)'
-                      }
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {!showWireframe && (
-                <div className="text-center py-4 text-white/50">
-                  <p className="text-xs">Click the eye icon to show wireframe</p>
-                  <p className="text-xs mt-1">Customize edge appearance</p>
-                </div>
-              )}
-            </div>
-          </>
         )}
+
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-medium mb-2 text-white/70 text-sm">Position</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {(['x', 'y', 'z'] as const).map((axis) => (
+                <div key={`pos-${axis}`}>
+                  <label className="text-xs text-white/50 uppercase block mb-1">{axis}</label>
+                  <input
+                    type="number"
+                    value={selectedObject.position[axis]}
+                    onChange={(e) => handlePositionChange(axis, parseFloat(e.target.value))}
+                    step="0.1"
+                    disabled={objectLocked}
+                    className={`w-full border rounded px-2 py-1 text-sm focus:outline-none ${
+                      objectLocked 
+                        ? 'bg-[#1a1a1a] border-white/5 text-white/30 cursor-not-allowed'
+                        : 'bg-[#2a2a2a] border-white/10 text-white/90 focus:border-blue-500/50'
+                    }`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-medium mb-2 text-white/70 text-sm">Rotation (degrees)</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {(['x', 'y', 'z'] as const).map((axis) => (
+                <div key={`rot-${axis}`}>
+                  <label className="text-xs text-white/50 uppercase block mb-1">{axis}</label>
+                  <input
+                    type="number"
+                    value={(selectedObject.rotation[axis] * 180) / Math.PI}
+                    onChange={(e) => handleRotationChange(axis, parseFloat(e.target.value))}
+                    step="5"
+                    disabled={objectLocked}
+                    className={`w-full border rounded px-2 py-1 text-sm focus:outline-none ${
+                      objectLocked 
+                        ? 'bg-[#1a1a1a] border-white/5 text-white/30 cursor-not-allowed'
+                        : 'bg-[#2a2a2a] border-white/10 text-white/90 focus:border-blue-500/50'
+                    }`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-medium mb-2 text-white/70 text-sm">Scale</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {(['x', 'y', 'z'] as const).map((axis) => (
+                <div key={`scale-${axis}`}>
+                  <label className="text-xs text-white/50 uppercase block mb-1">{axis}</label>
+                  <input
+                    type="number"
+                    value={selectedObject.scale[axis]}
+                    onChange={(e) => handleScaleChange(axis, parseFloat(e.target.value))}
+                    step="0.1"
+                    min="0.1"
+                    disabled={objectLocked}
+                    className={`w-full border rounded px-2 py-1 text-sm focus:outline-none ${
+                      objectLocked 
+                        ? 'bg-[#1a1a1a] border-white/5 text-white/30 cursor-not-allowed'
+                        : 'bg-[#2a2a2a] border-white/10 text-white/90 focus:border-blue-500/50'
+                    }`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {material && (
+            <>
+              <div>
+                <h3 className="font-medium mb-2 text-white/70 text-sm">Surface Color</h3>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={currentColor}
+                    onChange={(e) => handleColorChange(e.target.value)}
+                    disabled={objectLocked}
+                    className={`w-12 h-8 rounded cursor-pointer border ${
+                      objectLocked 
+                        ? 'bg-[#1a1a1a] border-white/5 cursor-not-allowed opacity-50'
+                        : 'bg-[#2a2a2a] border-white/10'
+                    }`}
+                  />
+                  <input
+                    type="text"
+                    value={currentColor}
+                    onChange={(e) => handleColorChange(e.target.value)}
+                    disabled={objectLocked}
+                    className={`flex-1 border rounded px-2 py-1 text-sm focus:outline-none ${
+                      objectLocked 
+                        ? 'bg-[#1a1a1a] border-white/5 text-white/30 cursor-not-allowed'
+                        : 'bg-[#2a2a2a] border-white/10 text-white/90 focus:border-blue-500/50'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-medium mb-2 text-white/70 text-sm">Surface Opacity</h3>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={localOpacity}
+                    onChange={(e) => handleOpacityChange(parseFloat(e.target.value))}
+                    disabled={objectLocked}
+                    className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer ${
+                      objectLocked 
+                        ? 'bg-[#1a1a1a] cursor-not-allowed opacity-50'
+                        : 'bg-[#2a2a2a]'
+                    }`}
+                  />
+                  <span className={`text-sm w-12 text-right ${
+                    objectLocked ? 'text-white/30' : 'text-white/90'
+                  }`}>
+                    {Math.round(localOpacity * 100)}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Edge/Wireframe Properties */}
+              <div className="border-t border-white/10 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-medium text-white/70 text-sm">Edges & Wireframe</h3>
+                  <button
+                    onClick={toggleWireframe}
+                    disabled={objectLocked}
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      objectLocked
+                        ? 'text-white/30 cursor-not-allowed'
+                        : showWireframe
+                          ? 'bg-blue-500/20 text-blue-400'
+                          : 'hover:bg-white/10 text-white/70'
+                    }`}
+                    title={objectLocked ? 'Object is locked' : (showWireframe ? 'Hide Wireframe' : 'Show Wireframe')}
+                  >
+                    {showWireframe ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {showWireframe && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-white/70 mb-2">Edge Color</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={wireframeColor}
+                          onChange={(e) => handleWireframeColorChange(e.target.value)}
+                          disabled={objectLocked}
+                          className={`w-12 h-8 rounded cursor-pointer border ${
+                            objectLocked 
+                              ? 'bg-[#1a1a1a] border-white/5 cursor-not-allowed opacity-50'
+                              : 'bg-[#2a2a2a] border-white/10'
+                          }`}
+                        />
+                        <input
+                          type="text"
+                          value={wireframeColor}
+                          onChange={(e) => handleWireframeColorChange(e.target.value)}
+                          disabled={objectLocked}
+                          className={`flex-1 border rounded px-2 py-1 text-sm focus:outline-none ${
+                            objectLocked 
+                              ? 'bg-[#1a1a1a] border-white/5 text-white/30 cursor-not-allowed'
+                              : 'bg-[#2a2a2a] border-white/10 text-white/90 focus:border-blue-500/50'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-white/70 mb-2">Edge Opacity</label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={wireframeOpacity}
+                          onChange={(e) => handleWireframeOpacityChange(parseFloat(e.target.value))}
+                          disabled={objectLocked}
+                          className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer ${
+                            objectLocked 
+                              ? 'bg-[#1a1a1a] cursor-not-allowed opacity-50'
+                              : 'bg-[#2a2a2a]'
+                          }`}
+                        />
+                        <span className={`text-sm w-12 text-right ${
+                          objectLocked ? 'text-white/30' : 'text-white/90'
+                        }`}>
+                          {Math.round(wireframeOpacity * 100)}%
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-white/70 mb-2">
+                        Line Thickness
+                        {wireframeLinewidth > 1 && (
+                          <span className="text-xs text-blue-400 ml-1">(3D tubes)</span>
+                        )}
+                      </label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          step="0.5"
+                          value={wireframeLinewidth}
+                          onChange={(e) => handleWireframeLinewidthChange(parseFloat(e.target.value))}
+                          disabled={objectLocked}
+                          className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer ${
+                            objectLocked 
+                              ? 'bg-[#1a1a1a] cursor-not-allowed opacity-50'
+                              : 'bg-[#2a2a2a]'
+                          }`}
+                        />
+                        <span className={`text-sm w-12 text-right ${
+                          objectLocked ? 'text-white/30' : 'text-white/90'
+                        }`}>
+                          {wireframeLinewidth}
+                        </span>
+                      </div>
+                      <p className="text-xs text-white/50 mt-1">
+                        {wireframeLinewidth <= 1 
+                          ? 'Thin lines (standard wireframe)'
+                          : 'Thick lines (3D tube geometry)'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!showWireframe && (
+                  <div className="text-center py-4 text-white/50">
+                    <p className="text-xs">Click the eye icon to show wireframe</p>
+                    <p className="text-xs mt-1">Customize edge appearance</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
