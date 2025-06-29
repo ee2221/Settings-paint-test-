@@ -12,8 +12,7 @@ import {
   DocumentData,
   QueryDocumentSnapshot,
   onSnapshot,
-  Unsubscribe,
-  writeBatch
+  Unsubscribe
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -53,7 +52,7 @@ export interface FirestoreObject {
   locked?: boolean;
   groupId?: string;
   userId: string;
-  sceneId: string; // Made required for project isolation
+  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -66,7 +65,7 @@ export interface FirestoreGroup {
   visible?: boolean;
   locked?: boolean;
   userId: string;
-  sceneId: string; // Made required for project isolation
+  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -86,7 +85,7 @@ export interface FirestoreLight {
   angle?: number;
   penumbra?: number;
   userId: string;
-  sceneId: string; // Made required for project isolation
+  sceneId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -132,46 +131,10 @@ export const updateScene = async (id: string, updates: Partial<FirestoreScene>):
 
 export const deleteScene = async (id: string): Promise<void> => {
   try {
-    const batch = writeBatch(db);
-    
-    // Delete the scene document
     const sceneRef = doc(db, SCENES_COLLECTION, id);
-    batch.delete(sceneRef);
-    
-    // Delete all objects in this scene
-    const objectsQuery = query(
-      collection(db, OBJECTS_COLLECTION),
-      where('sceneId', '==', id)
-    );
-    const objectsSnapshot = await getDocs(objectsQuery);
-    objectsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    // Delete all groups in this scene
-    const groupsQuery = query(
-      collection(db, GROUPS_COLLECTION),
-      where('sceneId', '==', id)
-    );
-    const groupsSnapshot = await getDocs(groupsQuery);
-    groupsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    // Delete all lights in this scene
-    const lightsQuery = query(
-      collection(db, LIGHTS_COLLECTION),
-      where('sceneId', '==', id)
-    );
-    const lightsSnapshot = await getDocs(lightsQuery);
-    lightsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    // Commit the batch
-    await batch.commit();
+    await deleteDoc(sceneRef);
   } catch (error) {
-    console.error('Error deleting scene and related data:', error);
+    console.error('Error deleting scene:', error);
     throw error;
   }
 };
@@ -180,8 +143,7 @@ export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
   try {
     const q = query(
       collection(db, SCENES_COLLECTION),
-      where('userId', '==', userId),
-      orderBy('updatedAt', 'desc')
+      where('userId', '==', userId)
     );
     
     const querySnapshot = await getDocs(q);
@@ -192,6 +154,12 @@ export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
         id: doc.id,
         ...doc.data()
       } as FirestoreScene);
+    });
+    
+    scenes.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis() || 0;
+      const bTime = b.createdAt?.toMillis() || 0;
+      return bTime - aTime;
     });
     
     return scenes;
@@ -217,48 +185,6 @@ export const getScene = async (id: string): Promise<FirestoreScene | null> => {
     return null;
   } catch (error) {
     console.error('Error getting scene:', error);
-    throw error;
-  }
-};
-
-// Helper function to clear existing project data before saving new data
-export const clearProjectData = async (sceneId: string): Promise<void> => {
-  try {
-    const batch = writeBatch(db);
-    
-    // Clear all objects for this scene
-    const objectsQuery = query(
-      collection(db, OBJECTS_COLLECTION),
-      where('sceneId', '==', sceneId)
-    );
-    const objectsSnapshot = await getDocs(objectsQuery);
-    objectsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    // Clear all groups for this scene
-    const groupsQuery = query(
-      collection(db, GROUPS_COLLECTION),
-      where('sceneId', '==', sceneId)
-    );
-    const groupsSnapshot = await getDocs(groupsQuery);
-    groupsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    // Clear all lights for this scene
-    const lightsQuery = query(
-      collection(db, LIGHTS_COLLECTION),
-      where('sceneId', '==', sceneId)
-    );
-    const lightsSnapshot = await getDocs(lightsQuery);
-    lightsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-    
-    await batch.commit();
-  } catch (error) {
-    console.error('Error clearing project data:', error);
     throw error;
   }
 };
@@ -308,7 +234,7 @@ const serializeGeometry = (geometry: any): any => {
 };
 
 // Object conversion functions
-export const objectToFirestore = (obj: any, name: string, sceneId: string, userId: string): FirestoreObject => {
+export const objectToFirestore = (obj: any, name: string, sceneId?: string, userId?: string): FirestoreObject => {
   const firestoreObj: FirestoreObject = {
     name: name || 'Unnamed Object',
     type: obj.type || 'mesh',
@@ -327,8 +253,8 @@ export const objectToFirestore = (obj: any, name: string, sceneId: string, userI
       y: obj.scale?.y || 1,
       z: obj.scale?.z || 1
     },
-    userId,
-    sceneId // Required for project isolation
+    userId: userId || '',
+    sceneId: sceneId
   };
 
   // Serialize material
@@ -364,8 +290,7 @@ export const firestoreToObject = (firestoreObj: FirestoreObject): any => {
     geometry: firestoreObj.geometry,
     visible: firestoreObj.visible,
     locked: firestoreObj.locked,
-    groupId: firestoreObj.groupId,
-    sceneId: firestoreObj.sceneId
+    groupId: firestoreObj.groupId
   };
 };
 
