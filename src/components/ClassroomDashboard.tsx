@@ -25,11 +25,12 @@ import {
   Star,
   MoreVertical,
   ChevronDown,
-  ArrowLeft
+  ArrowLeft,
+  X
 } from 'lucide-react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { getScenes, deleteScene, FirestoreScene } from '../services/firestoreService';
+import { getScenes, deleteScene, saveScene, FirestoreScene } from '../services/firestoreService';
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 
@@ -45,6 +46,7 @@ const ClassroomDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,6 +56,11 @@ const ClassroomDashboard: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [showProjectMenu, setShowProjectMenu] = useState<string | null>(null);
+  
+  // New project form state
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [creatingProject, setCreatingProject] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -104,31 +111,24 @@ const ClassroomDashboard: React.FC = () => {
   const generateProjectThumbnail = (scene: FirestoreScene): string => {
     // Generate a procedural thumbnail based on project data
     const colors = [
-      'from-blue-500 to-purple-600',
-      'from-green-400 to-blue-500',
-      'from-purple-500 to-pink-500',
-      'from-yellow-400 to-red-500',
-      'from-indigo-500 to-purple-600',
-      'from-pink-500 to-rose-500'
-    ];
-    
-    const patterns = [
-      'bg-gradient-to-br',
-      'bg-gradient-to-tr',
-      'bg-gradient-to-bl',
-      'bg-gradient-to-tl'
+      ['#3B82F6', '#8B5CF6'], // blue to purple
+      ['#10B981', '#3B82F6'], // green to blue
+      ['#8B5CF6', '#EC4899'], // purple to pink
+      ['#F59E0B', '#EF4444'], // yellow to red
+      ['#6366F1', '#8B5CF6'], // indigo to purple
+      ['#EC4899', '#F43F5E']  // pink to rose
     ];
     
     // Use scene ID to consistently generate the same thumbnail
     const colorIndex = (scene.id?.charCodeAt(0) || 0) % colors.length;
-    const patternIndex = (scene.id?.charCodeAt(1) || 0) % patterns.length;
+    const [color1, color2] = colors[colorIndex];
     
     return `data:image/svg+xml,${encodeURIComponent(`
       <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+            <stop offset="0%" style="stop-color:${color1};stop-opacity:1" />
+            <stop offset="100%" style="stop-color:${color2};stop-opacity:1" />
           </linearGradient>
         </defs>
         <rect width="400" height="300" fill="url(#grad)"/>
@@ -179,9 +179,54 @@ const ClassroomDashboard: React.FC = () => {
     setFilteredProjects(filtered);
   };
 
-  const handleCreateProject = () => {
-    // Navigate to the 3D modeling application in the same tab
-    window.location.href = '/?view=app';
+  const handleShowNewProjectModal = () => {
+    setShowNewProjectModal(true);
+    setNewProjectName('');
+    setNewProjectDescription('');
+  };
+
+  const handleCreateProject = async () => {
+    if (!user || !newProjectName.trim()) return;
+    
+    setCreatingProject(true);
+    
+    try {
+      // Create a new empty scene
+      const newScene: Omit<FirestoreScene, 'id' | 'createdAt' | 'updatedAt'> = {
+        name: newProjectName.trim(),
+        description: newProjectDescription.trim() || undefined,
+        userId: user.uid,
+        sceneData: {
+          backgroundColor: '#0f0f23',
+          showGrid: true,
+          gridSize: 10,
+          gridDivisions: 10,
+          cameraPerspective: 'perspective',
+          cameraZoom: 1,
+          objectCount: 0,
+          lightCount: 0,
+          thumbnail: generateProjectThumbnail({ 
+            name: newProjectName.trim(), 
+            id: 'temp-' + Date.now() 
+          } as FirestoreScene)
+        }
+      };
+      
+      const projectId = await saveScene(newScene);
+      
+      // Reload projects to show the new one
+      await loadProjects();
+      
+      // Close modal and navigate to the new project
+      setShowNewProjectModal(false);
+      setCreatingProject(false);
+      
+      // Navigate to the 3D modeling application with the new project
+      window.location.href = `/?view=app&project=${projectId}`;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      setCreatingProject(false);
+    }
   };
 
   const handleOpenProject = (projectId: string) => {
@@ -258,7 +303,7 @@ const ClassroomDashboard: React.FC = () => {
             {user && (
               <div className="flex items-center gap-4">
                 <button
-                  onClick={handleCreateProject}
+                  onClick={handleShowNewProjectModal}
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-lg"
                 >
                   <Plus className="w-5 h-5" />
@@ -397,7 +442,7 @@ const ClassroomDashboard: React.FC = () => {
             </p>
             {!searchTerm && (
               <button
-                onClick={handleCreateProject}
+                onClick={handleShowNewProjectModal}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-200 hover:scale-105"
               >
                 <Plus className="w-5 h-5" />
@@ -604,6 +649,68 @@ const ClassroomDashboard: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* New Project Modal */}
+      {showNewProjectModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1a1a] rounded-xl shadow-2xl border border-white/10 w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <h2 className="text-xl font-semibold text-white/90">Create New Project</h2>
+              <button
+                onClick={() => setShowNewProjectModal(false)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/70"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">
+                  Project Name *
+                </label>
+                <input
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  placeholder="Enter project name"
+                  className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50"
+                  autoFocus
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">
+                  Description (optional)
+                </label>
+                <textarea
+                  value={newProjectDescription}
+                  onChange={(e) => setNewProjectDescription(e.target.value)}
+                  placeholder="Describe your project..."
+                  rows={3}
+                  className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50 resize-none"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3 p-6 border-t border-white/10">
+              <button
+                onClick={() => setShowNewProjectModal(false)}
+                className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateProject}
+                disabled={!newProjectName.trim() || creatingProject}
+                className="flex-1 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+              >
+                {creatingProject ? 'Creating...' : 'Create & Open'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Authentication Modal */}
       <AuthModal 
