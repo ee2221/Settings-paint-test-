@@ -19,12 +19,6 @@ interface ProjectLoaderProps {
 
 const ProjectLoader: React.FC<ProjectLoaderProps> = ({ projectId, userId }) => {
   const { 
-    objects,
-    groups,
-    lights,
-    addObject,
-    createGroup,
-    addLight,
     updateSceneSettings,
     setCameraPerspective,
     setSelectedObject
@@ -257,6 +251,15 @@ const ProjectLoader: React.FC<ProjectLoaderProps> = ({ projectId, userId }) => {
         // Clear existing scene first
         setSelectedObject(null);
         
+        // Clear the scene state completely before loading new project
+        useSceneStore.setState({
+          objects: [],
+          groups: [],
+          lights: [],
+          selectedObject: null,
+          selectedLight: null
+        });
+        
         // Load scene metadata
         const scene = await getScene(projectId);
         if (scene?.sceneData) {
@@ -274,18 +277,13 @@ const ProjectLoader: React.FC<ProjectLoaderProps> = ({ projectId, userId }) => {
           }
         }
 
-        // Set up real-time subscriptions for project data
+        // Set up real-time subscriptions for project-specific data
         const unsubscribeObjects = subscribeToObjects(userId, projectId, (firestoreObjects) => {
-          // Convert Firestore objects to THREE.js objects and add to scene
-          firestoreObjects.forEach((firestoreObj) => {
-            // Check if object already exists in scene
-            const existingObject = objects.find(obj => obj.id === firestoreObj.id);
-            if (existingObject) return;
-
+          // Convert Firestore objects to THREE.js objects and replace in scene
+          const sceneObjects = firestoreObjects.map((firestoreObj) => {
             const threeObject = recreateThreeObject(firestoreObj);
             if (threeObject) {
-              // Add to scene store with metadata
-              const sceneObject = {
+              return {
                 id: firestoreObj.id!,
                 object: threeObject,
                 name: firestoreObj.name,
@@ -293,48 +291,39 @@ const ProjectLoader: React.FC<ProjectLoaderProps> = ({ projectId, userId }) => {
                 locked: firestoreObj.locked || false,
                 groupId: firestoreObj.groupId
               };
-              
-              // Use the store's internal method to add without triggering save
-              useSceneStore.setState(state => ({
-                objects: [...state.objects.filter(obj => obj.id !== firestoreObj.id), sceneObject]
-              }));
             }
-          });
+            return null;
+          }).filter(Boolean);
+          
+          // Replace all objects in the scene with project-specific objects
+          useSceneStore.setState(state => ({
+            objects: sceneObjects as any[]
+          }));
         });
 
         const unsubscribeGroups = subscribeToGroups(userId, projectId, (firestoreGroups) => {
-          // Convert Firestore groups to scene groups
-          firestoreGroups.forEach((firestoreGroup) => {
-            // Check if group already exists
-            const existingGroup = groups.find(group => group.id === firestoreGroup.id);
-            if (existingGroup) return;
-
-            const sceneGroup = {
-              id: firestoreGroup.id!,
-              name: firestoreGroup.name,
-              expanded: firestoreGroup.expanded !== false,
-              visible: firestoreGroup.visible !== false,
-              locked: firestoreGroup.locked || false,
-              objectIds: firestoreGroup.objectIds || []
-            };
-            
-            // Use the store's internal method to add without triggering save
-            useSceneStore.setState(state => ({
-              groups: [...state.groups.filter(group => group.id !== firestoreGroup.id), sceneGroup]
-            }));
-          });
+          // Convert Firestore groups to scene groups and replace in scene
+          const sceneGroups = firestoreGroups.map((firestoreGroup) => ({
+            id: firestoreGroup.id!,
+            name: firestoreGroup.name,
+            expanded: firestoreGroup.expanded !== false,
+            visible: firestoreGroup.visible !== false,
+            locked: firestoreGroup.locked || false,
+            objectIds: firestoreGroup.objectIds || []
+          }));
+          
+          // Replace all groups in the scene with project-specific groups
+          useSceneStore.setState(state => ({
+            groups: sceneGroups
+          }));
         });
 
         const unsubscribeLights = subscribeToLights(userId, projectId, (firestoreLights) => {
-          // Convert Firestore lights to THREE.js lights and add to scene
-          firestoreLights.forEach((firestoreLight) => {
-            // Check if light already exists
-            const existingLight = lights.find(light => light.id === firestoreLight.id);
-            if (existingLight) return;
-
+          // Convert Firestore lights to THREE.js lights and replace in scene
+          const sceneLights = firestoreLights.map((firestoreLight) => {
             const threeLight = recreateThreeLight(firestoreLight);
             if (threeLight) {
-              const sceneLight = {
+              return {
                 id: firestoreLight.id!,
                 name: firestoreLight.name,
                 type: firestoreLight.type as 'directional' | 'point' | 'spot',
@@ -352,13 +341,14 @@ const ProjectLoader: React.FC<ProjectLoaderProps> = ({ projectId, userId }) => {
                 penumbra: firestoreLight.penumbra || 0,
                 object: threeLight
               };
-              
-              // Use the store's internal method to add without triggering save
-              useSceneStore.setState(state => ({
-                lights: [...state.lights.filter(light => light.id !== firestoreLight.id), sceneLight]
-              }));
             }
-          });
+            return null;
+          }).filter(Boolean);
+          
+          // Replace all lights in the scene with project-specific lights
+          useSceneStore.setState(state => ({
+            lights: sceneLights as any[]
+          }));
         });
 
         setLoadedProjectId(projectId);
@@ -383,7 +373,7 @@ const ProjectLoader: React.FC<ProjectLoaderProps> = ({ projectId, userId }) => {
   // Clear scene when projectId is removed
   useEffect(() => {
     if (!projectId && loadedProjectId) {
-      // Clear the scene
+      // Clear the scene completely
       useSceneStore.setState({
         objects: [],
         groups: [],
@@ -401,7 +391,10 @@ const ProjectLoader: React.FC<ProjectLoaderProps> = ({ projectId, userId }) => {
       <div className="fixed top-4 right-4 bg-blue-500/20 border border-blue-500/30 text-blue-400 px-4 py-2 rounded-lg z-50">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
-          <span className="text-sm font-medium">Loading project...</span>
+          <span className="text-sm font-medium">Loading project data...</span>
+        </div>
+        <div className="text-xs text-blue-300 mt-1">
+          Project-specific database
         </div>
       </div>
     );
