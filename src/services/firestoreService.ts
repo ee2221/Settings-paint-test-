@@ -247,6 +247,21 @@ const serializeShape = (shape: any): any => {
   }
 };
 
+// Helper function to deep clone an object, avoiding circular references
+const deepClone = (obj: any): any => {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (obj instanceof Date) return new Date(obj.getTime());
+  if (Array.isArray(obj)) return obj.map(item => deepClone(item));
+  
+  const cloned: any = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      cloned[key] = deepClone(obj[key]);
+    }
+  }
+  return cloned;
+};
+
 // Helper function to serialize Three.js geometry
 const serializeGeometry = (geometry: any): any => {
   if (!geometry) return null;
@@ -257,19 +272,21 @@ const serializeGeometry = (geometry: any): any => {
   
   // Extract parameters for common geometries
   if (geometry.parameters) {
-    const params = { ...geometry.parameters };
+    // Create a deep copy of parameters to avoid modifying the original
+    const params = deepClone(geometry.parameters);
     
     // Special handling for ShapeGeometry
     if (geometry.type === 'ShapeGeometry' && params.shapes) {
       if (Array.isArray(params.shapes)) {
-        // Multiple shapes
+        // Multiple shapes - serialize each one
         params.shapes = params.shapes.map((shape: any) => serializeShape(shape)).filter(Boolean);
       } else {
-        // Single shape
+        // Single shape - serialize it and wrap in array
         const serializedShape = serializeShape(params.shapes);
         if (serializedShape) {
           params.shapes = [serializedShape];
         } else {
+          // If serialization failed, remove the shapes property
           delete params.shapes;
         }
       }
