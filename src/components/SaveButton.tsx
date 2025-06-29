@@ -75,9 +75,28 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
       // Capture scene screenshot
       const thumbnail = await captureSceneScreenshot();
       
-      // Save all objects
+      // Save scene settings first to get the scene ID
+      const sceneData: FirestoreScene = {
+        name: `Scene ${new Date().toLocaleString()}`,
+        description: 'Auto-saved scene',
+        sceneData: {
+          backgroundColor: sceneSettings.backgroundColor,
+          showGrid: sceneSettings.showGrid,
+          gridSize: sceneSettings.gridSize,
+          gridDivisions: sceneSettings.gridDivisions,
+          cameraPerspective,
+          cameraZoom,
+          thumbnail,
+          objectCount: objects.length,
+          lightCount: lights.length
+        },
+        userId: user.uid
+      };
+      const sceneId = await saveScene(sceneData, user.uid);
+
+      // Now save all objects with the scene ID
       const objectPromises = objects.map(async (obj) => {
-        const firestoreData = objectToFirestore(obj.object, obj.name, undefined, user.uid);
+        const firestoreData = objectToFirestore(obj.object, obj.name, sceneId, user.uid);
         firestoreData.visible = obj.visible;
         firestoreData.locked = obj.locked;
         // Only add groupId if it's defined
@@ -87,7 +106,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
         return await saveObject(firestoreData, user.uid);
       });
 
-      // Save all groups
+      // Save all groups with the scene ID
       const groupPromises = groups.map(async (group) => {
         const firestoreGroup: FirestoreGroup = {
           name: group.name,
@@ -95,12 +114,13 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           visible: group.visible,
           locked: group.locked,
           objectIds: group.objectIds,
+          sceneId: sceneId,
           userId: user.uid
         };
         return await saveGroup(firestoreGroup, user.uid);
       });
 
-      // Save all lights
+      // Save all lights with the scene ID
       const lightPromises = lights.map(async (light) => {
         const firestoreLight: FirestoreLight = {
           name: light.name,
@@ -119,36 +139,17 @@ const SaveButton: React.FC<SaveButtonProps> = ({ user }) => {
           decay: light.decay,
           angle: light.angle,
           penumbra: light.penumbra,
+          sceneId: sceneId,
           userId: user.uid
         };
         return await saveLight(firestoreLight, user.uid);
       });
 
-      // Save scene settings with thumbnail and metadata
-      const sceneData: FirestoreScene = {
-        name: `Scene ${new Date().toLocaleString()}`,
-        description: 'Auto-saved scene',
-        sceneData: {
-          backgroundColor: sceneSettings.backgroundColor,
-          showGrid: sceneSettings.showGrid,
-          gridSize: sceneSettings.gridSize,
-          gridDivisions: sceneSettings.gridDivisions,
-          cameraPerspective,
-          cameraZoom,
-          thumbnail,
-          objectCount: objects.length,
-          lightCount: lights.length
-        },
-        userId: user.uid
-      };
-      const scenePromise = saveScene(sceneData, user.uid);
-
-      // Wait for all saves to complete
+      // Wait for all sub-collection saves to complete
       await Promise.all([
         ...objectPromises,
         ...groupPromises,
-        ...lightPromises,
-        scenePromise
+        ...lightPromises
       ]);
 
       setSaveStatus('success');
