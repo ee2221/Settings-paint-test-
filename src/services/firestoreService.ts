@@ -442,6 +442,15 @@ export const updateScene = async (id: string, sceneData: Partial<FirestoreScene>
   }
 };
 
+export const deleteScene = async (id: string): Promise<void> => {
+  try {
+    await deleteDoc(doc(db, COLLECTIONS.SCENES, id));
+  } catch (error) {
+    console.error('Error deleting scene:', error);
+    throw error;
+  }
+};
+
 export const getScenes = async (userId: string): Promise<FirestoreScene[]> => {
   try {
     const q = query(
