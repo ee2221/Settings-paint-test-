@@ -25,11 +25,18 @@ import {
   Star,
   MoreVertical,
   ChevronDown,
-  ArrowLeft
+  ArrowLeft,
+  Share2,
+  X,
+  Check,
+  Mail,
+  UserPlus,
+  Link,
+  AlertCircle
 } from 'lucide-react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { getScenes, deleteScene, FirestoreScene } from '../services/firestoreService';
+import { getScenes, deleteScene, updateScene, FirestoreScene } from '../services/firestoreService';
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 
@@ -39,6 +46,365 @@ interface Project extends FirestoreScene {
   objectCount: number;
   lightCount: number;
 }
+
+interface ShareModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  project: Project | null;
+  onShare: (projectId: string, email: string, permission: 'view' | 'edit') => Promise<void>;
+}
+
+const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, project, onShare }) => {
+  const [email, setEmail] = useState('');
+  const [permission, setPermission] = useState<'view' | 'edit'>('view');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [shareLink, setShareLink] = useState('');
+
+  useEffect(() => {
+    if (project) {
+      // Generate shareable link
+      const baseUrl = window.location.origin;
+      setShareLink(`${baseUrl}/?view=app&shared=${project.id}`);
+    }
+  }, [project]);
+
+  const handleShare = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!project || !email.trim()) return;
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      await onShare(project.id!, email.trim(), permission);
+      setMessage({ type: 'success', text: `Project shared with ${email}` });
+      setEmail('');
+      
+      // Auto close after success
+      setTimeout(() => {
+        onClose();
+        setMessage(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Error sharing project:', error);
+      setMessage({ type: 'error', text: 'Failed to share project. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setMessage({ type: 'success', text: 'Share link copied to clipboard!' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to copy link' });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
+  if (!isOpen || !project) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-[#1a1a1a] rounded-xl shadow-2xl border border-white/10 w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <Share2 className="w-6 h-6 text-blue-400" />
+            <h2 className="text-xl font-semibold text-white/90">Share Project</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/70"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Project Info */}
+          <div className="p-4 bg-[#2a2a2a] rounded-lg border border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Box className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-medium text-white/90">{project.name}</h3>
+                <p className="text-sm text-white/60">
+                  {project.objectCount} objects • {project.lightCount} lights
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Share Link */}
+          <div>
+            <label className="block text-sm font-medium text-white/70 mb-2">
+              Share Link
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={shareLink}
+                readOnly
+                className="flex-1 bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white/90 text-sm focus:outline-none"
+              />
+              <button
+                onClick={copyShareLink}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <Link className="w-4 h-4" />
+                Copy
+              </button>
+            </div>
+            <p className="text-xs text-white/50 mt-1">
+              Anyone with this link can view the project
+            </p>
+          </div>
+
+          {/* Share with specific user */}
+          <div>
+            <label className="block text-sm font-medium text-white/70 mb-2">
+              Share with specific user
+            </label>
+            <form onSubmit={handleShare} className="space-y-4">
+              <div>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter email address"
+                    className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">
+                  Permission Level
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPermission('view')}
+                    className={`p-3 rounded-lg border transition-colors ${
+                      permission === 'view'
+                        ? 'border-blue-500/50 bg-blue-500/10 text-blue-400'
+                        : 'border-white/10 bg-[#2a2a2a] text-white/70 hover:bg-[#3a3a3a]'
+                    }`}
+                  >
+                    <Eye className="w-5 h-5 mx-auto mb-1" />
+                    <div className="text-sm font-medium">View Only</div>
+                    <div className="text-xs opacity-70">Can view project</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPermission('edit')}
+                    className={`p-3 rounded-lg border transition-colors ${
+                      permission === 'edit'
+                        ? 'border-green-500/50 bg-green-500/10 text-green-400'
+                        : 'border-white/10 bg-[#2a2a2a] text-white/70 hover:bg-[#3a3a3a]'
+                    }`}
+                  >
+                    <Edit3 className="w-5 h-5 mx-auto mb-1" />
+                    <div className="text-sm font-medium">Can Edit</div>
+                    <div className="text-xs opacity-70">Can modify project</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Message */}
+              {message && (
+                <div className={`flex items-center gap-2 p-3 rounded-lg ${
+                  message.type === 'success' 
+                    ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+                    : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                }`}>
+                  {message.type === 'success' ? (
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  )}
+                  <span className="text-sm">{message.text}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || !email.trim()}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Sharing...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-5 h-5" />
+                    Share Project
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface RenameModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  project: Project | null;
+  onRename: (projectId: string, newName: string, newDescription?: string) => Promise<void>;
+}
+
+const RenameModal: React.FC<RenameModalProps> = ({ isOpen, onClose, project, onRename }) => {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    if (project) {
+      setName(project.name);
+      setDescription(project.description || '');
+    }
+  }, [project]);
+
+  const handleRename = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!project || !name.trim()) return;
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      await onRename(project.id!, name.trim(), description.trim() || undefined);
+      setMessage({ type: 'success', text: 'Project renamed successfully!' });
+      
+      // Auto close after success
+      setTimeout(() => {
+        onClose();
+        setMessage(null);
+      }, 1500);
+    } catch (error) {
+      console.error('Error renaming project:', error);
+      setMessage({ type: 'error', text: 'Failed to rename project. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen || !project) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-[#1a1a1a] rounded-xl shadow-2xl border border-white/10 w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <Edit3 className="w-6 h-6 text-green-400" />
+            <h2 className="text-xl font-semibold text-white/90">Rename Project</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/70"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <form onSubmit={handleRename} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-white/70 mb-2">
+              Project Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter project name"
+              className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-3 text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50"
+              required
+              maxLength={100}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white/70 mb-2">
+              Description (Optional)
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter project description"
+              rows={3}
+              className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-3 text-white/90 placeholder-white/50 focus:outline-none focus:border-blue-500/50 resize-none"
+              maxLength={500}
+            />
+            <div className="text-xs text-white/50 mt-1">
+              {description.length}/500 characters
+            </div>
+          </div>
+
+          {/* Message */}
+          {message && (
+            <div className={`flex items-center gap-2 p-3 rounded-lg ${
+              message.type === 'success' 
+                ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+                : 'bg-red-500/10 border border-red-500/20 text-red-400'
+            }`}>
+              {message.type === 'success' ? (
+                <Check className="w-4 h-4 flex-shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              )}
+              <span className="text-sm">{message.text}</span>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 px-4 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white rounded-lg font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !name.trim()}
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="w-5 h-5" />
+                  Save Changes
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const ClassroomDashboard: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -54,6 +420,9 @@ const ClassroomDashboard: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [showProjectMenu, setShowProjectMenu] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -218,6 +587,63 @@ const ClassroomDashboard: React.FC = () => {
     
     // TODO: Implement project duplication
     console.log('Duplicate project:', projectId);
+  };
+
+  const handleShareProject = (project: Project, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    setSelectedProject(project);
+    setShowShareModal(true);
+    setShowProjectMenu(null);
+  };
+
+  const handleRenameProject = (project: Project, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    setSelectedProject(project);
+    setShowRenameModal(true);
+    setShowProjectMenu(null);
+  };
+
+  const handleShare = async (projectId: string, email: string, permission: 'view' | 'edit') => {
+    // TODO: Implement actual sharing logic with Firebase
+    // This would involve:
+    // 1. Adding the shared user to the project's permissions
+    // 2. Sending an email notification
+    // 3. Creating a shared project reference
+    
+    console.log('Sharing project:', { projectId, email, permission });
+    
+    // For now, just simulate the API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // In a real implementation, you would:
+    // - Update the project document with shared users
+    // - Send email notification via Firebase Functions
+    // - Create appropriate security rules
+  };
+
+  const handleRename = async (projectId: string, newName: string, newDescription?: string) => {
+    try {
+      await updateScene(projectId, {
+        name: newName,
+        description: newDescription
+      });
+      
+      // Update local state
+      setProjects(projects.map(p => 
+        p.id === projectId 
+          ? { ...p, name: newName, description: newDescription }
+          : p
+      ));
+    } catch (error) {
+      console.error('Error renaming project:', error);
+      throw error;
+    }
   };
 
   const handleSignOut = async () => {
@@ -473,12 +899,27 @@ const ClassroomDashboard: React.FC = () => {
                               Open Project
                             </button>
                             <button
+                              onClick={(e) => handleRenameProject(project, e)}
+                              className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                              Rename
+                            </button>
+                            <button
+                              onClick={(e) => handleShareProject(project, e)}
+                              className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
+                            >
+                              <Share2 className="w-4 h-4" />
+                              Share
+                            </button>
+                            <button
                               onClick={(e) => handleDuplicateProject(project.id!, e)}
                               className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
                             >
                               <Copy className="w-4 h-4" />
                               Duplicate
                             </button>
+                            <div className="border-t border-white/10 my-1" />
                             <button
                               onClick={(e) => handleDeleteProject(project.id!, e)}
                               className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-red-400 transition-colors"
@@ -584,12 +1025,27 @@ const ClassroomDashboard: React.FC = () => {
                         <div className="fixed inset-0 z-40" onClick={() => setShowProjectMenu(null)} />
                         <div className="absolute right-0 top-full mt-1 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-xl z-50">
                           <button
+                            onClick={(e) => handleRenameProject(project, e)}
+                            className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            Rename
+                          </button>
+                          <button
+                            onClick={(e) => handleShareProject(project, e)}
+                            className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
+                          >
+                            <Share2 className="w-4 h-4" />
+                            Share
+                          </button>
+                          <button
                             onClick={(e) => handleDuplicateProject(project.id!, e)}
                             className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-white transition-colors"
                           >
                             <Copy className="w-4 h-4" />
                             Duplicate
                           </button>
+                          <div className="border-t border-white/10 my-1" />
                           <button
                             onClick={(e) => handleDeleteProject(project.id!, e)}
                             className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/10 text-red-400 transition-colors"
@@ -608,18 +1064,31 @@ const ClassroomDashboard: React.FC = () => {
         )}
       </main>
 
-      {/* Authentication Modal */}
+      {/* Modals */}
       <AuthModal 
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onAuthSuccess={() => setShowAuthModal(false)}
       />
 
-      {/* Profile Modal */}
       <ProfileModal 
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         user={user}
+      />
+
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        project={selectedProject}
+        onShare={handleShare}
+      />
+
+      <RenameModal
+        isOpen={showRenameModal}
+        onClose={() => setShowRenameModal(false)}
+        project={selectedProject}
+        onRename={handleRename}
       />
     </div>
   );
