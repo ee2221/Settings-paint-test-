@@ -33,27 +33,28 @@ const SettingsPanel: React.FC = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Initialize position when opened
+  // Initialize position to top right, but offset to avoid layers panel
   useEffect(() => {
-    if (isOpen && panelRef.current && position.x === 0 && position.y === 0) {
+    if (panelRef.current && position.x === 0 && position.y === 0) {
       const rect = panelRef.current.getBoundingClientRect();
-      // Position to the right of the left controls, with some margin
-      setPosition({ x: 200, y: 16 }); // 200px from left, 16px from top
+      // Position further left to avoid layers panel overlap
+      const rightX = window.innerWidth - rect.width - 360; // 360px to account for layers panel width + margin
+      setPosition({ x: Math.max(16, rightX), y: 16 }); // Ensure minimum 16px from left edge
     }
   }, [isOpen]);
 
-  // Handle window resize to keep panel in bounds
+  // Handle window resize to keep panel in bounds and avoid overlap
   useEffect(() => {
     const handleResize = () => {
       if (!panelRef.current) return;
       
       const rect = panelRef.current.getBoundingClientRect();
-      const maxX = window.innerWidth - rect.width - 16;
-      const maxY = window.innerHeight - rect.height - 16;
+      const maxX = window.innerWidth - rect.width - 360; // Account for layers panel
+      const maxY = window.innerHeight - rect.height;
       
       setPosition(prev => ({
-        x: Math.max(16, Math.min(prev.x, maxX)),
-        y: Math.max(16, Math.min(prev.y, maxY))
+        x: Math.max(16, Math.min(prev.x, maxX)), // Minimum 16px from left
+        y: Math.max(0, Math.min(prev.y, maxY))
       }));
     };
 
@@ -82,12 +83,12 @@ const SettingsPanel: React.FC = () => {
       const newX = e.clientX - dragOffset.x;
       const newY = e.clientY - dragOffset.y;
       
-      // Constrain to viewport bounds
+      // Constrain to viewport bounds, accounting for layers panel
       const maxX = window.innerWidth - (panelRef.current?.offsetWidth || 0) - 16;
-      const maxY = window.innerHeight - (panelRef.current?.offsetHeight || 0) - 16;
+      const maxY = window.innerHeight - (panelRef.current?.offsetHeight || 0);
       
       setPosition({
-        x: Math.max(16, Math.min(newX, maxX)),
+        x: Math.max(16, Math.min(newX, maxX)), // Minimum 16px from edges
         y: Math.max(16, Math.min(newY, maxY))
       });
     };
@@ -142,12 +143,15 @@ const SettingsPanel: React.FC = () => {
     updateSceneSettings({ hideAllMenus: !sceneSettings.hideAllMenus });
   };
 
-  // Settings button (always visible) - positioned in left column
+  // Settings button (always visible) - positioned to avoid layers panel
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="p-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 border border-white/5 transition-all duration-200 hover:scale-105"
+        className="fixed top-4 p-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 border border-white/5 transition-all duration-200 hover:scale-105 z-50"
+        style={{ 
+          right: '360px' // Position to the left of where layers panel would be
+        }}
         title="Open Settings"
       >
         <Settings className="w-5 h-5 text-white/90" />
@@ -168,20 +172,18 @@ const SettingsPanel: React.FC = () => {
         }}
         onMouseDown={handleMouseDown}
       >
-        <div className="p-3 flex items-center gap-2 text-white/90">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsCollapsed(false);
+          }}
+          className="p-3 hover:bg-white/10 rounded-lg transition-colors text-white/90 flex items-center gap-2"
+          title="Expand Settings"
+        >
           <Settings className="w-5 h-5" />
           <span className="text-sm font-medium">Settings</span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsCollapsed(false);
-            }}
-            className="p-1 hover:bg-white/10 rounded transition-colors"
-            title="Expand Settings"
-          >
-            <ChevronDown className="w-4 h-4" />
-          </button>
-        </div>
+          <ChevronDown className="w-4 h-4" />
+        </button>
       </div>
     );
   }
