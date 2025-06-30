@@ -249,7 +249,6 @@ const LightingPanel: React.FC = () => {
     >
       {/* Drag Handle */}
       <div
-        ref={dragHandleRef}
         className={`flex items-center justify-between p-4 border-b border-white/10 ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         } select-none`}
