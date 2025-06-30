@@ -647,12 +647,12 @@ const CameraController = () => {
   } = useSceneStore();
   const controlsRef = useRef();
 
-  // Track the current camera target for zoom operations
+  // Update camera target only when controls are disabled (during vertex/edge dragging)
   useEffect(() => {
-    if (controlsRef.current && controlsRef.current.target) {
+    if (controlsRef.current && controlsRef.current.target && (draggedVertex || isDraggingEdge)) {
       setCameraTarget(controlsRef.current.target);
     }
-  }, [setCameraTarget]);
+  }, [draggedVertex, isDraggingEdge, setCameraTarget]);
 
   useEffect(() => {
     if (!camera || !controlsRef.current) return;
@@ -761,13 +761,6 @@ const CameraController = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Update camera target when controls change
-  const handleControlsChange = () => {
-    if (controlsRef.current && controlsRef.current.target) {
-      setCameraTarget(controlsRef.current.target);
-    }
-  };
-
   return (
     <OrbitControls
       ref={controlsRef}
@@ -776,7 +769,6 @@ const CameraController = () => {
       enableZoom={true}
       enableRotate={true}
       enabled={!draggedVertex && !isDraggingEdge} // Disable controls when dragging vertices or edges
-      onChange={handleControlsChange}
     />
   );
 };
