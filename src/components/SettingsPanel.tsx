@@ -20,7 +20,8 @@ import { useSceneStore } from '../store/sceneStore';
 const SettingsPanel: React.FC = () => {
   const { 
     sceneSettings, 
-    updateSceneSettings 
+    updateSceneSettings,
+    selectedObject // Add selectedObject to determine if Properties panel is open
   } = useSceneStore();
   
   const [isOpen, setIsOpen] = useState(false);
@@ -33,34 +34,45 @@ const SettingsPanel: React.FC = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Initialize position to top right, but offset to avoid layers panel
-  useEffect(() => {
-    if (panelRef.current && position.x === 0 && position.y === 0) {
-      const rect = panelRef.current.getBoundingClientRect();
-      // Position further left to avoid layers panel overlap
-      const rightX = window.innerWidth - rect.width - 360; // 360px to account for layers panel width + margin
-      setPosition({ x: Math.max(16, rightX), y: 16 }); // Ensure minimum 16px from left edge
+  // Calculate dynamic positioning based on whether Properties panel is open
+  const calculatePosition = () => {
+    if (!panelRef.current) return { x: 0, y: 0 };
+    
+    const rect = panelRef.current.getBoundingClientRect();
+    let rightOffset = 360; // Default offset for layers panel
+    
+    // If Properties panel is open (selectedObject exists), add more offset
+    if (selectedObject) {
+      rightOffset += 280; // Properties panel width (264px) + margin (16px)
     }
-  }, [isOpen]);
+    
+    const rightX = window.innerWidth - rect.width - rightOffset;
+    return { 
+      x: Math.max(16, rightX), // Ensure minimum 16px from left edge
+      y: 16 
+    };
+  };
+
+  // Initialize position and update when Properties panel opens/closes
+  useEffect(() => {
+    if (panelRef.current) {
+      const newPosition = calculatePosition();
+      setPosition(newPosition);
+    }
+  }, [isOpen, selectedObject]); // Re-calculate when Properties panel state changes
 
   // Handle window resize to keep panel in bounds and avoid overlap
   useEffect(() => {
     const handleResize = () => {
       if (!panelRef.current) return;
       
-      const rect = panelRef.current.getBoundingClientRect();
-      const maxX = window.innerWidth - rect.width - 360; // Account for layers panel
-      const maxY = window.innerHeight - rect.height;
-      
-      setPosition(prev => ({
-        x: Math.max(16, Math.min(prev.x, maxX)), // Minimum 16px from left
-        y: Math.max(0, Math.min(prev.y, maxY))
-      }));
+      const newPosition = calculatePosition();
+      setPosition(newPosition);
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [selectedObject]);
 
   // Handle mouse down on drag handle
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -83,7 +95,7 @@ const SettingsPanel: React.FC = () => {
       const newX = e.clientX - dragOffset.x;
       const newY = e.clientY - dragOffset.y;
       
-      // Constrain to viewport bounds, accounting for layers panel
+      // Constrain to viewport bounds, accounting for other panels
       const maxX = window.innerWidth - (panelRef.current?.offsetWidth || 0) - 16;
       const maxY = window.innerHeight - (panelRef.current?.offsetHeight || 0);
       
@@ -143,14 +155,26 @@ const SettingsPanel: React.FC = () => {
     updateSceneSettings({ hideAllMenus: !sceneSettings.hideAllMenus });
   };
 
-  // Settings button (always visible) - positioned to avoid layers panel
+  // Calculate dynamic right position for the settings button
+  const getSettingsButtonPosition = () => {
+    let rightOffset = 360; // Default offset for layers panel
+    
+    // If Properties panel is open, add more offset
+    if (selectedObject) {
+      rightOffset += 280; // Properties panel width + margin
+    }
+    
+    return `${rightOffset}px`;
+  };
+
+  // Settings button (always visible) - positioned dynamically to avoid other panels
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
         className="fixed top-4 p-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 border border-white/5 transition-all duration-200 hover:scale-105 z-50"
         style={{ 
-          right: '360px' // Position to the left of where layers panel would be
+          right: getSettingsButtonPosition()
         }}
         title="Open Settings"
       >
