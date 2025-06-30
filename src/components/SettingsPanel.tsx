@@ -141,12 +141,12 @@ const SettingsPanel: React.FC = () => {
     updateSceneSettings({ hideAllMenus: !sceneSettings.hideAllMenus });
   };
 
-  // Settings button (always visible) - positioned in top left
+  // Settings button (always visible) - positioned under Hide Interface button
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-4 left-20 p-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 border border-white/5 transition-all duration-200 hover:scale-105 z-50"
+        className="fixed top-20 left-4 p-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 border border-white/5 transition-all duration-200 hover:scale-105 z-50"
         title="Open Settings"
       >
         <Settings className="w-5 h-5 text-white/90" />
