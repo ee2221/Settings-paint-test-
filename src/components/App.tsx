@@ -60,19 +60,29 @@ function App() {
     <div className="w-full h-screen relative">
       <Scene />
       
-      {/* Top Left Controls - Arranged vertically */}
-      <div className="fixed top-4 left-4 flex flex-col items-start gap-4 z-50">
+      {/* Top Left Controls - Arranged vertically with proper spacing */}
+      <div className="fixed top-4 left-4 flex flex-col items-start gap-3 z-50">
         {/* Hide Interface Button */}
         <HideInterfaceButton />
         
-        {/* Settings Button */}
-        <SettingsPanel />
+        {/* Settings Button - positioned with proper spacing */}
+        <div className="w-full">
+          <SettingsPanel />
+        </div>
         
         {/* Save Button - When user is authenticated */}
-        {user && <SaveButton user={user} />}
+        {user && (
+          <div className="w-full">
+            <SaveButton user={user} />
+          </div>
+        )}
         
         {/* User Profile - When user is authenticated */}
-        {user && <UserProfile user={user} onSignOut={handleSignOut} />}
+        {user && (
+          <div className="w-full">
+            <UserProfile user={user} onSignOut={handleSignOut} />
+          </div>
+        )}
       </div>
       
       {/* Conditionally render UI panels based on hideAllMenus setting */}

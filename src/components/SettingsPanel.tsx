@@ -33,10 +33,10 @@ const SettingsPanel: React.FC = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Initialize position to top left area, below hide interface button
+  // Initialize position to top left area, with proper spacing from other buttons
   useEffect(() => {
     if (panelRef.current && position.x === 0 && position.y === 0 && isOpen) {
-      setPosition({ x: 16, y: 120 }); // 16px from left, 120px from top (below hide interface button)
+      setPosition({ x: 16, y: 140 }); // 16px from left, 140px from top (more space below hide interface button)
     }
   }, [isOpen]);
 
@@ -80,7 +80,7 @@ const SettingsPanel: React.FC = () => {
       const newX = e.clientX - dragOffset.x;
       const newY = e.clientY - dragOffset.y;
       
-      // Constrain to viewport bounds
+      // Constrain to viewport bounds with margins
       const maxX = window.innerWidth - (panelRef.current?.offsetWidth || 0) - 16;
       const maxY = window.innerHeight - (panelRef.current?.offsetHeight || 0) - 16;
       
@@ -140,12 +140,12 @@ const SettingsPanel: React.FC = () => {
     updateSceneSettings({ hideAllMenus: !sceneSettings.hideAllMenus });
   };
 
-  // Settings button (always visible) - positioned in top left area
+  // Settings button (always visible) - positioned as a standalone button
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="p-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 border border-white/5 transition-all duration-200 hover:scale-105"
+        className="w-full p-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 border border-white/5 transition-all duration-200 hover:scale-105 flex items-center justify-center"
         title="Open Settings"
       >
         <Settings className="w-5 h-5 text-white/90" />
@@ -430,10 +430,10 @@ const HideInterfaceButton: React.FC = () => {
   return (
     <button
       onClick={handleToggleInterface}
-      className="bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 p-3 border border-white/5 transition-all duration-200 hover:scale-105 group"
+      className="w-full bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 p-3 border border-white/5 transition-all duration-200 hover:scale-105 group"
       title={sceneSettings.hideAllMenus ? 'Show Interface (Tab)' : 'Hide Interface (Tab)'}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 justify-center">
         {sceneSettings.hideAllMenus ? (
           <>
             <Eye className="w-5 h-5 text-green-400" />
