@@ -17,7 +17,8 @@ import {
   Gauge,
   ChevronLeft,
   ChevronUp,
-  GripHorizontal
+  GripHorizontal,
+  Grid3X3
 } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 
@@ -30,7 +31,9 @@ const LightingPanel: React.FC = () => {
     updateLight,
     toggleLightVisibility,
     setSelectedLight,
-    selectedObject
+    selectedObject,
+    sceneSettings,
+    updateSceneSettings
   } = useSceneStore();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -200,6 +203,10 @@ const LightingPanel: React.FC = () => {
     }
   };
 
+  const handleGridToggle = () => {
+    updateSceneSettings({ showGrid: !sceneSettings.showGrid });
+  };
+
   // Collapsed state - just a small tab with only expand arrow clickable
   if (isCollapsed) {
     return (
@@ -256,6 +263,25 @@ const LightingPanel: React.FC = () => {
         </h2>
         <div className="flex items-center gap-2">
           <GripHorizontal className="w-4 h-4 text-white/50 pointer-events-none" />
+          
+          {/* Grid Toggle Button - Only show when lights exist */}
+          {lights.length > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleGridToggle();
+              }}
+              className={`p-1.5 rounded-lg transition-colors ${
+                sceneSettings.showGrid
+                  ? 'bg-blue-500/20 text-blue-400'
+                  : 'hover:bg-white/10 text-white/70'
+              }`}
+              title={sceneSettings.showGrid ? 'Hide Grid' : 'Show Grid'}
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </button>
+          )}
+          
           <div className="relative">
             <button
               onClick={(e) => {
@@ -301,6 +327,49 @@ const LightingPanel: React.FC = () => {
 
       {/* Panel Content */}
       <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(70vh - 80px)' }}>
+        {/* Grid Status Info - Only show when lights exist */}
+        {lights.length > 0 && (
+          <div className={`mb-4 p-3 rounded-lg border ${
+            sceneSettings.showGrid
+              ? 'bg-blue-500/10 border-blue-500/20'
+              : 'bg-gray-500/10 border-gray-500/20'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Grid3X3 className={`w-4 h-4 ${
+                  sceneSettings.showGrid ? 'text-blue-400' : 'text-gray-400'
+                }`} />
+                <span className={`text-sm font-medium ${
+                  sceneSettings.showGrid ? 'text-blue-400' : 'text-gray-400'
+                }`}>
+                  Grid {sceneSettings.showGrid ? 'Visible' : 'Hidden'}
+                </span>
+              </div>
+              <button
+                onClick={handleGridToggle}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  sceneSettings.showGrid
+                    ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
+                    : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+                }`}
+                title={sceneSettings.showGrid ? 'Hide Grid' : 'Show Grid'}
+              >
+                {sceneSettings.showGrid ? (
+                  <Eye className="w-3 h-3" />
+                ) : (
+                  <EyeOff className="w-3 h-3" />
+                )}
+              </button>
+            </div>
+            <div className="text-xs text-white/60 mt-1">
+              {sceneSettings.showGrid 
+                ? 'Grid helps with object placement and alignment'
+                : 'Enable grid for better object positioning'
+              }
+            </div>
+          </div>
+        )}
+
         {/* Lights List */}
         <div className="space-y-2">
           <button
