@@ -53,7 +53,7 @@ const LayersPanel: React.FC = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Initialize position to right side
+  // Initialize position to right side, accounting for settings panel
   useEffect(() => {
     if (panelRef.current && position.x === 0 && position.y === 0) {
       const rect = panelRef.current.getBoundingClientRect();

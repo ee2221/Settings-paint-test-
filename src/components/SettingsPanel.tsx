@@ -33,25 +33,28 @@ const SettingsPanel: React.FC = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Initialize position to top left area, with proper spacing from other buttons
+  // Initialize position to top right, but offset to avoid layers panel
   useEffect(() => {
-    if (panelRef.current && position.x === 0 && position.y === 0 && isOpen) {
-      setPosition({ x: 16, y: 140 }); // 16px from left, 140px from top (more space below hide interface button)
+    if (panelRef.current && position.x === 0 && position.y === 0) {
+      const rect = panelRef.current.getBoundingClientRect();
+      // Position further left to avoid layers panel overlap
+      const rightX = window.innerWidth - rect.width - 360; // 360px to account for layers panel width + margin
+      setPosition({ x: Math.max(16, rightX), y: 16 }); // Ensure minimum 16px from left edge
     }
   }, [isOpen]);
 
-  // Handle window resize to keep panel in bounds
+  // Handle window resize to keep panel in bounds and avoid overlap
   useEffect(() => {
     const handleResize = () => {
       if (!panelRef.current) return;
       
       const rect = panelRef.current.getBoundingClientRect();
-      const maxX = window.innerWidth - rect.width - 16;
-      const maxY = window.innerHeight - rect.height - 16;
+      const maxX = window.innerWidth - rect.width - 360; // Account for layers panel
+      const maxY = window.innerHeight - rect.height;
       
       setPosition(prev => ({
-        x: Math.max(16, Math.min(prev.x, maxX)),
-        y: Math.max(16, Math.min(prev.y, maxY))
+        x: Math.max(16, Math.min(prev.x, maxX)), // Minimum 16px from left
+        y: Math.max(0, Math.min(prev.y, maxY))
       }));
     };
 
@@ -80,12 +83,12 @@ const SettingsPanel: React.FC = () => {
       const newX = e.clientX - dragOffset.x;
       const newY = e.clientY - dragOffset.y;
       
-      // Constrain to viewport bounds with margins
+      // Constrain to viewport bounds, accounting for layers panel
       const maxX = window.innerWidth - (panelRef.current?.offsetWidth || 0) - 16;
-      const maxY = window.innerHeight - (panelRef.current?.offsetHeight || 0) - 16;
+      const maxY = window.innerHeight - (panelRef.current?.offsetHeight || 0);
       
       setPosition({
-        x: Math.max(16, Math.min(newX, maxX)),
+        x: Math.max(16, Math.min(newX, maxX)), // Minimum 16px from edges
         y: Math.max(16, Math.min(newY, maxY))
       });
     };
@@ -140,12 +143,15 @@ const SettingsPanel: React.FC = () => {
     updateSceneSettings({ hideAllMenus: !sceneSettings.hideAllMenus });
   };
 
-  // Settings button (always visible) - positioned as a standalone button
+  // Settings button (always visible) - positioned to avoid layers panel
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="w-full p-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 border border-white/5 transition-all duration-200 hover:scale-105 flex items-center justify-center"
+        className="fixed top-4 p-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 border border-white/5 transition-all duration-200 hover:scale-105 z-50"
+        style={{ 
+          right: '360px' // Position to the left of where layers panel would be
+        }}
         title="Open Settings"
       >
         <Settings className="w-5 h-5 text-white/90" />
@@ -430,10 +436,10 @@ const HideInterfaceButton: React.FC = () => {
   return (
     <button
       onClick={handleToggleInterface}
-      className="w-full bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 p-3 border border-white/5 transition-all duration-200 hover:scale-105 group"
+      className="bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 p-3 border border-white/5 transition-all duration-200 hover:scale-105 group"
       title={sceneSettings.hideAllMenus ? 'Show Interface (Tab)' : 'Hide Interface (Tab)'}
     >
-      <div className="flex items-center gap-2 justify-center">
+      <div className="flex items-center gap-2">
         {sceneSettings.hideAllMenus ? (
           <>
             <Eye className="w-5 h-5 text-green-400" />
