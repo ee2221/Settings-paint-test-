@@ -338,13 +338,19 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       }
 
       let newEditMode = state.editMode;
+      let newTransformMode = state.transformMode;
 
       if (object) {
+        // Apply persistent transform mode if set
+        if (state.persistentTransformMode) {
+          newTransformMode = state.persistentTransformMode;
+        }
+
         // Apply persistent edit mode if set
         if (state.persistentEditMode) {
           newEditMode = state.persistentEditMode;
         } else {
-          // Auto-enable vertex mode for sphere, cylinder, and cone
+          // Auto-enable vertex mode for sphere, cylinder, and cone only if no persistent mode is set
           if (object instanceof THREE.Mesh) {
             const geometry = object.geometry;
             if (geometry instanceof THREE.SphereGeometry ||
@@ -355,15 +361,19 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           }
         }
       } else {
-        // When deselecting, clear edit mode but keep persistent modes
-        newEditMode = null;
+        // When deselecting, only clear modes if no persistent modes are set
+        if (!state.persistentEditMode) {
+          newEditMode = null;
+        }
+        if (!state.persistentTransformMode) {
+          newTransformMode = null;
+        }
       }
       
       return { 
         selectedObject: object,
         editMode: newEditMode,
-        // Don't automatically set transform mode - only show when explicitly selected
-        transformMode: object ? state.transformMode : null
+        transformMode: newTransformMode
       };
     }),
 
@@ -1184,11 +1194,27 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       // Save to history after adding
       setTimeout(() => get().saveToHistory(), 0);
 
+      // Apply persistent modes to the newly placed object
+      let newTransformMode = state.persistentTransformMode;
+      let newEditMode = state.persistentEditMode;
+
+      // Auto-enable vertex mode for certain geometries if no persistent edit mode is set
+      if (!state.persistentEditMode && object instanceof THREE.Mesh) {
+        const geometry = object.geometry;
+        if (geometry instanceof THREE.SphereGeometry ||
+            geometry instanceof THREE.CylinderGeometry ||
+            geometry instanceof THREE.ConeGeometry) {
+          newEditMode = 'vertex';
+        }
+      }
+
       return {
         objects: newObjects,
         placementMode: false,
         pendingObject: null,
-        selectedObject: object
+        selectedObject: object,
+        transformMode: newTransformMode,
+        editMode: newEditMode
       };
     }),
 
