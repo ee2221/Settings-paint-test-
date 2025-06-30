@@ -13,7 +13,8 @@ import {
   EyeOff,
   GripHorizontal,
   Layout,
-  LayoutDashboard
+  LayoutDashboard,
+  Lightbulb
 } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 
@@ -139,6 +140,10 @@ const SettingsPanel: React.FC = () => {
 
   const handleHideMenusToggle = () => {
     updateSceneSettings({ hideAllMenus: !sceneSettings.hideAllMenus });
+  };
+
+  const handleHideLightingToggle = () => {
+    updateSceneSettings({ hideLightingPanel: !sceneSettings.hideLightingPanel });
   };
 
   // Settings button (always visible) - positioned under Hide Interface button
@@ -277,6 +282,32 @@ const SettingsPanel: React.FC = () => {
                 </button>
               </div>
 
+              {/* Hide Lighting Panel Toggle */}
+              <div className="flex items-center justify-between p-3 bg-[#2a2a2a] rounded-lg border border-white/10">
+                <div className="flex items-center gap-3">
+                  <Lightbulb className="w-5 h-5 text-yellow-400" />
+                  <div>
+                    <div className="text-sm font-medium text-white/90">Hide Lighting Panel</div>
+                    <div className="text-xs text-white/60 mt-0.5">
+                      Hide the lighting controls panel
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleHideLightingToggle}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    sceneSettings.hideLightingPanel ? 'bg-orange-500' : 'bg-gray-600'
+                  }`}
+                  title={sceneSettings.hideLightingPanel ? 'Show Lighting Panel' : 'Hide Lighting Panel'}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      sceneSettings.hideLightingPanel ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
               {sceneSettings.hideAllMenus && (
                 <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
                   <div className="text-xs text-orange-400 font-medium mb-1 flex items-center gap-2">
@@ -285,6 +316,18 @@ const SettingsPanel: React.FC = () => {
                   </div>
                   <div className="text-xs text-white/60">
                     All tool menus are hidden. Use this settings panel or keyboard shortcuts to access features.
+                  </div>
+                </div>
+              )}
+
+              {sceneSettings.hideLightingPanel && !sceneSettings.hideAllMenus && (
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <div className="text-xs text-yellow-400 font-medium mb-1 flex items-center gap-2">
+                    <EyeOff className="w-3 h-3" />
+                    Lighting Panel Hidden
+                  </div>
+                  <div className="text-xs text-white/60">
+                    The lighting controls panel is hidden. Toggle this setting to show it again.
                   </div>
                 </div>
               )}
@@ -411,6 +454,7 @@ const SettingsPanel: React.FC = () => {
           <div className="text-xs text-white/60 space-y-1">
             <div><kbd className="bg-white/10 px-1 rounded">Tab</kbd> - Toggle clean mode</div>
             <div><kbd className="bg-white/10 px-1 rounded">G</kbd> - Toggle grid</div>
+            <div><kbd className="bg-white/10 px-1 rounded">L</kbd> - Toggle lighting panel</div>
             <div><kbd className="bg-white/10 px-1 rounded">Ctrl+Z</kbd> - Undo</div>
             <div><kbd className="bg-white/10 px-1 rounded">Ctrl+Y</kbd> - Redo</div>
           </div>
@@ -460,5 +504,46 @@ const HideInterfaceButton: React.FC = () => {
   );
 };
 
+// Hide Lighting Panel Button Component - Positioned under Settings button
+const HideLightingButton: React.FC = () => {
+  const { sceneSettings, updateSceneSettings } = useSceneStore();
+
+  const handleToggleLighting = () => {
+    updateSceneSettings({ hideLightingPanel: !sceneSettings.hideLightingPanel });
+  };
+
+  return (
+    <button
+      onClick={handleToggleLighting}
+      className="bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-xl shadow-2xl shadow-black/20 p-3 border border-white/5 transition-all duration-200 hover:scale-105 group"
+      title={sceneSettings.hideLightingPanel ? 'Show Lighting Panel (L)' : 'Hide Lighting Panel (L)'}
+    >
+      <div className="flex items-center gap-2">
+        {sceneSettings.hideLightingPanel ? (
+          <>
+            <Lightbulb className="w-5 h-5 text-green-400" />
+            <span className="text-sm font-medium text-white/90 hidden group-hover:block">
+              Show Lighting
+            </span>
+          </>
+        ) : (
+          <>
+            <Lightbulb className="w-5 h-5 text-yellow-400" />
+            <EyeOff className="w-4 h-4 text-orange-400" />
+            <span className="text-sm font-medium text-white/90 hidden group-hover:block">
+              Hide Lighting
+            </span>
+          </>
+        )}
+      </div>
+      
+      {/* Tooltip */}
+      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+        {sceneSettings.hideLightingPanel ? 'Show Lighting Panel (L)' : 'Hide Lighting Panel (L)'}
+      </div>
+    </button>
+  );
+};
+
 export default SettingsPanel;
-export { HideInterfaceButton };
+export { HideInterfaceButton, HideLightingButton };
