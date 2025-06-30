@@ -634,63 +634,92 @@ const SceneLights = () => {
   );
 };
 
-// Camera controller component
+// Camera controller component with improved zoom behavior
 const CameraController = () => {
   const { camera } = useThree();
-  const { cameraPerspective, cameraZoom, draggedVertex, isDraggingEdge } = useSceneStore();
+  const { 
+    cameraPerspective, 
+    cameraZoom, 
+    draggedVertex, 
+    isDraggingEdge, 
+    cameraTarget, 
+    setCameraTarget 
+  } = useSceneStore();
   const controlsRef = useRef();
+
+  // Track the current camera target for zoom operations
+  useEffect(() => {
+    if (controlsRef.current && controlsRef.current.target) {
+      setCameraTarget(controlsRef.current.target);
+    }
+  }, [setCameraTarget]);
 
   useEffect(() => {
     if (!camera || !controlsRef.current) return;
 
     const controls = controlsRef.current;
-    const distance = 10 / cameraZoom; // Apply zoom to distance
+    
+    // For perspective view, maintain current camera position and target for zoom
+    if (cameraPerspective === 'perspective') {
+      // Get current camera direction and distance
+      const currentTarget = controls.target || cameraTarget;
+      const currentDirection = camera.position.clone().sub(currentTarget).normalize();
+      const baseDistance = 10; // Base distance for zoom level 1
+      const distance = baseDistance / cameraZoom;
+      
+      // Set new camera position maintaining direction but adjusting distance
+      const newPosition = currentTarget.clone().add(currentDirection.multiplyScalar(distance));
+      camera.position.copy(newPosition);
+      camera.lookAt(currentTarget);
+      camera.up.set(0, 1, 0);
+    } else {
+      // For orthographic views, use fixed positions with zoom
+      const distance = 10 / cameraZoom;
+      const target = controls.target || new THREE.Vector3(0, 0, 0);
 
-    switch (cameraPerspective) {
-      case 'front':
-        camera.position.set(0, 0, distance);
-        camera.lookAt(0, 0, 0);
-        camera.up.set(0, 1, 0);
-        break;
-      case 'back':
-        camera.position.set(0, 0, -distance);
-        camera.lookAt(0, 0, 0);
-        camera.up.set(0, 1, 0);
-        break;
-      case 'right':
-        camera.position.set(distance, 0, 0);
-        camera.lookAt(0, 0, 0);
-        camera.up.set(0, 1, 0);
-        break;
-      case 'left':
-        camera.position.set(-distance, 0, 0);
-        camera.lookAt(0, 0, 0);
-        camera.up.set(0, 1, 0);
-        break;
-      case 'top':
-        camera.position.set(0, distance, 0);
-        camera.lookAt(0, 0, 0);
-        camera.up.set(0, 0, -1);
-        break;
-      case 'bottom':
-        camera.position.set(0, -distance, 0);
-        camera.lookAt(0, 0, 0);
-        camera.up.set(0, 0, 1);
-        break;
-      case 'perspective':
-      default:
-        camera.position.set(5 / cameraZoom, 5 / cameraZoom, 5 / cameraZoom);
-        camera.lookAt(0, 0, 0);
-        camera.up.set(0, 1, 0);
-        break;
+      switch (cameraPerspective) {
+        case 'front':
+          camera.position.copy(target.clone().add(new THREE.Vector3(0, 0, distance)));
+          camera.lookAt(target);
+          camera.up.set(0, 1, 0);
+          break;
+        case 'back':
+          camera.position.copy(target.clone().add(new THREE.Vector3(0, 0, -distance)));
+          camera.lookAt(target);
+          camera.up.set(0, 1, 0);
+          break;
+        case 'right':
+          camera.position.copy(target.clone().add(new THREE.Vector3(distance, 0, 0)));
+          camera.lookAt(target);
+          camera.up.set(0, 1, 0);
+          break;
+        case 'left':
+          camera.position.copy(target.clone().add(new THREE.Vector3(-distance, 0, 0)));
+          camera.lookAt(target);
+          camera.up.set(0, 1, 0);
+          break;
+        case 'top':
+          camera.position.copy(target.clone().add(new THREE.Vector3(0, distance, 0)));
+          camera.lookAt(target);
+          camera.up.set(0, 0, -1);
+          break;
+        case 'bottom':
+          camera.position.copy(target.clone().add(new THREE.Vector3(0, -distance, 0)));
+          camera.lookAt(target);
+          camera.up.set(0, 0, 1);
+          break;
+      }
     }
 
-    // Update controls target and position
+    // Update controls
     if (controls.target) {
-      controls.target.set(0, 0, 0);
+      // Don't reset target for perspective view during zoom
+      if (cameraPerspective !== 'perspective') {
+        controls.target.set(0, 0, 0);
+      }
     }
     controls.update();
-  }, [cameraPerspective, camera, cameraZoom]);
+  }, [cameraPerspective, camera, cameraZoom, cameraTarget]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -732,6 +761,13 @@ const CameraController = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Update camera target when controls change
+  const handleControlsChange = () => {
+    if (controlsRef.current && controlsRef.current.target) {
+      setCameraTarget(controlsRef.current.target);
+    }
+  };
+
   return (
     <OrbitControls
       ref={controlsRef}
@@ -740,6 +776,7 @@ const CameraController = () => {
       enableZoom={true}
       enableRotate={true}
       enabled={!draggedVertex && !isDraggingEdge} // Disable controls when dragging vertices or edges
+      onChange={handleControlsChange}
     />
   );
 };

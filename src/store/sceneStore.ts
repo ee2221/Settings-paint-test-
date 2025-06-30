@@ -105,6 +105,8 @@ interface SceneState {
   // Save state
   lastSaved: Date | null;
   hasUnsavedChanges: boolean;
+  // Camera state for zoom operations
+  cameraTarget: THREE.Vector3;
   addObject: (object: THREE.Object3D, name: string) => void;
   removeObject: (id: string) => void;
   setSelectedObject: (object: THREE.Object3D | null) => void;
@@ -162,6 +164,8 @@ interface SceneState {
   // Save functions
   markSaved: () => void;
   markUnsavedChanges: () => void;
+  // Camera functions
+  setCameraTarget: (target: THREE.Vector3) => void;
 }
 
 const cloneObject = (obj: THREE.Object3D): THREE.Object3D => {
@@ -247,6 +251,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   // Save state
   lastSaved: null,
   hasUnsavedChanges: false,
+  // Camera state
+  cameraTarget: new THREE.Vector3(0, 0, 0),
 
   updateSceneSettings: (settings) =>
     set((state) => {
@@ -1365,5 +1371,11 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   markUnsavedChanges: () =>
     set({
       hasUnsavedChanges: true
+    }),
+
+  // Camera functions
+  setCameraTarget: (target) => 
+    set({
+      cameraTarget: target.clone()
     }),
 }));
