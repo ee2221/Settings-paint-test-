@@ -36,7 +36,6 @@ interface SceneSettings {
   gridSize: number;
   gridDivisions: number;
   hideAllMenus: boolean;
-  hideLightingPanel: boolean;
 }
 
 interface HistoryState {
@@ -223,8 +222,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     showGrid: true,
     gridSize: 10,
     gridDivisions: 10,
-    hideAllMenus: false,
-    hideLightingPanel: false
+    hideAllMenus: false
   },
   // New persistent mode settings
   persistentTransformMode: null,

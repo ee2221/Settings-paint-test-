@@ -9,7 +9,7 @@ import ObjectProperties from './components/ObjectProperties';
 import EditControls from './components/EditControls';
 import CameraPerspectivePanel from './components/CameraPerspectivePanel';
 import LightingPanel from './components/LightingPanel';
-import SettingsPanel, { HideInterfaceButton, HideLightingButton } from './components/SettingsPanel';
+import SettingsPanel, { HideInterfaceButton } from './components/SettingsPanel';
 import SaveButton from './components/SaveButton';
 import AuthModal from './components/AuthModal';
 import UserProfile from './components/UserProfile';
@@ -34,35 +34,6 @@ function App() {
 
     return () => unsubscribe();
   }, []);
-
-  // Add keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Only handle shortcuts when not typing in inputs
-      if (event.target && (event.target as HTMLElement).tagName === 'INPUT') return;
-      if (event.target && (event.target as HTMLElement).tagName === 'TEXTAREA') return;
-
-      const { updateSceneSettings } = useSceneStore.getState();
-
-      switch (event.key.toLowerCase()) {
-        case 'tab':
-          event.preventDefault();
-          updateSceneSettings({ hideAllMenus: !sceneSettings.hideAllMenus });
-          break;
-        case 'g':
-          event.preventDefault();
-          updateSceneSettings({ showGrid: !sceneSettings.showGrid });
-          break;
-        case 'l':
-          event.preventDefault();
-          updateSceneSettings({ hideLightingPanel: !sceneSettings.hideLightingPanel });
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sceneSettings.hideAllMenus, sceneSettings.showGrid, sceneSettings.hideLightingPanel]);
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
@@ -89,13 +60,10 @@ function App() {
     <div className="w-full h-screen relative">
       <Scene />
       
-      {/* Top Left Controls - Arranged vertically */}
-      <div className="fixed top-4 left-4 flex flex-col gap-4 z-50">
+      {/* Top Left Controls - Arranged horizontally */}
+      <div className="fixed top-4 left-4 flex items-center gap-4 z-50">
         {/* Hide Interface Button */}
         <HideInterfaceButton />
-        
-        {/* Hide Lighting Button */}
-        <HideLightingButton />
         
         {/* Save Button - When user is authenticated */}
         {user && <SaveButton user={user} />}
@@ -113,8 +81,7 @@ function App() {
           <ObjectProperties />
           <EditControls />
           <CameraPerspectivePanel />
-          {/* Conditionally render Lighting Panel based on hideLightingPanel setting */}
-          {!sceneSettings.hideLightingPanel && <LightingPanel />}
+          <LightingPanel />
         </>
       )}
       
