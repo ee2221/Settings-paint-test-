@@ -288,7 +288,10 @@ const ObjectProperties: React.FC = () => {
   };
 
   return (
-    <div className="absolute right-72 top-4 bg-[#1a1a1a] rounded-xl shadow-2xl shadow-black/20 p-4 w-64 border border-white/5 max-h-[85vh] overflow-y-auto">
+    <div className="absolute top-4 bg-[#1a1a1a] rounded-xl shadow-2xl shadow-black/20 p-4 w-64 border border-white/5 max-h-[85vh] overflow-y-auto z-40"
+         style={{ 
+           right: '360px' // Position to the left of the layers panel (320px width + 40px margin)
+         }}>
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-white/90">Properties</h2>
