@@ -36,6 +36,7 @@ interface SceneSettings {
   gridSize: number;
   gridDivisions: number;
   hideAllMenus: boolean;
+  showLightHelpers: boolean; // New setting for light helper visibility
 }
 
 interface HistoryState {
@@ -222,7 +223,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     showGrid: true,
     gridSize: 10,
     gridDivisions: 10,
-    hideAllMenus: false
+    hideAllMenus: false,
+    showLightHelpers: true // Default to showing light helpers
   },
   // New persistent mode settings
   persistentTransformMode: null,

@@ -18,7 +18,7 @@ import {
   ChevronLeft,
   ChevronUp,
   GripHorizontal,
-  Grid3X3
+  Zap as LightHelperIcon
 } from 'lucide-react';
 import { useSceneStore } from '../store/sceneStore';
 
@@ -45,7 +45,6 @@ const LightingPanel: React.FC = () => {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
-  const dragHandleRef = useRef<HTMLDivElement>(null);
 
   // Initialize position to bottom right
   useEffect(() => {
@@ -203,8 +202,8 @@ const LightingPanel: React.FC = () => {
     }
   };
 
-  const handleGridToggle = () => {
-    updateSceneSettings({ showGrid: !sceneSettings.showGrid });
+  const handleLightHelpersToggle = () => {
+    updateSceneSettings({ showLightHelpers: !sceneSettings.showLightHelpers });
   };
 
   // Collapsed state - just a small tab with only expand arrow clickable
@@ -264,21 +263,21 @@ const LightingPanel: React.FC = () => {
         <div className="flex items-center gap-2">
           <GripHorizontal className="w-4 h-4 text-white/50 pointer-events-none" />
           
-          {/* Grid Toggle Button - Only show when lights exist */}
+          {/* Light Helpers Toggle Button - Only show when lights exist */}
           {lights.length > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleGridToggle();
+                handleLightHelpersToggle();
               }}
               className={`p-1.5 rounded-lg transition-colors ${
-                sceneSettings.showGrid
-                  ? 'bg-blue-500/20 text-blue-400'
+                sceneSettings.showLightHelpers
+                  ? 'bg-yellow-500/20 text-yellow-400'
                   : 'hover:bg-white/10 text-white/70'
               }`}
-              title={sceneSettings.showGrid ? 'Hide Grid' : 'Show Grid'}
+              title={sceneSettings.showLightHelpers ? 'Hide Light Helpers' : 'Show Light Helpers'}
             >
-              <Grid3X3 className="w-4 h-4" />
+              <LightHelperIcon className="w-4 h-4" />
             </button>
           )}
           
@@ -327,34 +326,34 @@ const LightingPanel: React.FC = () => {
 
       {/* Panel Content */}
       <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(70vh - 80px)' }}>
-        {/* Grid Status Info - Only show when lights exist */}
+        {/* Light Helpers Status Info - Only show when lights exist */}
         {lights.length > 0 && (
           <div className={`mb-4 p-3 rounded-lg border ${
-            sceneSettings.showGrid
-              ? 'bg-blue-500/10 border-blue-500/20'
+            sceneSettings.showLightHelpers
+              ? 'bg-yellow-500/10 border-yellow-500/20'
               : 'bg-gray-500/10 border-gray-500/20'
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Grid3X3 className={`w-4 h-4 ${
-                  sceneSettings.showGrid ? 'text-blue-400' : 'text-gray-400'
+                <LightHelperIcon className={`w-4 h-4 ${
+                  sceneSettings.showLightHelpers ? 'text-yellow-400' : 'text-gray-400'
                 }`} />
                 <span className={`text-sm font-medium ${
-                  sceneSettings.showGrid ? 'text-blue-400' : 'text-gray-400'
+                  sceneSettings.showLightHelpers ? 'text-yellow-400' : 'text-gray-400'
                 }`}>
-                  Grid {sceneSettings.showGrid ? 'Visible' : 'Hidden'}
+                  Light Helpers {sceneSettings.showLightHelpers ? 'Visible' : 'Hidden'}
                 </span>
               </div>
               <button
-                onClick={handleGridToggle}
+                onClick={handleLightHelpersToggle}
                 className={`p-1.5 rounded-lg transition-colors ${
-                  sceneSettings.showGrid
-                    ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
+                  sceneSettings.showLightHelpers
+                    ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                     : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
                 }`}
-                title={sceneSettings.showGrid ? 'Hide Grid' : 'Show Grid'}
+                title={sceneSettings.showLightHelpers ? 'Hide Light Helpers' : 'Show Light Helpers'}
               >
-                {sceneSettings.showGrid ? (
+                {sceneSettings.showLightHelpers ? (
                   <Eye className="w-3 h-3" />
                 ) : (
                   <EyeOff className="w-3 h-3" />
@@ -362,9 +361,9 @@ const LightingPanel: React.FC = () => {
               </button>
             </div>
             <div className="text-xs text-white/60 mt-1">
-              {sceneSettings.showGrid 
-                ? 'Grid helps with object placement and alignment'
-                : 'Enable grid for better object positioning'
+              {sceneSettings.showLightHelpers 
+                ? 'Visual indicators show light positions and directions'
+                : 'Enable to see light position and direction helpers'
               }
             </div>
           </div>

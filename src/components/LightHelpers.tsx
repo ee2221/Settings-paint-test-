@@ -9,14 +9,14 @@ interface LightHelpersProps {
 }
 
 const LightHelpers: React.FC<LightHelpersProps> = ({ lights, selectedLight }) => {
-  const { setSelectedLight } = useSceneStore();
+  const { setSelectedLight, sceneSettings } = useSceneStore();
   const helpersRef = useRef<{ [key: string]: THREE.Object3D }>({});
 
   useFrame(() => {
     // Update helper positions and properties
     lights.forEach(light => {
       const helper = helpersRef.current[light.id];
-      if (helper && light.visible) {
+      if (helper && light.visible && sceneSettings.showLightHelpers) {
         // Update helper visibility and properties based on light changes
         helper.visible = true;
       } else if (helper) {
@@ -24,6 +24,11 @@ const LightHelpers: React.FC<LightHelpersProps> = ({ lights, selectedLight }) =>
       }
     });
   });
+
+  // Don't render anything if light helpers are disabled
+  if (!sceneSettings.showLightHelpers) {
+    return null;
+  }
 
   return (
     <group>
